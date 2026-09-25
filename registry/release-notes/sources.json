@@ -161,8 +161,8 @@
           "pinNote": "the station row names the branch and commit; scripts/build-guests/tiles/nokia9300.sh exports EKA2L1_FORK_BRANCH/EKA2L1_FORK_PIN for emulators/build-eka2l1.sh, which checks the pin out as a local branch"
         },
         {
-          "name": "s80-rom-station",
-          "what": "the ROM window-server track (the firmware's own ewsrv.exe draws the screen): ROM boot, ROM input and the ROM window bridge merged for the hidden nokia9300rom comparison station",
+          "name": "s80-rom-full",
+          "what": "the full ROM stack (the firmware's own window server, font and bitmap server and Eikon draw the screen): ROM boot, ROM input, the ROM window bridge and ROM FBS, for the hidden nokia9300rom comparison station",
           "pinnedBy": [
             "registry/stations/nokia9300rom.json"
           ],
@@ -173,6 +173,10 @@
         {
           "branch": "s80-epoc7-tables",
           "why": "an early topic branch of the wave, merged into s80-integration; it never ran the station on its own"
+        },
+        {
+          "branch": "s80-rom-station",
+          "why": "agent D5's first nokia9300rom build (ROM boot + input + window bridge); superseded by s80-rom-full, which contains all three"
         }
       ]
     }

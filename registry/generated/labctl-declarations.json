@@ -1152,7 +1152,7 @@
       "exec_subshell": null,
       "console": "x11",
       "udp_port": 54220,
-      "notes": "Sibling of nokia9300 on the ROM window-server track (EKA2L1 fork s80-rom-station, EKA2L1_ROM_WSERV=1): same nspawn container shape and launcher (streamhost/stations/nokia9300/x11-runtime.sh), Xvfb :120 at 1280x400, x11 capture, XTEST keys. Network = the retronet web plane in its own netns cage (rn-nokia9300rom, static 10.99.0.44, no default route; docs/lab/retronet/WEB-STATION-nokia9300rom.md). ekactl/1 at <station>/work/run/ekactl.sock; `list`/`focus`/`switch` answer from the ROM window server through worker D's bridge (the SysState helper's snapshots); Restore = `quit` + relaunch from the golden. Drive with xdotool on DISPLAY=:120 from labrun, or `labctl shot nokia9300rom`."
+      "notes": "Sibling of nokia9300 on the ROM window-server track (EKA2L1 fork s80-rom-full, EKA2L1_ROM_WSERV=1 + EKA2L1_ROM_FBS=1: ROM wserv, ROM FBS, ROM Eikon): same nspawn container shape and launcher (streamhost/stations/nokia9300/x11-runtime.sh), Xvfb :120 at 1280x400, x11 capture, XTEST keys. Network = the retronet web plane in its own netns cage (rn-nokia9300rom, static 10.99.0.44, no default route; docs/lab/retronet/WEB-STATION-nokia9300rom.md). ekactl/1 at <station>/work/run/ekactl.sock; `list`/`focus`/`switch` answer from the ROM window server through worker D's bridge (the SysState helper's snapshots); Restore = `quit` + relaunch from the golden. Drive with xdotool on DISPLAY=:120 from labrun, or `labctl shot nokia9300rom`."
     },
     "nt351": {
       "dir": "/data/vms/streamhost/stations/nt351",

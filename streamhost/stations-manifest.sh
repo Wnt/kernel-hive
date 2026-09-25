@@ -1374,7 +1374,7 @@ emit nokia9300 \
 
 # nokia9300rom (VMID 220) — the nokia9300 station's sibling on the ROM window-server track: the same
 # launcher, rootfs shape and golden v3.1 (+ the resident SysState helper), EKA2L1 built from fork
-# s80-rom-station and started with EKA2L1_ROM_WSERV=1, so the ROM's own ewsrv.exe paints the screen. HIDDEN.
+# s80-rom-full and started with EKA2L1_ROM_WSERV=1, so the ROM's own ewsrv.exe paints the screen. HIDDEN.
 emit nokia9300rom \
   --tile nokia9300rom --udp 54220 --x11 --x11-display :120 --capture x11 \
   --pointer none --input-backend x11test --audio off --fps 25 \

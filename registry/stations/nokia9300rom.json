@@ -15,7 +15,7 @@
           "class": "graphical",
           "estimated": "~30m",
           "automation": "none",
-          "produces": "assets/nokia9300rom (eka2l1/: the Wnt/EKA2L1 s80-rom-station build via tiles/nokia9300.sh + emulators/build-eka2l1.sh; rootfs/: the nspawn trixie runtime root, uid-shifted to 2686976) and golden/ (nokia9300's golden v3.1 + the SysState.exe overlay; relaunch reset)",
+          "produces": "assets/nokia9300rom (eka2l1/: the Wnt/EKA2L1 s80-rom-full build via tiles/nokia9300.sh + emulators/build-eka2l1.sh; rootfs/: the nspawn trixie runtime root, uid-shifted to 2686976) and golden/ (nokia9300's golden v3.1 + the SysState.exe overlay; relaunch reset)",
           "flags": []
         }
       }
@@ -35,13 +35,13 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54220,
-      "notes": "Sibling of nokia9300 on the ROM window-server track (EKA2L1 fork s80-rom-station, EKA2L1_ROM_WSERV=1): same nspawn container shape and launcher (streamhost/stations/nokia9300/x11-runtime.sh), Xvfb :120 at 1280x400, x11 capture, XTEST keys. Network = the retronet web plane in its own netns cage (rn-nokia9300rom, static 10.99.0.44, no default route; docs/lab/retronet/WEB-STATION-nokia9300rom.md). ekactl/1 at <station>/work/run/ekactl.sock; `list`/`focus`/`switch` answer from the ROM window server through worker D's bridge (the SysState helper's snapshots); Restore = `quit` + relaunch from the golden. Drive with xdotool on DISPLAY=:120 from labrun, or `labctl shot nokia9300rom`."
+      "notes": "Sibling of nokia9300 on the ROM window-server track (EKA2L1 fork s80-rom-full, EKA2L1_ROM_WSERV=1 + EKA2L1_ROM_FBS=1: ROM wserv, ROM FBS, ROM Eikon): same nspawn container shape and launcher (streamhost/stations/nokia9300/x11-runtime.sh), Xvfb :120 at 1280x400, x11 capture, XTEST keys. Network = the retronet web plane in its own netns cage (rn-nokia9300rom, static 10.99.0.44, no default route; docs/lab/retronet/WEB-STATION-nokia9300rom.md). ekactl/1 at <station>/work/run/ekactl.sock; `list`/`focus`/`switch` answer from the ROM window server through worker D's bridge (the SysState helper's snapshots); Restore = `quit` + relaunch from the golden. Drive with xdotool on DISPLAY=:120 from labrun, or `labctl shot nokia9300rom`."
     }
   },
   "render": {
     "signalOrder": 114,
     "stationsManifestOrder": 93,
-    "stationsManifestPrelude": "\n# nokia9300rom (VMID 220) — the nokia9300 station's sibling on the ROM window-server track: the same\n# launcher, rootfs shape and golden v3.1 (+ the resident SysState helper), EKA2L1 built from fork\n# s80-rom-station and started with EKA2L1_ROM_WSERV=1, so the ROM's own ewsrv.exe paints the screen. HIDDEN.\n",
+    "stationsManifestPrelude": "\n# nokia9300rom (VMID 220) — the nokia9300 station's sibling on the ROM window-server track: the same\n# launcher, rootfs shape and golden v3.1 (+ the resident SysState helper), EKA2L1 built from fork\n# s80-rom-full and started with EKA2L1_ROM_WSERV=1, so the ROM's own ewsrv.exe paints the screen. HIDDEN.\n",
     "bringUpGroup": 8,
     "bindingOrder": 121,
     "bindingPrelude": "",
@@ -163,13 +163,13 @@
       "Web"
     ],
     "blurb": "A Nokia 9300 Communicator running its own firmware: closed it is a phone, opened it is a 640x200 landscape screen over a full QWERTY keyboard, with four command buttons beside the screen whose labels change with the application. Symbian OS 7.0s with the Series 80 v2 interface, firmware 5.22 (November 2005). Here the firmware's own window server (ewsrv.exe) draws every pixel of the screen.",
-    "notes": "Dark-launched COMPARISON sibling of nokia9300: identical container, launcher, keymap and golden v3.1 (plus C:\\System\\Programs\\SysState.exe, the resident state publisher the ROM window server starts), but EKA2L1 is built from fork branch s80-rom-station and run with EKA2L1_ROM_WSERV=1: the ROM's own ewsrv.exe owns the screen, HLE FBS stays. See docs/guests/nokia9300rom.md."
+    "notes": "Dark-launched COMPARISON sibling of nokia9300: identical container, launcher, keymap and golden v3.1 (plus C:\\System\\Programs\\SysState.exe, the resident state publisher the ROM window server starts), but EKA2L1 is built from fork branch s80-rom-full and run with EKA2L1_ROM_WSERV=1 + EKA2L1_ROM_FBS=1: the ROM's own window server, font and bitmap server and Eikon run. See docs/guests/nokia9300rom.md."
   },
   "emulator": {
     "family": "EKA2L1",
-    "version": "Wnt/EKA2L1 fork, branch s80-rom-station @ ac7c1e126 (agent D5): the ROM window-server track = s80-rom-boot @ f7ca695c4 (Z4 A: s80-integration @ b1fec4a28 + the ROM's own ewsrv.exe behind EKA2L1_ROM_WSERV=1, controlled startup via the resident SysState helper, RTimer::Lock, FullName, ChangeLocale, VideoDriver/HAL) + s80-rom-input @ 1d7801eca (Z4 B: ROM raw input, EKeyb, key/type socket verbs) + s80-rom-apps @ 93961ef8e (Z4 D: ROM window bridge, so ekactl list/focus/switch answer from the ROM window server). HLE FBS stays.",
-    "source": "scripts/build-guests/tiles/nokia9300rom.sh (github.com/Wnt/EKA2L1 s80-rom-station @ ac7c1e126109d799306d070c25e8a9641f431137, built by scripts/build-guests/emulators/build-eka2l1.sh)",
-    "driver": "RAE-6 (Nokia 9300), epoc7, firmware 5.22 SYM.ROM + Z: tree + the four Series 80 UI fonts; EKA2L1_ROM_WSERV=1; --run 0x101f8e4f (Desk) --kiosk --kiosk-home 0x101f8e4f --control-socket"
+    "version": "Wnt/EKA2L1 fork, branch s80-rom-full @ 20ee52b11 (Z4 worker F): the full ROM stack = s80-rom-boot (A: the ROM's own ewsrv.exe behind EKA2L1_ROM_WSERV=1, controlled startup via the resident SysState helper, RTimer::Lock, FullName, ChangeLocale, VideoDriver/HAL) + s80-rom-input (B: ROM raw input, EKeyb, key/type socket verbs) + s80-rom-apps (D: the ROM window bridge behind ekactl list/focus/switch) + E's ROM fbserv.exe behind EKA2L1_ROM_FBS=1 + the HLE font-size fix, on s80-integration @ b1fec4a28.",
+    "source": "scripts/build-guests/tiles/nokia9300rom.sh (github.com/Wnt/EKA2L1 s80-rom-full @ 20ee52b1182f5b7e6fea2c2ac33e56be8f1087c9, built by scripts/build-guests/emulators/build-eka2l1.sh)",
+    "driver": "RAE-6 (Nokia 9300), epoc7, firmware 5.22 SYM.ROM + Z: tree + the four Series 80 UI fonts; EKA2L1_ROM_WSERV=1 EKA2L1_ROM_FBS=1; --run 0x101f8e4f (Desk) --kiosk --kiosk-home 0x101f8e4f --control-socket"
   },
   "ui": "mobile",
   "network": {
@@ -195,7 +195,7 @@
     "snapshot": null,
     "mouse": "N/A — the Nokia 9300 has no pointing device and no touchscreen; the exhibit publishes no pointer (stream.pointer.present=false).",
     "keyboard": "ROM raw input (fork s80-rom-input, Z4 worker B): XTEST keys reach the ROM window server's own key tables (Nordic layout 6), per nokia9300's keymap and 0/0 pacing. Framebuffer proof in the D5 report.",
-    "fixture": "Desk as the ROM's own window server (ewsrv.exe) paints it under EKA2L1 s80-rom-station @ ac7c1e126 with EKA2L1_ROM_WSERV=1: date header, Personal / Office / Media / Tools, Clock, Nokia.com, command buttons and the ROM Eikon status pane, at 2x in a 1280x400 root. Golden = nokia9300's golden v3.1 + C:\\System\\Programs\\SysState.exe (Z4 worker D's build of tools/s80-sysstate at s80-rom-apps 93961ef8e: state publisher + ROM window-bridge snapshots; sha256 77a7d8c1…98d2). resetMode=relaunch, in-process via `ekactl quit`, as nokia9300."
+    "fixture": "Desk as the ROM's own window server (ewsrv.exe) paints it under EKA2L1 s80-rom-full @ 20ee52b11 with EKA2L1_ROM_WSERV=1 + EKA2L1_ROM_FBS=1: date header, Personal / Office / Media / Tools, Clock, Nokia.com, command buttons and the ROM Eikon status pane, at 2x in a 1280x400 root. Golden = nokia9300's golden v3.1 + C:\\System\\Programs\\SysState.exe (Z4 worker F's rebuild of tools/s80-sysstate at s80-rom-full 20ee52b11: state publisher + ROM window-bridge snapshots; sha256 6e8b2068…fac0). resetMode=relaunch, in-process via `ekactl quit`, as nokia9300."
   },
   "notes": [
     "Scaffolded from nokia9300 on 2026-09-25 by agent D5 (Opus 5.5) as the operator's ROM-track comparison station; shares nokia9300's launcher, inner script and keymap, owns its fixture."
