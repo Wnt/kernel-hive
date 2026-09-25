@@ -59,7 +59,7 @@ UIDBASE="${UIDBASE:-2621440}"
 # museum kiosk frontend + control socket (B2), Desk content (B6), third app
 # (B4), HLE DOS (B5), Opera home (N7), icon masks (A1), clock faces (A2).
 export EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-integration}"
-export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-fa385d47a0b4bb4b6ea681e78253eb5f48a63811}"
+export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-ba50d94204dffdf8631738b3d0872ccdec75cd7e}"
 
 # The golden ledger (measured 2026-09-24, docs/guests/nokia9300.md §Golden).
 # TREE = sha256 of `find . -type f -print0 | LC_ALL=C sort -z | xargs -0

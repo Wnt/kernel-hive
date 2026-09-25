@@ -46,9 +46,8 @@
 #   NOKIA_APP            app UID for --run (0x101f8e4f = Desk, the S80 shell)
 #   NOKIA_EMU_ARGS       extra eka2l1_qt flags (B2's kiosk flags, when they exist)
 #   NOKIA_LOG_FILTER     EKA2L1 log-filter for the live copy ("" keeps the golden's)
-#   NOKIA_TZ             the container's TZ: EKA2L1 seeds the guest's UTC offset
-#                        from the host's local time (kernel.cpp), so this is the
-#                        exhibit's time zone (Europe/Helsinki)
+#   NOKIA_TZ             the container's TZ; seeds the kernel's UTC offset (the
+#                        guest's home city overrides it — see the guest doc)
 #   NOKIA_UID_BASE       host uid the container's uid 0 maps to (2621440)
 #   NOKIA_X11_SOCKDIR    host dir bound over /tmp/.X11-unix
 #   NOKIA_MACHINE        nspawn machine name (default kh-$SH_STATION; rigs override)

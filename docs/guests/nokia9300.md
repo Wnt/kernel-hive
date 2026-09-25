@@ -13,7 +13,7 @@ QWERTY keyboard, clamshell) running its **own firmware 5.22 of 2005-11-16** —
 Symbian OS 7.0s (EKA1 kernel) with the Series 80 v2 interface. The station
 opens at **Desk**, the Series 80 shell: date header, the Personal / Office /
 Media / Tools groups, Clock and Nokia.com, and the status pane at the lower
-left (skin, no-network and battery indicators). No pointer and no touchscreen: Series
+left (skin, clock, no-network and battery indicators). No pointer and no touchscreen: Series
 80 is driven by four command buttons beside the screen, eight application
 buttons below it, a joystick and the keyboard.
 
@@ -30,7 +30,7 @@ buttons below it, a joystick and the keyboard.
 ## Emulator
 
 **EKA2L1**, the Symbian HLE emulator, from our fork `github.com/Wnt/EKA2L1`,
-branch **`s80-integration` @ `fa385d47a`** (GPL-3; pinned in
+branch **`s80-integration` @ `ba50d9420`** (GPL-3; pinned in
 `tiles/nokia9300.sh`). Agents I2/I3 merged every Series 80 branch of the
 2026-09-24 wave onto upstream master `39858137e`: the 7.0s window-server
 tables (F1), application buttons in the window server (B1), the ROM's own
@@ -38,12 +38,13 @@ keyboard tables (K1), the museum kiosk frontend and `ekactl/1` control socket
 (B2), Desk content (B6), the third-app fix (B4), an HLE DOS server (B5), Opera's
 home page (N7), icon masks (A1), clock faces (A2), Messaging folders (M1) and
 the Telephone directory (T1: SecurityServer pre-started + a Phone Server stub),
-and the Series 80 status pane painted under the HLE Eikon server (S1). Built on labhost by
+and the Series 80 status pane with its minute clock, painted under the HLE
+Eikon server (S1). Built on labhost by
 `scripts/build-guests/emulators/build-eka2l1.sh` (agent D1's branch
 `eka2l1-builder`: pinned fork commit, trixie build root under nspawn, shared
 ccache, mold; the configure stamp is gated, so the binary logs
-`EKA2L1 v0.0.1 (s80-integration-fa385d47a)`); 94 s incremental from the
-previous pin, sha256 `d7cf295d…0b1b`.
+`EKA2L1 v0.0.1 (s80-integration-ba50d94204)`); 93 s incremental from the
+previous pin, sha256 `95e4ff55…a3be`.
 
 Run protocol: `eka2l1_qt --device RAE-6 --run 0x101f8e4f` (Desk) with
 `XDG_DATA_HOME` on a private data dir — EKA2L1 copies `compat/ patch/
@@ -86,11 +87,23 @@ An EKA2L1 XDG data root: `EKA2L1/config.yml` and
   (+ `MANIFEST.sha256`; `xdg.v1` = the previous golden);
   `tiles/nokia9300.sh --golden` hash-gates it and installs `$STATION/golden`,
   keeping the previous as `golden.prev`.
-- Time zone: the container runs `TZ=Europe/Helsinki` (`NOKIA_TZ`); EKA2L1 seeds
-  the guest's UTC offset from the host's local time (`kernel.cpp`), so the guest
-  clock is Helsinki time. The Clock's HOME CITY stays "New York, NY": selecting
-  Helsinki in Clock → Change city finds it but never commits — the Clock thread
-  hits `Unimplemented system call: 0xC00049` (`euser.dll` ord 107). Fork item.
+- Time zone — NOT Helsinki yet. The container runs `TZ=Europe/Helsinki`
+  (`NOKIA_TZ`) and EKA2L1 seeds the kernel's UTC offset from it, but the
+  guest's world server follows its HOME CITY, the ROM default "New York, NY",
+  and the status-pane clock shows that: UTC−4 at start; once Telephone starts,
+  the ROM writes `C:\System\Data\Wldsvr.dat` (221 B: home city New York,
+  offset field −300 min) and the clock drops to UTC−5 (measured 2026-09-25:
+  07:56 then 06:56 at 11:56 UTC; the file is kept in the D2 bake report). The
+  golden has no `Wldsvr.dat`. Clock → Change city finds "Helsinki, Finland"
+  but neither Select nor Enter commits it — the Clock thread hits
+  `Unimplemented system call: 0xC00049` (`euser.dll` ord 107). Fix = a fork
+  SVC, or a Helsinki `Wldsvr.dat` (+120 min, EU DST) baked into the golden.
+- Date and time FORMAT: Desk shows "Friday September 25th 2026" and a 24 h
+  clock; the 9300 user guide shows "Wed 4th August 2004" and "7:25 AM". Not a
+  golden setting: EKA2L1's HLE hard-codes the guest locale
+  (`services/src/init.cpp`: `date_format_america`, `time_format_twenty_four_hours`),
+  and Control panel › General › Regional settings closes Control panel when
+  opened. Fork item.
 - No `hosts:` map yet: there is no network plane to name (see Network).
 
 ## Sandbox
@@ -224,11 +237,11 @@ LIVE display before it can be patched for an x11 rig.
 
 ## Known gaps / OPEN
 
-- Clock home city: Change city → Helsinki does not commit (SVC `0xC00049`
-  unimplemented); the guest clock is Helsinki time through `TZ`, the label says
-  New York.
-- The status pane (lower left) shows the skin and the no-network and battery
-  indicators but no clock yet (S1 may add it).
+- Home city / time zone: New York (UTC−4, then UTC−5 after Telephone); see
+  Golden › Time zone. Date format American and 24 h clock (HLE-fixed).
+- The status pane (lower left) shows the skin, a minute clock and the
+  no-network and battery indicators; the clock follows the guest's home city
+  (New York), not Helsinki — see Golden › Time zone.
 - Messaging opens with a one-time "Cannot find message storage. Try restoring
   from a backup." note (Enter closes it); baking the message store into the
   golden would remove it. Menu hold (task list): `CaptureLongKey` unhandled.
