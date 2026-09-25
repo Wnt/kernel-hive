@@ -66,14 +66,23 @@ const APPS: [string, string, string][] = [
   ['app.own', 'My own', 'My own — the application the owner put on this button'],
 ];
 
-// Whole-column spans make every application seam continue into the number
-// row. Wider spans accommodate Telephone, Messaging, Contacts and Documents.
-// The photos' near-equal application widths are approximated to honour this
-// exact seam grid; the keyboard's outer bounds and all lower rows stay fixed.
-const APP_COLUMNS = [0, 1, 3, 5, 6, 8, 10, 11, 12];
+// Eight equal 1.5-column keys (the photos show near-equal application
+// widths). Only the seams that land on an integer column continue into the
+// number row below: at columns 3, 6 and 9 that's Telephone|Messaging on the
+// 2|3 seam, Web|Contacts on the 5|6 seam and Documents|Calendar on the 8|9
+// seam — the operator's marked photo, not every seam. The other four seams
+// (1.5, 4.5, 7.5, 10.5) fall mid-key on the number row on purpose. The
+// keyboard's outer bounds and all lower rows stay fixed.
+const APP_COLUMNS = [0, 1.5, 3, 4.5, 6, 7.5, 9, 10.5, 12];
+// cell()'s width formula widens a col-0 box by the same 4 units the outer
+// frame gives Esc (see row1) — right for a single key, wrong here, where
+// all eight must be the SAME width. Keep cell()'s x (its left edge already
+// lines up with every column boundary, integer or fractional, exactly) and
+// give every key the plain 1.5-column width instead of cell()'s own.
+const APP_W = 1.5 * KB_U - 2 * GAP;
 const appKeys: DeviceKey[] = APPS.map(([id, label, hint], i) => ({
   id, kind: 'key', keysym: F(5 + i), label, hint, codes: [`F${5 + i}`],
-  box: { ...cell(APP_COLUMNS[i], 0, APP_COLUMNS[i + 1] - APP_COLUMNS[i]), y: APP_Y, h: APP_H },
+  box: { x: cell(APP_COLUMNS[i], 0).x, y: APP_Y, w: APP_W, h: APP_H },
 }));
 
 // Command buttons: one per quarter of the screen height, right of the display.

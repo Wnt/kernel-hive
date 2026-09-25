@@ -8,19 +8,28 @@ const edges = (id: string) => {
 };
 
 describe('Nokia application and keyboard seams', () => {
-  it('continues both edges of every application gap into a number-row gap exactly', () => {
+  it('lands exactly three application seams on a number-row gap, the other four mid-key', () => {
     const apps = NOKIA9300_KEYS.filter((key) => key.id.startsWith('app.'));
     const numbers = ['esc', ...'1234567890'.split('').map((d) => `k${d}`), 'eq', 'bksp'];
     const numberGaps = numbers.slice(1).map((id, i) => [edges(numbers[i])[1], edges(id)[0]]);
     const appGaps = apps.slice(1).map((key, i) => [edges(apps[i].id)[1], edges(key.id)[0]]);
     expect(appGaps).toHaveLength(7);
-    for (const gap of appGaps) expect(numberGaps).toContainEqual(gap);
-    expect(appGaps.map(([left, right]) => (left + right) / 2))
-      .toEqual([238, 442, 646, 748, 952, 1156, 1258]);
+
+    // Telephone|Messaging on 2|3, Web|Contacts on 5|6, Documents|Calendar on 8|9.
+    const onGrid = [1, 3, 5];
+    const offGrid = [0, 2, 4, 6];
+    for (const i of onGrid) expect(numberGaps).toContainEqual(appGaps[i]);
+    for (const i of offGrid) expect(numberGaps).not.toContainEqual(appGaps[i]);
+    expect(appGaps[1]).toEqual([edges('k2')[1], edges('k3')[0]]);
+    expect(appGaps[3]).toEqual([edges('k5')[1], edges('k6')[0]]);
+    expect(appGaps[5]).toEqual([edges('k8')[1], edges('k9')[0]]);
+
+    // All eight application keys are the same width.
+    const widths = apps.map((key) => edges(key.id)[1] - edges(key.id)[0]);
+    for (const w of widths) expect(w).toBeCloseTo(widths[0]);
+
     expect(edges(apps[0].id)[0]).toBe(edges('esc')[0]);
     expect(edges(apps[apps.length - 1].id)[1]).toBe(edges('eq')[1]);
-    expect(edges('esc')[0]).toBe(132.75);
-    expect(edges('bksp')[1]).toBe(1461.25);
   });
 
   it('retains the photo layout of letter columns, the tall Enter and space-bar span', () => {
