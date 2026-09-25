@@ -1,8 +1,8 @@
 #!/bin/bash
 # rn-netns.sh — a nokia9300-family station's link onto the retronet bridge vmbr-rn.
 #
-# Shared by nokia9300 and its ROM-track sibling nokia9300rom (both emit this
-# file from streamhost/stations/nokia9300/). RN_STATION (x11-runtime.sh passes
+# Emitted from streamhost/stations/nokia9300/ for nokia9300 and for any rig or
+# sibling on the same launcher. RN_STATION (x11-runtime.sh passes
 # $SH_STATION; default nokia9300) names everything the station owns: netns
 # rn-<st>, veth <st>rn0 (guest end <st>rn0g, cut to 15 chars), chain
 # <ST>RN-IN, MAC RN_<ST>_MAC in local.env. The address comes from RN_GUEST_IP

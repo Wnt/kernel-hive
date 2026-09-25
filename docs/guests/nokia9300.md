@@ -1,9 +1,11 @@
 # Nokia 9300 Communicator — Series 80 v2 — gallery station notes
 
-Status: **DARK-LAUNCHED, baked** (2026-09-25, agent D2) — registry entry
+Status: **DARK-LAUNCHED on the full ROM stack** (2026-09-25; baked by agent D2,
+switched to the ROM stack by agent S1 per operator decision 28) — registry entry
 `listing.state: hidden` (listing is the operator's call), host-native EKA2L1 in a
-systemd-nspawn sandbox, the daemon capturing a pinned 1280x400 Xvfb whose root
-is the 640x200 inner screen at exactly 2x. Measured facts only; the museum's
+systemd-nspawn sandbox, the firmware's own window server, font and bitmap
+server and Eikon painting the screen, the daemon capturing a pinned 1280x400
+Xvfb whose root is the 640x200 inner screen at exactly 2x. Measured facts only; the museum's
 prose comes later. Research record: `docs/lab/research/candidate-symbian-s80.md`
 (branch `worktree-symbian-s80-research`).
 
@@ -29,34 +31,46 @@ buttons below it, a joystick and the keyboard.
 
 ## Emulator
 
-**EKA2L1**, the Symbian HLE emulator, from our fork `github.com/Wnt/EKA2L1`,
-branch **`s80-integration` @ `e7198fd8c`** (GPL-3; pinned in
-`tiles/nokia9300.sh`). Agents I2–I4 merged every Series 80 branch of the
-2026-09-24/25 wave onto upstream master `39858137e`: the 7.0s window-server
-tables (F1), application buttons in the window server (B1), the ROM's own
-keyboard tables (K1), the museum kiosk frontend and `ekactl/1` control socket
-(B2), Desk content (B6), the third-app fix (B4), an HLE DOS server (B5), Opera's
-home page (N7), icon masks (A1), clock faces (A2), Messaging folders (M1) and
-the Telephone directory (T1: SecurityServer pre-started + a Phone Server stub),
-and the Series 80 status pane with its minute clock, painted under the HLE
-Eikon server (S1), the key-event FIFO that no longer purges characters (K3),
-Exit and Desk icon fixes (E1) and the Series 80 locale file plus the
-Clock's missing SVC (L1), the Contacts New card that no longer panics CONE 46
-(A5), Messaging without the storage note (M2; agent I5), repaint remnants, a
-12 h pane clock and the "Communicator" / "Memory card" volume names (C2), and
-system notes painted by the window server as modal dialogs plus the SMS editor
-(M3; agent I6), Documents Save as with the TrueType glyph atlas and caret
-(G3), window-server draw modes, masked blits and texture upload (G1), and the
-Sheet cursor, formula bar and cell font (G2; agent I7), and text-field fixes
-(C3; agent I8; the ROM-track branches are merged with their switches off by
-default, see nokia9300rom). Built on labhost by
-`scripts/build-guests/emulators/build-eka2l1.sh` (agent D1's branch
-`eka2l1-builder`: pinned fork commit, trixie build root under nspawn, shared
-ccache, mold; the configure stamp is gated, so the binary logs
-`EKA2L1 v0.0.1 (s80-integration-e7198fd8ca)`); built from the previous
-pin, sha256 `783b176e…2f58`. The station runs the whole installed tree
-(`compat/ patch/ resources/ scripts/` beside `eka2l1_qt`), not the binary
-alone.
+**EKA2L1**, the Symbian emulator, from our fork `github.com/Wnt/EKA2L1`,
+branch **`s80-integration` @ `0dd7cab29`** (GPL-3; pinned in
+`tiles/nokia9300.sh`), run on the **full ROM stack**. Agents I2–I10 merged every
+Series 80 branch of the 2026-09-24/25 wave onto upstream master `39858137e`:
+
+- **The ROM track** (Z4, `s80-rom-full` @ `20ee52b11`, merged by I10): ROM boot
+  (A: the ROM's own `ewsrv.exe`, a controlled startup through the resident
+  SysState helper, `RTimer::Lock`, `FullName`, `ChangeLocale`, VideoDriver/HAL),
+  ROM raw input (B: `EKeyb`, key/type socket verbs), the ROM window bridge (D:
+  `ekactl list`/`focus`/`switch` answered from the ROM window server) and ROM
+  `fbserv.exe` (E), plus the HLE FreeType design-size fix (F).
+- **The HLE-era branches**, still in the tree and used by the parts the ROM does
+  not replace: the 7.0s window-server tables (F1), application buttons (B1), the
+  ROM's own keyboard tables (K1), the museum kiosk frontend and `ekactl/1`
+  control socket (B2), Desk content (B6), the third-app fix (B4), an HLE DOS
+  server (B5), Opera's home page (N7), icon masks (A1), clock faces (A2),
+  Messaging folders (M1), the Telephone directory (T1: SecurityServer
+  pre-started + a Phone Server stand-in), the status pane (S1), the key-event
+  FIFO that no longer purges characters (K3), Exit and Desk icon fixes (E1), the
+  locale file (L1), the Contacts New card (A5), Messaging without the storage
+  note (M2), repaint remnants and volume names (C2), system notes and the SMS
+  editor (M3), Documents Save as with the TrueType glyph atlas and caret (G3),
+  draw modes and masked blits (G1), the Sheet cursor and formula bar (G2),
+  text-field fixes (C3) and the sub-byte bitmap expander (G4).
+
+The ROM switches are set by the fixture (`NOKIA_EMU_ENV`, one `--setenv` per
+word): **`EKA2L1_ROM_WSERV=1`** (the ROM's `ewsrv.exe`; it also selects ROM
+Eikon) and **`EKA2L1_ROM_FBS=1`** (the ROM's `fbserv.exe`,
+`Z:\System\Libs\fbserv.exe` in the log). The switches are presence-tested:
+remove one to disable it, never assign 0. Never set `EKA2L1_ROM_STARTER` or
+`EKA2L1_PRESTART` — the fork's runtime `wsini.ini` overlay starts SysState
+through the ROM window-server shell and the default prestart starts
+SecurityServer. With `NOKIA_EMU_ENV` empty the same binary runs the HLE window
+server and FBS (the pre-switch station).
+
+Built on labhost by `scripts/build-guests/emulators/build-eka2l1.sh` (pinned
+fork commit, trixie build root under nspawn, shared ccache, mold; the configure
+stamp is gated, so the binary logs `EKA2L1 v0.0.1 (s80-integration-0dd7cab290)`),
+sha256 `93edacff…e2ef`. The station runs the whole installed tree (`compat/
+patch/ resources/ scripts/ tools/` beside `eka2l1_qt`), not the binary alone.
 
 Run protocol: `eka2l1_qt --device RAE-6 --run 0x101f8e4f` (Desk) with
 `XDG_DATA_HOME` on a private data dir — EKA2L1 copies `compat/ patch/
@@ -66,8 +80,8 @@ every start, so two instances must never share one — plus B2's kiosk flags
 1280x400+0+0 --kiosk-home 0x101f8e4f --control-socket /work/run/ekactl.sock
 --log-file /work/eka2l1.log --log-filter *:warn --no-console-log`. `--device`
 must precede `--run`; `--run` swallows the next token unless it starts with
-`--`. EKA2L1 ignores SIGTERM. `EKA2L1_ROM_EIKSRV` stays unset (the ROM shell is
-not proven). It needs an X server with GLX; Xvfb + Mesa llvmpipe works.
+`--`. EKA2L1 ignores SIGTERM. It needs an X server with GLX; Xvfb + Mesa
+llvmpipe works.
 
 ## Golden (never in git — Nokia firmware, SDK fonts)
 
@@ -114,6 +128,17 @@ An EKA2L1 XDG data root: `EKA2L1/config.yml` and
   clock. The fork (L1) loads `C:\System\Data\LOCALE.D00` at boot, as
   `BaflUtils::InitialiseLocale` would; the HLE's old American default is gone.
 - `hosts:` map empty on purpose: the retronet's wildcard DNS names everything (see Network).
+- **Overlay: `C:\System\Programs\SysState.exe`**, the resident state
+  publisher that the ROM window server's `STARTUP` directive launches; it also
+  publishes the window-group snapshots behind the ROM window bridge. Built from
+  the pinned tree's `tools/s80-sysstate` (`build.sh` with the N-Gage SDK
+  toolchain), 2 800 B, sha256 `6062e081…faf2`; code-identical to Z4 F's
+  `6e8b2068…fac0` (only the E32 header timestamp differs). An older helper
+  boots but cannot serve `list`/`focus`/`switch`. It publishes SharedData
+  `state.val` itself: never bake a `state.val` or edit ROM `wsini` bytes.
+  Staged at `/data/assets-staging/symbian-s80/nokia9300-overlay` with its own
+  `MANIFEST.sha256`; `tiles/nokia9300.sh --golden` checks it and lays it over
+  the gated ledger golden (`GOLDEN_OVERLAY`, empty = the bare ledger).
 
 ## Sandbox
 
@@ -156,9 +181,10 @@ Xvfb, version-matched to the build root), shifted to 2621440.
 
 ## Input — keys only, over XTEST (keymap contract v3, agent K1)
 
-The fork runs the ROM's own `EKDATA.DLL` tables (EKTRAN's algorithm), so Shift,
-Ctrl, Chr and Caps behave as on the device; printable characters are injected
-as their own keysyms and the fork types the 9300 key that produces them.
+Keys reach the ROM window server through ROM raw input (Z4 B) and the ROM's own
+`EKDATA.DLL` tables, so Shift, Ctrl, Chr and Caps behave as on the device
+(layout 6, Nordic); printable characters are injected as their own keysyms and
+the fork types the 9300 key that produces them.
 
 | Key | Keysym | Key | Keysym |
 |---|---|---|---|
@@ -275,7 +301,47 @@ LIVE display before it can be patched for an x11 rig.
   the claims, relaunch, restart the daemon. The `darklaunch.d` declaration
   survives on `/data`.
 
+## Rollback to the HLE-only build
+
+The previous install, the HLE window server build `s80-integration` @
+`e7198fd8c`, is kept as `assets/nokia9300/eka2l1.prev`, and the golden without
+the SysState overlay as `stations/nokia9300/golden.prev`. Together with an
+empty `NOKIA_EMU_ENV` they are the exact pre-switch combination. One command:
+
+```bash
+ssh lab 'A=/data/vms/streamhost/assets/nokia9300 S=/data/vms/streamhost/stations/nokia9300; mv $A/eka2l1 $A/eka2l1.rom && mv $A/eka2l1.prev $A/eka2l1 && mv $S/golden $S/golden.rom && mv $S/golden.prev $S/golden && sed -i "s/^NOKIA_EMU_ENV=.*/NOKIA_EMU_ENV=/" $S/station.env && systemctl restart streamhost@nokia9300'
+```
+
+The next `station-up.sh nokia9300` re-emits the committed fixture, so a lasting
+rollback also empties `NOKIA_EMU_ENV` in
+`streamhost/stations/nokia9300/station.env.fixture` and re-pins
+`tiles/nokia9300.sh`.
+
+## Re-pin
+
+Set `EKA2L1_FORK_PIN` in `scripts/build-guests/tiles/nokia9300.sh` (and the
+builder default in `emulators/build-eka2l1.sh`) and `emulator.source` in the
+registry row; land; `box-deploy --apply`; then build into the assets (the
+previous tree becomes `eka2l1.prev`) and restart:
+
+```bash
+scripts/dev/labrun -c 'WORK=/data/vms/sandbox/s80-eka2l1/work BUILDROOT=/data/vms/sandbox/s80-eka2l1/buildroot bash /data/kernel-hive/scripts/build-guests/tiles/nokia9300.sh --build'
+ssh lab 'systemctl restart streamhost@nokia9300'
+```
+
+A new helper: rebuild `tools/s80-sysstate` from the new pin, replace the file in
+the overlay dir, regenerate its `MANIFEST.sha256`, run `tiles/nokia9300.sh --golden`.
+
 ## Known gaps / OPEN
+
+- **Kiosk verbs.** `ekactl list`, `focus` and `switch` read the ROM window
+  server through the ROM window bridge; it answers `ERR ROM window bridge not
+  ready` until SysState publishes its first snapshot. `quit` does not depend on
+  the bridge, so Restore and the auto-reset always work.
+- Full phone-side Starter boot is not used; the controlled service set replaces it.
+- Fonts are not device-identical (X2's rasteriser/metrics gap; the Sheet row
+  pitch and Documents line pitch differ from the device).
+- Contacts, Opera and Messaging stay in the background after Exit.
 
 - The status pane (lower left) shows the skin, a minute clock and the
   no-network and battery indicators; the clock follows the guest's home city

@@ -26,7 +26,7 @@ nspawn container:
 | Thing | Value |
 |---|---|
 | Switch | `NOKIA_NET=retronet` in `station.env.fixture`. `off` = `--private-network`, lo only (the default for rigs) |
-| Helper | `streamhost/stations/nokia9300/rn-netns.sh` (an emit aux file, shared with [`nokia9300rom`](WEB-STATION-nokia9300rom.md) via `RN_STATION`), called `up` by `x11-runtime.sh` on every launch. The launcher refuses to start networked if it fails |
+| Helper | `streamhost/stations/nokia9300/rn-netns.sh` (an emit aux file; every name it creates derives from `RN_STATION`), called `up` by `x11-runtime.sh` on every launch. The launcher refuses to start networked if it fails |
 | Netns | `rn-nokia9300`; its only interface is veth `nokia9300rn0g` |
 | Link | veth `nokia9300rn0` (host end) enslaved to `vmbr-rn` |
 | Guest IP | `10.99.0.43/24`, static on the netns veth; reservation kept in `RETRONET_DHCP_RESERVATIONS` (`wave.sh alloc nokia9300 --retronet`) |

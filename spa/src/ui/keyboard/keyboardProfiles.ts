@@ -541,8 +541,6 @@ export const OS_FAMILY: Record<string, Family> = {
   // application buttons below it, none of them on a PC keyboard — its own
   // family in keyboardProfiles.data.handheld.ts.
   nokia9300: 'nokia9300',
-  // The same Communicator on the ROM window-server comparison track (hidden).
-  nokia9300rom: 'nokia9300',
 };
 
 // keyboardProfileFor lives in keyboardProfiles.data.ts alongside PROFILES: it

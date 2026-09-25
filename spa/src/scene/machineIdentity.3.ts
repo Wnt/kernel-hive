@@ -236,9 +236,4 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#b9bcc0', accentTint: '#5b7fa6', tintMix: 0.45,
     badge: 'NOKIA 9300', spec: 'SERIES 80 • SYMBIAN OS 7.0s • 2005', kit: 'mobile',
   },
-  // nokia9300rom: the same Communicator (hidden ROM window-server comparison sibling).
-  nokia9300rom: {
-    caseTint: '#b9bcc0', accentTint: '#5b7fa6', tintMix: 0.45,
-    badge: 'NOKIA 9300', spec: 'SERIES 80 • SYMBIAN OS 7.0s • 2005', kit: 'mobile',
-  },
 } as const satisfies Record<string, ExhibitIdentity>;

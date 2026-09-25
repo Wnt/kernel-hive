@@ -52,7 +52,8 @@
 #   NOKIA_APP            app UID for --run (0x101f8e4f = Desk, the S80 shell)
 #   NOKIA_EMU_ARGS       extra eka2l1_qt flags (B2's kiosk flags, when they exist)
 #   NOKIA_EMU_ENV        space-separated NAME=value words set in the emulator's
-#                        environment (nokia9300rom: EKA2L1_ROM_WSERV=1); unset = none
+#                        environment (the full ROM stack: EKA2L1_ROM_WSERV=1
+#                        EKA2L1_ROM_FBS=1); unset = none (HLE wserv + FBS)
 #   NOKIA_LOG_FILTER     EKA2L1 log-filter for the live copy ("" keeps the golden's)
 #   NOKIA_TZ             the container's TZ; seeds the kernel's UTC offset (the
 #                        guest's home city overrides it — see the guest doc)
@@ -61,8 +62,8 @@
 #   NOKIA_MACHINE        nspawn machine name (default kh-$SH_STATION; rigs override)
 #   NOKIA_BASE           override for $BASE on a rig (unset in production)
 #   NOKIA_NET            retronet | off (default off; the fixture sets retronet)
-#   NOKIA_RN_IP          the station's reserved retronet address (nokia9300rom;
-#                        nokia9300 relies on rn-netns.sh's default)
+#   NOKIA_RN_IP          the station's reserved retronet address (unset: only
+#                        nokia9300 has rn-netns.sh's default, 10.99.0.43)
 #   NOKIA_NETNS          the netns rn-netns.sh makes (default rn-$SH_STATION);
 #                        a rig also passes RN_VETH_HOST/RN_VETH_GUEST for its own
 #   SH_IDLE_PAUSE_*      the daemon's freezer reads mame.pid (kept current here)

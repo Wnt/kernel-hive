@@ -63,7 +63,7 @@ export function useStreamInput({
   // the whole box back to guest pixels — resolution-based, stretch-independent).
   presentFill: boolean;
   // DEVICE DRAWING stations whose real device has no pointer (deviceTypes.ts
-  // `pointer: 'none'`, e.g. nokia9300/nokia9300rom): the guest ignores a
+  // `pointer: 'none'`, e.g. nokia9300): the guest ignores a
   // pointer entirely, so the whole POINTER + WHEEL effect below is skipped —
   // no listener attaches, so clicks/drags/wheel never reach the guest and the
   // browser's own default click-to-focus-page behaviour is untouched (nothing

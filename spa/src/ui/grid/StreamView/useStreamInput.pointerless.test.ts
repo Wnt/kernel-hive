@@ -1,5 +1,5 @@
 // M-UI4: device-drawing stations whose real device has no pointer
-// (deviceTypes.ts `pointer: 'none'`, e.g. nokia9300/nokia9300rom) must never
+// (deviceTypes.ts `pointer: 'none'`, e.g. nokia9300) must never
 // forward a click/drag/wheel on the stream as a guest pointer event — the
 // drawn keys and the physical keyboard remain the only input. This drives the
 // REAL "POINTER + WHEEL -> guest" effect end to end (a real DOM event

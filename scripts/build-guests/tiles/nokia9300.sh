@@ -1,10 +1,14 @@
 #!/bin/bash
 # =============================================================================
 # tiles/nokia9300.sh — stage the host-native nokia9300 station: EKA2L1, the
-# Symbian HLE emulator (our fork github.com/Wnt/EKA2L1, branch
-# s80-integration, GPL-3), running the Nokia 9300 Communicator's OWN firmware
-# (RAE-6, fw 5.22 of 2005-11-16: Symbian OS 7.0s, Series 80 v2). Three outputs,
-# ONE combination with the launcher (streamhost/stations/nokia9300/x11-runtime.sh):
+# Symbian emulator (our fork github.com/Wnt/EKA2L1, branch s80-integration,
+# GPL-3), running the Nokia 9300 Communicator's OWN firmware (RAE-6, fw 5.22
+# of 2005-11-16: Symbian OS 7.0s, Series 80 v2) on the FULL ROM STACK — the
+# fixture's NOKIA_EMU_ENV sets EKA2L1_ROM_WSERV=1 EKA2L1_ROM_FBS=1, so the
+# firmware's own window server, font and bitmap server and Eikon paint the
+# screen (operator decision 28, 2026-09-25). Three outputs, ONE combination
+# with the launcher (streamhost/stations/nokia9300/x11-runtime.sh) and the
+# fixture's emulator switches:
 #
 #   $OUT/eka2l1/      the emulator build: eka2l1_qt + compat/ patch/ resources/
 #                     scripts/, made by scripts/build-guests/emulators/
@@ -49,8 +53,12 @@
 #   EKA2L1_FORK_BRANCH, EKA2L1_FORK_PIN). GOLDEN_OVERLAY (optional): a staged
 #   dir laid over the gated golden before the swap, every file of it checked
 #   against its own MANIFEST.sha256 (sha256sum format, paths relative to the
-#   golden root) — how a sibling station (nokia9300rom) adds files to the
-#   same golden without a second ledger of Nokia's bytes.
+#   golden root). Default: the staged overlay that adds
+#   C:\System\Programs\SysState.exe — tools/s80-sysstate built from the
+#   pinned fork tree (state publisher + the ROM window bridge's snapshots),
+#   which the ROM window server's STARTUP directive launches; without it
+#   Desk still boots but `ekactl list/focus/switch` never answer. Set
+#   GOLDEN_OVERLAY= (empty) for the bare ledger golden.
 # =============================================================================
 set -euo pipefail
 
@@ -63,13 +71,14 @@ MEDIA="${MEDIA:-/data/assets-staging/symbian-s80/nokia9300-golden/xdg}"
 # 40 x 65536: `kh-claim uidbase 2621440`, clear of CT 950/951's subuid range
 # and of every other contained station (lisa 200000, medley 1966080, ...).
 UIDBASE="${UIDBASE:-2621440}"
-# The fork commit the station runs — ONE combination with the golden and the
-# launch flags: s80-integration (agent I2) = every Series 80 branch of the wave
-# merged — window server, app buttons (B1), the ROM's own key tables (K1), the
-# museum kiosk frontend + control socket (B2), Desk content (B6), third app
-# (B4), HLE DOS (B5), Opera home (N7), icon masks (A1), clock faces (A2).
+GOLDEN_OVERLAY="${GOLDEN_OVERLAY-/data/assets-staging/symbian-s80/nokia9300-overlay}"
+# The fork commit the station runs — ONE combination with the golden, the
+# SysState overlay and the launch switches: s80-integration @ 0dd7cab29
+# (agent I10) = every Series 80 branch of the wave (I2-I9) + the full ROM
+# stack s80-rom-full @ 20ee52b11 (Z4: ROM boot, ROM input, the ROM window
+# bridge, ROM fbserv) + the sub-byte bitmap expander (G4).
 export EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-integration}"
-export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-e7198fd8cabb408cfa6b2bc205aca8ba46fb706c}"
+export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-0dd7cab2905fa14a2b1d5377dd9541dd2cbd58c0}"
 
 # The golden ledger (measured 2026-09-24, docs/guests/nokia9300.md §Golden).
 # TREE = sha256 of `find . -type f -print0 | LC_ALL=C sort -z | xargs -0
