@@ -105,3 +105,13 @@ export interface DeviceDrawing {
   /** One line under the drawing naming the physical-keyboard shortcuts. */
   shortcutNote: string;
 }
+
+/** className of the native `<input type="button">` KeyCap mounts inside each
+ *  drawn key's SVG hit rectangle (accessible focus/Tab/Enter/Space activation
+ *  — see KeyCap.tsx). Shared with StreamView's global physical-key forwarder
+ *  (useStreamInput.ts), which must keep forwarding Esc/arrows/F-keys/letters
+ *  to the guest while one of these has focus — only Enter/Space are the
+ *  control's OWN activation keys and must not also be sent as literal
+ *  keysyms (that would double-send: once as the drawn key's real keysym via
+ *  onPress/onRelease, once as literal Enter/Space via the forwarder). */
+export const DEVICE_KEY_INPUT_CLASS = 'dev-key-input';

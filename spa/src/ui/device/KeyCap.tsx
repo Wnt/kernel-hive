@@ -9,6 +9,7 @@
 
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { DeviceKey } from './deviceTypes';
+import { DEVICE_KEY_INPUT_CLASS } from './deviceTypes';
 import { GlyphMark } from './glyphs';
 
 export const DEVICE_INK = 'var(--dev-ink)';
@@ -94,12 +95,16 @@ export function KeyCap({
           strokeWidth={2.6} />
       )}
       <Legends k={k} />
-      {/* Native form controls keep Tab/Enter/Space out of the station's
-          physical-key forwarder. Pointer edges still bubble to this group. */}
+      {/* A native focusable control for Tab order + Enter/Space activation.
+          useStreamInput's global forwarder recognises this class and keeps
+          forwarding every OTHER physical key (Esc, arrows, F-keys, letters)
+          to the guest while it has focus — only this control's own Enter/
+          Space are excluded there, so activating it never double-sends.
+          Pointer edges still bubble to the drawn <g> above. */}
       <foreignObject x={x} y={y} width={w} height={h}>
         <input
           type="button"
-          className="dev-key-input"
+          className={DEVICE_KEY_INPUT_CLASS}
           aria-label={k.label ?? k.hint}
           aria-pressed={latched || undefined}
           value=""

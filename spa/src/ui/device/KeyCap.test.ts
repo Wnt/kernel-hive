@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { KeyCap } from './KeyCap';
 import { NOKIA9300_DRAWING } from './nokia9300/drawing';
+import { DEVICE_KEY_INPUT_CLASS } from './deviceTypes';
 
 describe('drawn key accessibility and geometry', () => {
   const noop = () => {};
@@ -15,6 +16,10 @@ describe('drawn key accessibility and geometry', () => {
       const [, x, y, w, h] = html.match(/<foreignObject x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)"/)!;
       expect(html).toContain('type="button"');
       expect(html).toContain('aria-label=');
+      // The class useStreamInput's global forwarder recognises to keep
+      // forwarding physical keys (Esc, arrows, F-keys, letters…) while this
+      // control has focus, per keyboardLock.ts's isTypingField exclusion.
+      expect(html).toContain(`class="${DEVICE_KEY_INPUT_CLASS}"`);
       expect([+x, +y, +w, +h]).toEqual([k.box.x, k.box.y, k.box.w, k.box.h]);
       return { id: k.id, x: +x, y: +y, w: +w, h: +h };
     });
