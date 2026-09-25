@@ -25,13 +25,13 @@ function Legends({ k }: { k: DeviceKey }) {
     const small = k.label.length > 4 || h < 50;
     out.push(
       <text key="l" x={small ? x + w / 2 : x + 14} y={small ? y + h * 0.66 : mid}
-        textAnchor={small ? 'middle' : 'start'} fontSize={small ? 23 : 27} fill={ink}>{k.label}</text>,
+        textAnchor={small ? 'middle' : 'start'} fontSize={small ? 23 : 29} fill={ink}>{k.label}</text>,
     );
   }
   if (k.glyph && k.cap !== 'none') {
     const gx = k.chrGlyph ? x + w * 0.3 : x + w / 2 - (k.glyph === 'enter' ? 0 : w * 0.18);
     const gy = k.glyph === 'enter' ? y + h * 0.5 : mid - 9;
-    out.push(<GlyphMark key="g" name={k.glyph} x={gx} y={gy} size={k.glyph === 'shift' ? 15 : 17} color={DEVICE_INK} />);
+    out.push(<GlyphMark key="g" name={k.glyph} x={gx} y={gy} size={k.glyph === 'enter' ? 33 : k.glyph === 'tab' ? 24 : 18} color={DEVICE_INK} />);
   }
   if (k.base) {
     const shown = k.shownBase ?? k.base;
@@ -59,7 +59,7 @@ function Legends({ k }: { k: DeviceKey }) {
 }
 
 export function KeyCap({
-  k, down, latched, shortcut, onDown, onUp,
+  k, down, latched, shortcut, onDown, onUp, onPress, onRelease,
 }: {
   k: DeviceKey;
   down: boolean;
@@ -67,16 +67,16 @@ export function KeyCap({
   shortcut: string;
   onDown: (e: ReactPointerEvent<SVGGElement>) => void;
   onUp: (e: ReactPointerEvent<SVGGElement>) => void;
+  onPress: () => void;
+  onRelease: () => void;
 }) {
   const { x, y, w, h } = k.box;
   const joy = k.cap === 'none';
   const fill = down ? 'var(--dev-down)' : latched ? 'var(--dev-latched)' : joy ? 'transparent' : 'var(--dev-key)';
   return (
     <g
-      role="button"
-      aria-label={k.label ?? k.hint}
-      aria-pressed={latched || undefined}
       data-key={k.id}
+      className="dev-key"
       style={{ cursor: 'pointer', touchAction: 'none' }}
       onPointerDown={onDown}
       onPointerUp={onUp}
@@ -87,14 +87,37 @@ export function KeyCap({
       <title>{shortcut ? `${k.hint} — keyboard: ${shortcut}` : k.hint}</title>
       {joy ? (
         <rect x={x} y={y} width={w} height={h} rx={Math.min(w, h) / 2} fill={fill} opacity={down ? 0.9 : 1} />
+      ) : k.outline ? (
+        <path d={k.outline} transform={`translate(${x} ${y})`} fill={fill} stroke={DEVICE_INK} strokeWidth={2.6} />
       ) : (
-        <rect x={x} y={y} width={w} height={h} rx={9} fill={fill} stroke={DEVICE_INK}
-          strokeWidth={down ? 1.8 : 1} vectorEffect="non-scaling-stroke" />
-      )}
-      {joy && k.glyph && (
-        <GlyphMark name={k.glyph} x={x + w / 2} y={y + h / 2} size={9} color="var(--dev-muted)" />
+        <rect x={x} y={y} width={w} height={h} rx={3} fill={fill} stroke={DEVICE_INK}
+          strokeWidth={2.6} />
       )}
       <Legends k={k} />
+      {/* Native form controls keep Tab/Enter/Space out of the station's
+          physical-key forwarder. Pointer edges still bubble to this group. */}
+      <foreignObject x={x} y={y} width={w} height={h}>
+        <input
+          type="button"
+          className="dev-key-input"
+          aria-label={k.label ?? k.hint}
+          aria-pressed={latched || undefined}
+          value=""
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (!e.repeat) onPress();
+          }}
+          onKeyUp={(e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            e.stopPropagation();
+            onRelease();
+          }}
+          onBlur={onRelease}
+        />
+      </foreignObject>
     </g>
   );
 }

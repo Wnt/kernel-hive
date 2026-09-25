@@ -57,6 +57,8 @@ export interface DeviceKey {
   /** A joystick zone is drawn by its device's outline, not as a keycap:
    *  'none' renders only the invisible hit target and the pressed highlight. */
   cap?: 'rect' | 'none';
+  /** Optional silhouette in local (0…w, 0…h) coordinates, inside box. */
+  outline?: string;
   /** Printed text of a named key (Esc, Ctrl, Menu, Desk…). */
   label?: string;
   /** The key's main line glyph, in place of or beside the label. */

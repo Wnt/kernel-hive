@@ -17,14 +17,15 @@ import {
 import { createDeviceSender, type DeviceSenderHandle } from './deviceSender';
 import type { DeviceDrawing } from './deviceTypes';
 import { KeyCap } from './KeyCap';
+import './deviceStage.css';
 
 const THEME: CSSProperties & Record<`--${string}`, string> = {
-  '--dev-ink': 'var(--ink)',
-  '--dev-muted': 'var(--ink-muted)',
-  // The 9300 prints its Chr legends blue.
-  '--dev-chr': '#2c62a6',
-  '--dev-body': 'var(--paper-raised)',
-  '--dev-key': '#fffdf8',
+  '--dev-ink': '#151515',
+  '--dev-muted': '#151515',
+  // Monochrome ink, like the reference line drawing.
+  '--dev-chr': '#151515',
+  '--dev-body': 'var(--paper)',
+  '--dev-key': 'var(--paper)',
   '--dev-down': '#cfd6df',
   '--dev-latched': 'rgba(44, 98, 166, 0.18)',
 };
@@ -113,11 +114,11 @@ export function DeviceStage({
         aria-label={drawing.name}
         style={{
           ...S.device,
-          width: `min(calc(100cqw - 16px), calc((100cqh - ${NOTE_PX + 8}px) * ${W} / ${H}))`,
+          width: 'min(calc(100cqw - 8px), 1500px)',
           aspectRatio: `${W} / ${H}`,
         }}
       >
-        <svg viewBox={`0 0 ${W} ${H}`} style={S.svg} fontFamily="var(--font-ui)">
+        <svg viewBox={`0 0 ${W} ${H}`} style={S.svg} fontFamily="Arial, Helvetica, sans-serif">
           <drawing.Outline />
           {drawing.keys.map((k) => {
             const role = drawing.mods[k.id];
@@ -130,6 +131,8 @@ export function DeviceStage({
                 shortcut={(k.codes ?? []).map(codeLabel).join(' / ')}
                 onDown={onDown(k.id)}
                 onUp={onUp}
+                onPress={() => sender.press(k.id)}
+                onRelease={() => sender.release(k.id)}
               />
             );
           })}
@@ -149,7 +152,7 @@ export function DeviceStage({
 const S: Record<string, CSSProperties> = {
   fill: {
     position: 'absolute', inset: 0, containerType: 'size', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center', gap: 6,
+    alignItems: 'center', justifyContent: 'safe center', gap: 6, overflow: 'auto', paddingBlock: 4,
   },
   device: { position: 'relative', flex: '0 0 auto' },
   svg: { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', overflow: 'visible' },
@@ -157,7 +160,7 @@ const S: Record<string, CSSProperties> = {
   // spinner, power-on) are absolutely placed and stay within the panel.
   screen: { position: 'absolute', overflow: 'hidden', background: '#15171a' },
   note: {
-    margin: 0, maxWidth: 'calc(100cqw - 32px)', minHeight: NOTE_PX - 6, fontSize: 12, lineHeight: 1.35,
+    flexShrink: 0, margin: 0, maxWidth: 'calc(100cqw - 32px)', minHeight: NOTE_PX - 6, fontSize: 12, lineHeight: 1.35,
     color: 'var(--ink-muted)', textAlign: 'center', fontFamily: 'var(--font-ui)',
   },
 };

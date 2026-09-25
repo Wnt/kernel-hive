@@ -2,8 +2,8 @@
 //  glyphs — the small line symbols printed on device keys
 //  ---------------------------------------------------------------------------
 //  Each glyph is drawn in a unit box (-1..1 on both axes) and placed with a
-//  translate+scale, so one set of paths serves every key size. Strokes do not
-//  scale (vector-effect), which keeps the drawing a clean line drawing at any
+//  translate+scale, so one set of paths serves every key size. Strokes
+//  remain proportional to their symbols, keeping a clean line drawing at any
 //  viewport width, the same weight as the key outlines.
 // ============================================================================
 
@@ -34,7 +34,7 @@ const PATHS: Record<Exclude<Glyph, 'help'>, string> = {
 };
 
 export function GlyphMark({
-  name, x, y, size, color, width = 1.1,
+  name, x, y, size, color, width = 0.085,
 }: {
   name: Glyph;
   x: number;
@@ -48,7 +48,7 @@ export function GlyphMark({
   if (name === 'help') {
     return (
       <g transform={t} stroke={color} fill="none" strokeWidth={width}>
-        <path d="M-0.8 -0.75H0.8V0.45H-0.1L-0.5 0.85V0.45H-0.8Z" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+        <path d="M-0.8 -0.75H0.8V0.45H-0.1L-0.5 0.85V0.45H-0.8Z" strokeLinejoin="round" />
         <text x={0} y={0.28} fontSize={1} textAnchor="middle" fill={color} stroke="none" fontWeight={700}>?</text>
       </g>
     );
@@ -56,7 +56,7 @@ export function GlyphMark({
   return (
     <g transform={t}>
       <path d={PATHS[name]} fill="none" stroke={color} strokeWidth={width}
-        strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        strokeLinecap="round" strokeLinejoin="round" />
     </g>
   );
 }

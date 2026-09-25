@@ -1,7 +1,7 @@
 // ============================================================================
 //  nokia9300/keys — every control of the open Nokia 9300 Communicator
 //  ---------------------------------------------------------------------------
-//  Geometry: the drawing's viewBox units (1500 × 1010). The keyboard is a
+//  Geometry: the drawing's viewBox units (1536 × 1024). The keyboard is a
 //  13-column grid, as on the device: the application-button row on top, then
 //  five key rows, Enter two rows tall, the joystick in its own well at the
 //  bottom right. The four command buttons stand in a column right of the
@@ -22,30 +22,30 @@
 
 import type { Box, DeviceKey } from '../deviceTypes';
 
-export const VIEW_W = 1500;
-export const VIEW_H = 1010;
+export const VIEW_W = 1536;
+export const VIEW_H = 1024;
 
-// The live 640x200 panel (streamed at 2x, 1280x400): 1088x340 units, aspect 3.2.
-export const SCREEN: Box = { x: 176, y: 94, w: 1088, h: 340 };
+// The live 640x200 panel (streamed at 2x, 1280x400): 1100x343.75 units, aspect 3.2.
+export const SCREEN: Box = { x: 202, y: 100, w: 1100, h: 343.75 };
 
 // Keyboard grid.
-const KB_X = 118;
-const KB_U = 102.4;
-const APP_Y = 562;
-const APP_H = 44;
+const KB_X = 132;
+const KB_U = 102;
+const APP_Y = 566;
+const APP_H = 48;
 const KB_Y = 614;
-const KB_RH = 68;
-const GAP = 3;
+const KB_RH = 70;
+const GAP = 0.75;
 
 const cell = (col: number, row: number, cols = 1, rows = 1): Box => ({
-  x: KB_X + col * KB_U + GAP,
+  x: KB_X + col * KB_U + (col > 0 ? 4 : 0) + GAP,
   y: KB_Y + row * KB_RH + GAP,
-  w: cols * KB_U - 2 * GAP,
+  w: cols * KB_U + (col === 0 ? 4 : 0) - 2 * GAP,
   h: rows * KB_RH - 2 * GAP,
 });
 
 // Joystick well (bottom right, rows 4–5 beside Menu).
-export const JOY = { cx: 1357, cy: 882, r: 60, knob: 25 };
+export const JOY = { cx: 1366, cy: 894, r: 43, knob: 25 };
 
 const XK = {
   Escape: 0xff1b, BackSpace: 0xff08, Tab: 0xff09, Return: 0xff0d,
@@ -72,14 +72,19 @@ const appKeys: DeviceKey[] = APPS.map(([id, label, hint], i) => ({
 }));
 
 // Command buttons: one per quarter of the screen height, right of the display.
-const CBA_X = 1308;
-const CBA_W = 118;
+const CBA_X = 1374;
+const CBA_W = 90;
 const cbaKeys: DeviceKey[] = [0, 1, 2, 3].map((i) => {
-  const h = (SCREEN.h - 3 * 8) / 4;
+  const h = (SCREEN.h - 3 * 3) / 4;
   return {
     id: `cba${i + 1}`, kind: 'key', keysym: F(i + 1), codes: [`F${i + 1}`],
     hint: `Command button ${i + 1} — does what the application prints beside it on the screen`,
-    box: { x: CBA_X, y: SCREEN.y + i * (h + 8), w: CBA_W, h },
+    outline: i === 0
+      ? `M3 0Q48 0 81 9Q87 10 87 17L90 ${h - 3}Q90 ${h} 87 ${h}H3Q0 ${h} 0 ${h - 3}V3Q0 0 3 0Z`
+      : i === 3
+        ? `M3 0H87Q90 0 90 3L87 ${h - 17}Q87 ${h - 10} 81 ${h - 9}Q48 ${h} 3 ${h}Q0 ${h} 0 ${h - 3}V3Q0 0 3 0Z`
+        : undefined,
+    box: { x: CBA_X, y: SCREEN.y + i * (h + 3), w: CBA_W, h },
   };
 });
 
@@ -169,13 +174,13 @@ const row5: DeviceKey[] = [
 // Joystick: centre press + four directions, drawn by the outline's well.
 const J = JOY;
 const joyKeys: DeviceKey[] = [
-  key('joy.u', F(14), { x: J.cx - 32, y: J.cy - J.r - 8, w: 64, h: J.r - J.knob + 8 },
+  key('joy.u', F(14), { x: J.cx - J.knob, y: J.cy - J.r - 8, w: 2 * J.knob, h: J.r - J.knob + 8 },
     { cap: 'none', glyph: 'up', hint: 'Joystick up (Chr: page up)' }),
-  key('joy.d', F(15), { x: J.cx - 32, y: J.cy + J.knob, w: 64, h: J.r - J.knob + 8 },
+  key('joy.d', F(15), { x: J.cx - J.knob, y: J.cy + J.knob, w: 2 * J.knob, h: J.r - J.knob + 8 },
     { cap: 'none', glyph: 'down', hint: 'Joystick down (Chr: page down)' }),
-  key('joy.l', F(16), { x: J.cx - J.r - 8, y: J.cy - 32, w: J.r - J.knob + 8, h: 64 },
+  key('joy.l', F(16), { x: J.cx - J.r - 8, y: J.cy - J.knob, w: J.r - J.knob + 8, h: 2 * J.knob },
     { cap: 'none', glyph: 'left', hint: 'Joystick left (Chr: home)' }),
-  key('joy.r', F(17), { x: J.cx + J.knob, y: J.cy - 32, w: J.r - J.knob + 8, h: 64 },
+  key('joy.r', F(17), { x: J.cx + J.knob, y: J.cy - J.knob, w: J.r - J.knob + 8, h: 2 * J.knob },
     { cap: 'none', glyph: 'right', hint: 'Joystick right (Chr: end)' }),
   key('joy.c', F(13), { x: J.cx - J.knob, y: J.cy - J.knob, w: 2 * J.knob, h: 2 * J.knob },
     { cap: 'none', hint: 'Joystick press — select' }),

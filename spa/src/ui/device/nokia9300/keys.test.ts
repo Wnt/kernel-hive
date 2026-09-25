@@ -113,8 +113,8 @@ describe('nokia9300 drawing geometry', () => {
     }
   });
 
-  it('no two keycaps overlap (the joystick zones share one well)', () => {
-    const caps = keys.filter((k) => k.cap !== 'none');
+  it('no key rectangles overlap, including all five joystick hit zones)', () => {
+    const caps = keys;
     for (let i = 0; i < caps.length; i++) {
       for (let j = i + 1; j < caps.length; j++) {
         const a = caps[i].box, b = caps[j].box;
