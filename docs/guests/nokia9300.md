@@ -12,7 +12,8 @@ ARM925T at 150 MHz, 64 MiB RAM, 640x200 inner display in 65,536 colours, full
 QWERTY keyboard, clamshell) running its **own firmware 5.22 of 2005-11-16** —
 Symbian OS 7.0s (EKA1 kernel) with the Series 80 v2 interface. The station
 opens at **Desk**, the Series 80 shell: date header, the Personal / Office /
-Media / Tools groups, Clock and Nokia.com. No pointer and no touchscreen: Series
+Media / Tools groups, Clock and Nokia.com, and the status pane at the lower
+left (skin, no-network and battery indicators). No pointer and no touchscreen: Series
 80 is driven by four command buttons beside the screen, eight application
 buttons below it, a joystick and the keyboard.
 
@@ -29,19 +30,20 @@ buttons below it, a joystick and the keyboard.
 ## Emulator
 
 **EKA2L1**, the Symbian HLE emulator, from our fork `github.com/Wnt/EKA2L1`,
-branch **`s80-integration` @ `3f8b52782`** (GPL-3; pinned in
+branch **`s80-integration` @ `fa385d47a`** (GPL-3; pinned in
 `tiles/nokia9300.sh`). Agents I2/I3 merged every Series 80 branch of the
 2026-09-24 wave onto upstream master `39858137e`: the 7.0s window-server
 tables (F1), application buttons in the window server (B1), the ROM's own
 keyboard tables (K1), the museum kiosk frontend and `ekactl/1` control socket
 (B2), Desk content (B6), the third-app fix (B4), an HLE DOS server (B5), Opera's
 home page (N7), icon masks (A1), clock faces (A2), Messaging folders (M1) and
-the Telephone directory (T1: SecurityServer pre-started + a Phone Server stub). Built on labhost by
+the Telephone directory (T1: SecurityServer pre-started + a Phone Server stub),
+and the Series 80 status pane painted under the HLE Eikon server (S1). Built on labhost by
 `scripts/build-guests/emulators/build-eka2l1.sh` (agent D1's branch
 `eka2l1-builder`: pinned fork commit, trixie build root under nspawn, shared
 ccache, mold; the configure stamp is gated, so the binary logs
-`EKA2L1 v0.0.1 (s80-integration-3f8b52782)`); 70 s incremental from the
-previous pin, sha256 `57f0e112…267c`.
+`EKA2L1 v0.0.1 (s80-integration-fa385d47a)`); 94 s incremental from the
+previous pin, sha256 `d7cf295d…0b1b`.
 
 Run protocol: `eka2l1_qt --device RAE-6 --run 0x101f8e4f` (Desk) with
 `XDG_DATA_HOME` on a private data dir — EKA2L1 copies `compat/ patch/
@@ -187,7 +189,7 @@ this path and the nspawn CRIU route is blocked by the sandbox's seccomp filter.
   screen without any network.
 - Apps proven on s80-integration by agent I2: Desk, Documents, Web, File
   manager, Contacts, Clock (both faces), Sync, Write note, three at once.
-  On 3f8b52782 Messaging shows its folders and Telephone its directory.
+  Since 3f8b52782 Messaging shows its folders and Telephone its directory.
 
 ## Network
 
@@ -225,8 +227,8 @@ LIVE display before it can be patched for an x11 rig.
 - Clock home city: Change city → Helsinki does not commit (SVC `0xC00049`
   unimplemented); the guest clock is Helsinki time through `TZ`, the label says
   New York.
-- Desk's lower-left status pane is never painted (B7's ROM-shell work); the app
-  behind shows through there.
+- The status pane (lower left) shows the skin and the no-network and battery
+  indicators but no clock yet (S1 may add it).
 - Messaging opens with a one-time "Cannot find message storage. Try restoring
   from a backup." note (Enter closes it); baking the message store into the
   golden would remove it. Menu hold (task list): `CaptureLongKey` unhandled.
