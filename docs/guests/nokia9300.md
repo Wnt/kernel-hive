@@ -29,18 +29,19 @@ buttons below it, a joystick and the keyboard.
 ## Emulator
 
 **EKA2L1**, the Symbian HLE emulator, from our fork `github.com/Wnt/EKA2L1`,
-branch **`s80-integration` @ `e43db215e`** (GPL-3; pinned in
-`tiles/nokia9300.sh`). Agent I2 merged every Series 80 branch of the
+branch **`s80-integration` @ `3f8b52782`** (GPL-3; pinned in
+`tiles/nokia9300.sh`). Agents I2/I3 merged every Series 80 branch of the
 2026-09-24 wave onto upstream master `39858137e`: the 7.0s window-server
 tables (F1), application buttons in the window server (B1), the ROM's own
 keyboard tables (K1), the museum kiosk frontend and `ekactl/1` control socket
 (B2), Desk content (B6), the third-app fix (B4), an HLE DOS server (B5), Opera's
-home page (N7), icon masks (A1), clock faces (A2). Built on labhost by
+home page (N7), icon masks (A1), clock faces (A2), Messaging folders (M1) and
+the Telephone directory (T1: SecurityServer pre-started + a Phone Server stub). Built on labhost by
 `scripts/build-guests/emulators/build-eka2l1.sh` (agent D1's branch
 `eka2l1-builder`: pinned fork commit, trixie build root under nspawn, shared
 ccache, mold; the configure stamp is gated, so the binary logs
-`EKA2L1 v0.0.1 (s80-integration-e43db215e)`); 417 s incremental at `-j16`,
-sha256 `b79112c1…5022`.
+`EKA2L1 v0.0.1 (s80-integration-3f8b52782)`); 70 s incremental from the
+previous pin, sha256 `57f0e112…267c`.
 
 Run protocol: `eka2l1_qt --device RAE-6 --run 0x101f8e4f` (Desk) with
 `XDG_DATA_HOME` on a private data dir — EKA2L1 copies `compat/ patch/
@@ -160,9 +161,11 @@ as their own keysyms and the fork types the 9300 key that produces them.
 - Pacing 150/150 ms (contract v3: EKA2L1's key FIFO drops events under load at
   faster rates).
 - PROVEN through the real SPA (Chrome on the shared desktop → `/os/nokia9300` →
-  streamhost x11test → XTEST), frames read out of the SPA's own `<video>`: F10
-  opened Documents, `Nokia 9300 test 123` typed with correct case, F8 opened
-  Web on the Nokia home page ("Complete"), F5 brought Desk back.
+  streamhost x11test → XTEST), frames read out of the SPA's own `<video>`: F7
+  opened Messaging (Inbox/Outbox/Drafts/Sent; a one-time "Cannot find message
+  storage" note closes with Enter), F6 the Telephone directory, F10 Documents
+  with `Nokia 9300 test 123` typed in correct case, F8 Web on the Nokia home
+  page ("Complete"), F5 Desk — five apps alive at once.
 
 ## Boot and reset
 
@@ -184,7 +187,7 @@ this path and the nspawn CRIU route is blocked by the sandbox's seccomp filter.
   screen without any network.
 - Apps proven on s80-integration by agent I2: Desk, Documents, Web, File
   manager, Contacts, Clock (both faces), Sync, Write note, three at once.
-  Messaging reports "Problem starting Messaging center" (ROM MsvServer start).
+  On 3f8b52782 Messaging shows its folders and Telephone its directory.
 
 ## Network
 
@@ -224,8 +227,9 @@ LIVE display before it can be patched for an x11 rig.
   New York.
 - Desk's lower-left status pane is never painted (B7's ROM-shell work); the app
   behind shows through there.
-- Messaging: "Problem starting Messaging center". Menu hold (task list):
-  `CaptureLongKey` unhandled.
+- Messaging opens with a one-time "Cannot find message storage. Try restoring
+  from a backup." note (Enter closes it); baking the message store into the
+  golden would remove it. Menu hold (task list): `CaptureLongKey` unhandled.
 - Command-button acceptance per app (agent X1, the real platform): Desk = Open /
   Write note / Note list; Documents = Insert object / Font / Style / Exit; Web =
   Open Web address / Back / Bookmarks / Exit; Sheet = Edit / Insert function /
