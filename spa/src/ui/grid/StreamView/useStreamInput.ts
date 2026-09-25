@@ -31,7 +31,7 @@ const REENTER_HINT_MS = 1000;
 
 export function useStreamInput({
   streamable, inputSuspended, releaseHeldButtons, control, live, touchExhibit, mouseCapture, acquireLock,
-  directCanvas, revealChrome, setDebug, touch, pointerRel, presentFill,
+  directCanvas, revealChrome, setDebug, touch, pointerRel, presentFill, pointerless,
   controlRef, fsRef, lockedRef, vcursorRef, lastGuestRef, pressedButtonsRef, penHoverRef,
   videoRef, canvasRef, trackpadRef, stageRef,
 }: {
@@ -62,6 +62,15 @@ export function useStreamInput({
   // element's rect IS that box, so the letterbox map runs in fill mode (u/v span
   // the whole box back to guest pixels — resolution-based, stretch-independent).
   presentFill: boolean;
+  // DEVICE DRAWING stations whose real device has no pointer (deviceTypes.ts
+  // `pointer: 'none'`, e.g. nokia9300/nokia9300rom): the guest ignores a
+  // pointer entirely, so the whole POINTER + WHEEL effect below is skipped —
+  // no listener attaches, so clicks/drags/wheel never reach the guest and the
+  // browser's own default click-to-focus-page behaviour is untouched (nothing
+  // calls preventDefault on a pointerdown that never gets a handler). The
+  // drawn keys (DeviceStage/KeyCap) and the physical-key forwarder above are
+  // the only input for these stations.
+  pointerless?: boolean;
   controlRef: RefObject<StreamControlHandle | null>;
   fsRef: RefObject<boolean>;
   lockedRef: RefObject<boolean>;
@@ -215,6 +224,7 @@ export function useStreamInput({
   // ---- POINTER + WHEEL -> guest, letterbox-aware pixel mapping --------------
   //  The interaction element is the streamhost <canvas> or <video>.
   useEffect(() => {
+    if (pointerless) return; // no guest pointer for this device — see the param doc above
     const el: HTMLElement | null = directCanvas ? canvasRef.current : videoRef.current;
     if (!el || !control || !live) return;
     // Listen on the STAGE so the letterbox bars are live trackpad surface; the
@@ -531,6 +541,6 @@ export function useStreamInput({
       surface.removeEventListener('auxclick', onAux, true);
       releaseHeldButtons(control);
     };
-  }, [control, live, touchExhibit, mouseCapture, acquireLock, directCanvas, releaseHeldButtons]);
+  }, [control, live, touchExhibit, mouseCapture, acquireLock, directCanvas, releaseHeldButtons, pointerless]);
 
 }

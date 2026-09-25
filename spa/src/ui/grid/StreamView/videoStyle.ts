@@ -17,11 +17,16 @@ import { S, presentFillStyle } from './styles';
 //  overrides w/h/object-fit.
 // ---------------------------------------------------------------------------
 export function videoStyleFor({
-  nativeWidth, zoom, present,
+  nativeWidth, zoom, present, pointerless,
 }: {
   nativeWidth: number;
   zoom: ZoomState;
   present: PresentAspect | null;
+  /** device drawing station with `pointer: 'none'` — no pointer is ever
+   *  forwarded to the guest, so S.video's `cursor: 'crosshair'` (the
+   *  pointer-capture affordance) would be a lie; show the plain default
+   *  cursor instead. */
+  pointerless?: boolean;
 }): CSSProperties {
   const pixelate = nativeWidth > 0 && nativeWidth <= 800;
   const zoomStyle: CSSProperties =
@@ -34,7 +39,8 @@ export function videoStyleFor({
         }
       : {};
   const fit = present ? presentFillStyle(present) : null;
+  const cursorStyle: CSSProperties = pointerless ? { cursor: 'default' } : {};
   return pixelate
-    ? { ...S.video, ...fit, ...zoomStyle }
-    : { ...S.video, imageRendering: 'auto', ...fit, ...zoomStyle };
+    ? { ...S.video, ...fit, ...zoomStyle, ...cursorStyle }
+    : { ...S.video, imageRendering: 'auto', ...fit, ...zoomStyle, ...cursorStyle };
 }

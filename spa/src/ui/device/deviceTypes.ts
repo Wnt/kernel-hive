@@ -92,6 +92,14 @@ export interface DeviceDrawing {
   id: string;
   /** Accessible name of the whole device (e.g. "Nokia 9300 Communicator"). */
   name: string;
+  /** 'none': the real device has no pointer (no mouse, no pen, no touch
+   *  digitizer) — a browser click/drag/wheel on the stream is never forwarded
+   *  as a guest pointer event, and the stream element shows no pointer-capture
+   *  cursor. The drawn keys and the physical keyboard remain the only input;
+   *  clicking the stream still focuses the page (no listener suppresses the
+   *  browser's own default). Omit for a device that DOES have one (a stylus
+   *  or touchscreen handheld would set nothing here, or a future 'touch'). */
+  pointer?: 'none';
   viewBox: { w: number; h: number };
   /** Where the live picture goes, in viewBox units. Its aspect must equal the
    *  stream's (test-enforced per drawing) so the picture fills it exactly. */

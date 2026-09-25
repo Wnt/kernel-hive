@@ -132,6 +132,11 @@ export default function StreamView({
   // letterboxed picture and the toggleable on-screen keyboard.
   const device = deviceDrawingFor(os.osId);
   const presentFill = !!present;
+  // The real device has no mouse/pen/touch digitizer (deviceTypes.ts `pointer:
+  // 'none'`) — a click/drag/wheel on the stream is never forwarded as a guest
+  // pointer event; the drawn keys and the physical keyboard remain the only
+  // input.
+  const pointerless = device?.pointer === 'none';
 
   // STATION-TYPE grouping dimensions (analytics/stationAttrs.ts) — the same
   // three attrs on every span/metric this station's telemetry opens, so a
@@ -342,7 +347,7 @@ export default function StreamView({
   useStreamInput({
     streamable, inputSuspended: posterOpen, releaseHeldButtons, control, live, touchExhibit, mouseCapture, acquireLock,
     directCanvas, revealChrome, setDebug, touch: touch.controller,
-    pointerRel, presentFill, penHoverRef: touch.penHoverRef,
+    pointerRel, presentFill, pointerless, penHoverRef: touch.penHoverRef,
     controlRef, fsRef, lockedRef, vcursorRef, lastGuestRef, pressedButtonsRef,
     videoRef, canvasRef, trackpadRef: touch.trackpadRef, stageRef,
   });
@@ -384,7 +389,7 @@ export default function StreamView({
   });
 
   // ---- picture style: pixelation + pinch-zoom + present-aspect (videoStyle.ts)
-  const videoStyle = videoStyleFor({ nativeWidth: control?.getResolution()?.w ?? 0, zoom, present });
+  const videoStyle = videoStyleFor({ nativeWidth: control?.getResolution()?.w ?? 0, zoom, present, pointerless });
 
   // ---- STREAMHOST codec / ABR overlay rows (Section 4) ---------------------
   const sh = stats?.streamhost ?? null;
