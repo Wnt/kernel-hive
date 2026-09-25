@@ -65,7 +65,7 @@ set -euo pipefail
 
 EKA2L1_FORK_URL="${EKA2L1_FORK_URL:-https://github.com/Wnt/EKA2L1.git}"
 EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-integration}"
-EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-17801342fdf672ce5a9cc01a37d8ad9aa27ca933}"
+EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-4ef4b2fb6d10de4c363b0007ca4376f597b1b23c}"
 
 WORK="${WORK:-/data/vms/sandbox/BUILD-eka2l1}"
 BUILDROOT="${BUILDROOT:-$WORK/buildroot}"

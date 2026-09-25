@@ -65,14 +65,14 @@ UIDBASE="${UIDBASE:-2621440}"
 # museum kiosk frontend + control socket (B2), Desk content (B6), third app
 # (B4), HLE DOS (B5), Opera home (N7), icon masks (A1), clock faces (A2).
 export EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-integration}"
-export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-17801342fdf672ce5a9cc01a37d8ad9aa27ca933}"
+export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-4ef4b2fb6d10de4c363b0007ca4376f597b1b23c}"
 
 # The golden ledger (measured 2026-09-24, docs/guests/nokia9300.md §Golden).
 # TREE = sha256 of `find . -type f -print0 | LC_ALL=C sort -z | xargs -0
 # sha256sum` run inside $MEDIA.
-GOLDEN_FILES=3259
-GOLDEN_BYTES=68736107
-GOLDEN_TREE_SHA=0462324993200ba2b0e7bf79381cf6bc770f7cc9b1397183b07dd5c462bd8440
+GOLDEN_FILES=3258
+GOLDEN_BYTES=68735629
+GOLDEN_TREE_SHA=e5b0b53d5dd54a6885b6b31c98730cebb071b949c8d5dec7072141c92413d0ac
 ROM_REL=EKA2L1/data/roms/rae-6/SYM.ROM
 ROM_BYTES=17825792
 ROM_SHA=ca4b0bc929519b046994c8501b0135b688d8d7910d6669f4791805e3ab373596

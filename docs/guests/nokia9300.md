@@ -30,7 +30,7 @@ buttons below it, a joystick and the keyboard.
 ## Emulator
 
 **EKA2L1**, the Symbian HLE emulator, from our fork `github.com/Wnt/EKA2L1`,
-branch **`s80-integration` @ `17801342f`** (GPL-3; pinned in
+branch **`s80-integration` @ `4ef4b2fb6`** (GPL-3; pinned in
 `tiles/nokia9300.sh`). Agents I2–I4 merged every Series 80 branch of the
 2026-09-24/25 wave onto upstream master `39858137e`: the 7.0s window-server
 tables (F1), application buttons in the window server (B1), the ROM's own
@@ -42,12 +42,15 @@ and the Series 80 status pane with its minute clock, painted under the HLE
 Eikon server (S1), the key-event FIFO that no longer purges characters (K3),
 Exit and Desk icon fixes (E1) and the Series 80 locale file plus the
 Clock's missing SVC (L1), the Contacts New card that no longer panics CONE 46
-(A5) and Messaging without the storage note (M2; agent I5). Built on labhost by
+(A5), Messaging without the storage note (M2; agent I5), repaint remnants, a
+12 h pane clock and the "Communicator" / "Memory card" volume names (C2), and
+system notes painted by the window server as modal dialogs plus the SMS editor
+(M3; agent I6). Built on labhost by
 `scripts/build-guests/emulators/build-eka2l1.sh` (agent D1's branch
 `eka2l1-builder`: pinned fork commit, trixie build root under nspawn, shared
 ccache, mold; the configure stamp is gated, so the binary logs
-`EKA2L1 v0.0.1 (s80-integration-17801342f4)`); 367 s from the previous
-pin, sha256 `aa060e32…aaa6`. The station runs the whole installed tree
+`EKA2L1 v0.0.1 (s80-integration-4ef4b2fb6d)`); built from the previous
+pin, sha256 `ecf823e2…7f1f`. The station runs the whole installed tree
 (`compat/ patch/ resources/ scripts/` beside `eka2l1_qt`), not the binary
 alone.
 
@@ -87,13 +90,14 @@ An EKA2L1 XDG data root: `EKA2L1/config.yml` and
 - Agent B6's Desk first-boot state (`apply-desk-state.sh`):
   `C:\System\Data\Shortcuts.dat`, `C:\System\Apps\desk\desk.ini`,
   `C:\System\SharedData\101f8e4f.ini`.
-- Ledger (v3): 3259 files, 68 736 107 B; tree manifest sha256
-  `0462324993200ba2b0e7bf79381cf6bc770f7cc9b1397183b07dd5c462bd8440` (sha256 of
+- `C:\cword` (478 B) is removed: a leftover of an old Create launch (C2).
+- Ledger (v3.1): 3258 files, 68 735 629 B; tree manifest sha256
+  `e5b0b53d5dd54a6885b6b31c98730cebb071b949c8d5dec7072141c92413d0ac` (sha256 of
   `find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum` inside the
   root). `SYM.ROM` 17 825 792 B, sha256
   `ca4b0bc929519b046994c8501b0135b688d8d7910d6669f4791805e3ab373596`.
 - Staged on labhost at `/data/assets-staging/symbian-s80/nokia9300-golden/xdg`
-  (+ `MANIFEST.sha256`; `xdg.v2` = the previous golden);
+  (+ `MANIFEST.sha256`; `xdg.v3` = the previous golden);
   `tiles/nokia9300.sh --golden` hash-gates it and installs `$STATION/golden`,
   keeping the previous as `golden.prev`.
 - Time zone: Helsinki. The container runs `TZ=Europe/Helsinki` (`NOKIA_TZ`)
