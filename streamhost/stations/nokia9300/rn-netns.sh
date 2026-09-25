@@ -1,5 +1,13 @@
 #!/bin/bash
-# rn-netns.sh — the nokia9300 station's link onto the retronet bridge vmbr-rn.
+# rn-netns.sh — a nokia9300-family station's link onto the retronet bridge vmbr-rn.
+#
+# Shared by nokia9300 and its ROM-track sibling nokia9300rom (both emit this
+# file from streamhost/stations/nokia9300/). RN_STATION (x11-runtime.sh passes
+# $SH_STATION; default nokia9300) names everything the station owns: netns
+# rn-<st>, veth <st>rn0 (guest end <st>rn0g, cut to 15 chars), chain
+# <ST>RN-IN, MAC RN_<ST>_MAC in local.env. The address comes from RN_GUEST_IP
+# (the fixture's NOKIA_RN_IP); only nokia9300 has a default (10.99.0.43), so
+# another station can never come up on nokia9300's address by omission.
 #
 # The amigaos35 shape (streamhost/stations/amigaos35/rn-netns.sh), for the same
 # reason: EKA2L1 has no NIC to put on a tap. Its ESock is HLE — the Symbian
@@ -27,7 +35,7 @@
 #
 # The guest MAC rides the veth guest end and follows the fleet scheme
 # (52:54:00:52:4e:<ip-hex>); the real value lives ONLY in gitignored
-# registry/local.env as RN_NOKIA9300_MAC — the committed placeholder below is
+# registry/local.env as RN_<ST>_MAC — the committed placeholder below is
 # scrubbed per AGENTS.md rule 1.
 #
 # Idempotent; called `up` from x11-runtime.sh on every launch when
@@ -40,15 +48,30 @@
 #   rn-netns.sh show    current state
 set -u
 
-NS="${RN_NS:-rn-nokia9300}"
-IF_H="${RN_VETH_HOST:-nokia9300rn0}"
-IF_G="${RN_VETH_GUEST:-nokia9300rn0g}"
+ST="${RN_STATION:-nokia9300}"
+case "$ST" in '' | *[!a-z0-9]*)
+  echo "rn-netns: bad RN_STATION '$ST'" >&2
+  exit 1
+  ;;
+esac
+ST_UP="$(printf '%s' "$ST" | tr '[:lower:]' '[:upper:]')"
+NS="${RN_NS:-rn-$ST}"
+IF_H="${RN_VETH_HOST:-${ST}rn0}"
+_g="${ST}rn0g"
+[ "${#_g}" -le 15 ] || _g="${_g:0:14}g"
+IF_G="${RN_VETH_GUEST:-$_g}"
 BRIDGE="${RN_BRIDGE:-vmbr-rn}"
-GUEST_IP="${RN_GUEST_IP:-10.99.0.43}"
+_ip_default=""
+[ "$ST" = nokia9300 ] && _ip_default=10.99.0.43
+GUEST_IP="${RN_GUEST_IP:-$_ip_default}"
+[ -n "$GUEST_IP" ] || {
+  echo "rn-netns: no RN_GUEST_IP for $ST (set NOKIA_RN_IP in its fixture)" >&2
+  exit 1
+}
 DNS_IP="${RN_DNS_IP:-10.99.0.2}"
 RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
 GUEST_MAC="02:00:00:00:00:2b" # placeholder (committed); real value in local.env
-_m="$(sed -n 's/^RN_NOKIA9300_MAC=//p' "$RN_LOCAL_ENV" 2>/dev/null | head -1)"
+_m="$(sed -n "s/^RN_${ST_UP}_MAC=//p" "$RN_LOCAL_ENV" 2>/dev/null | head -1)"
 [ -n "$_m" ] && GUEST_MAC="$_m"
 
 # PER-INTERFACE chain name — the clone-teardown containment lesson
@@ -56,10 +79,10 @@ _m="$(sed -n 's/^RN_NOKIA9300_MAC=//p' "$RN_LOCAL_ENV" 2>/dev/null | head -1)"
 # production veth keeps the bare registry name, anything else is suffixed.
 if [ -n "${RN_IN_CHAIN:-}" ]; then
   IN_CHAIN="$RN_IN_CHAIN"
-elif [ "$IF_H" = nokia9300rn0 ]; then
-  IN_CHAIN="NOKIA9300RN-IN"
+elif [ "$IF_H" = "${ST}rn0" ]; then
+  IN_CHAIN="${ST_UP}RN-IN"
 else
-  IN_CHAIN="NOKIA9300RN-IN-$IF_H"
+  IN_CHAIN="${ST_UP}RN-IN-$IF_H"
 fi
 IPT_WAIT="${RN_IPT_WAIT:-15}"
 
@@ -168,7 +191,7 @@ case "${1:-}" in
   down) do_down ;;
   show) do_show ;;
   *)
-    sed -n '2,42p' "$0" >&2
+    sed -n '2,48p' "$0" >&2
     exit 2
     ;;
 esac

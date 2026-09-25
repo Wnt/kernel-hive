@@ -16,9 +16,9 @@ Everything not listed here is nokia9300's; read [nokia9300.md](nokia9300.md).
 | Slot / UDP / VMID / display | 219 / 54219 / 219 / :119 | 220 / 54220 / 220 / :120 |
 | Container uid base | 2621440 | 2686976 (41 x 65536) |
 | Assets | `assets/nokia9300` | `assets/nokia9300rom` (own `eka2l1/`, and an own `rootfs/` shifted to its uid base) |
-| Network | retronet web plane (netns cage) | off (`--private-network`, lo only) |
+| Network | retronet web plane: netns `rn-nokia9300`, 10.99.0.43 | retronet web plane in its own netns cage: `rn-nokia9300rom`, veth `nokia9300romrn0`, static 10.99.0.44, guard `NOKIA9300ROMRN-IN` ([WEB-STATION-nokia9300rom.md](../lab/retronet/WEB-STATION-nokia9300rom.md)) |
 
-The launcher, the inner script and the keymap are nokia9300's files. They are emitted
+The launcher, the inner script, the retronet helper `rn-netns.sh` and the keymap are nokia9300's files. They are emitted
 from `streamhost/stations/nokia9300/`. The station owns only its
 `station.env.fixture`.
 

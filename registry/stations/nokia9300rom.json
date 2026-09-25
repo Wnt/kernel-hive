@@ -35,7 +35,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54220,
-      "notes": "Sibling of nokia9300 on the ROM window-server track (EKA2L1 fork s80-rom-station, EKA2L1_ROM_WSERV=1): same nspawn container shape and launcher (streamhost/stations/nokia9300/x11-runtime.sh), Xvfb :120 at 1280x400, x11 capture, XTEST keys. Network off. ekactl/1 at <station>/work/run/ekactl.sock; `list`/`focus`/`switch` answer from the ROM window server through worker D's bridge (the SysState helper's snapshots); Restore = `quit` + relaunch from the golden. Drive with xdotool on DISPLAY=:120 from labrun, or `labctl shot nokia9300rom`."
+      "notes": "Sibling of nokia9300 on the ROM window-server track (EKA2L1 fork s80-rom-station, EKA2L1_ROM_WSERV=1): same nspawn container shape and launcher (streamhost/stations/nokia9300/x11-runtime.sh), Xvfb :120 at 1280x400, x11 capture, XTEST keys. Network = the retronet web plane in its own netns cage (rn-nokia9300rom, static 10.99.0.44, no default route; docs/lab/retronet/WEB-STATION-nokia9300rom.md). ekactl/1 at <station>/work/run/ekactl.sock; `list`/`focus`/`switch` answer from the ROM window server through worker D's bridge (the SysState helper's snapshots); Restore = `quit` + relaunch from the golden. Drive with xdotool on DISPLAY=:120 from labrun, or `labctl shot nokia9300rom`."
     }
   },
   "render": {
@@ -120,12 +120,15 @@
         "--aux-file",
         "$T/nokia9300/nokia9300-inner.sh",
         "--aux-file",
+        "$T/nokia9300/rn-netns.sh",
+        "--aux-file",
         "$T/nokia9300/x11test.keysyms",
         "--env-append-file",
         "$T/nokia9300rom/station.env.fixture"
       ],
       "auxFiles": [
         "streamhost/stations/nokia9300/nokia9300-inner.sh",
+        "streamhost/stations/nokia9300/rn-netns.sh",
         "streamhost/stations/nokia9300rom/station.env.fixture",
         "streamhost/stations/nokia9300/x11test.keysyms"
       ]
@@ -170,8 +173,19 @@
   },
   "ui": "mobile",
   "network": {
-    "status": "none",
-    "note": "NOKIA_NET=off for the first comparison: the container runs with --private-network (lo only). Joining retronet would be a copy of nokia9300's netns cage with its own address, tap and guard chain claims; not done."
+    "status": "host-only",
+    "note": "Retronet web plane via nokia9300's NETNS CAGE with its own claims: x11-runtime.sh (NOKIA_NET=retronet, NOKIA_RN_IP=10.99.0.44) runs the shared rn-netns.sh with RN_STATION=nokia9300rom and starts the systemd-nspawn container inside netns rn-nokia9300rom (nsenter --net; nspawn's --network-namespace-path is refused under --private-users), whose only interface is the guest end of veth nokia9300romrn0/nokia9300romrng; the host end is enslaved to vmbr-rn (no uplink). Static 10.99.0.44 (reservation kept in RETRONET_DHCP_RESERVATIONS), MAC per the fleet scheme in gitignored local.env (RN_NOKIA9300ROM_MAC), no default route in the netns and no CAP_NET_ADMIN in the container, fail-closed NOKIA9300ROMRN-IN chain above RETRONET-IN. The netns resolv.conf (the gateway's wildcard DNS 10.99.0.2) is bound over the container's /etc/resolv.conf; config.yml hosts: stays empty and Opera needs no proxy. See docs/lab/retronet/WEB-STATION-nokia9300rom.md."
+  },
+  "retronet": {
+    "planes": [
+      "web"
+    ],
+    "address": "10.99.0.44",
+    "addressing": "static",
+    "link": "veth nokia9300romrn0 on vmbr-rn",
+    "guard": "NOKIA9300ROMRN-IN",
+    "joined": "2026-09-25",
+    "doc": "docs/lab/retronet/WEB-STATION-nokia9300rom.md"
   },
   "reset": {
     "stationDir": "nokia9300rom",

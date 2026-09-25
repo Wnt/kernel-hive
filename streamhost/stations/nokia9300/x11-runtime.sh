@@ -61,6 +61,8 @@
 #   NOKIA_MACHINE        nspawn machine name (default kh-$SH_STATION; rigs override)
 #   NOKIA_BASE           override for $BASE on a rig (unset in production)
 #   NOKIA_NET            retronet | off (default off; the fixture sets retronet)
+#   NOKIA_RN_IP          the station's reserved retronet address (nokia9300rom;
+#                        nokia9300 relies on rn-netns.sh's default)
 #   NOKIA_NETNS          the netns rn-netns.sh makes (default rn-$SH_STATION);
 #                        a rig also passes RN_VETH_HOST/RN_VETH_GUEST for its own
 #   SH_IDLE_PAUSE_*      the daemon's freezer reads mame.pid (kept current here)
@@ -206,7 +208,9 @@ case "${NOKIA_NET:-off}" in
     NETNS="${NOKIA_NETNS:-rn-$TILE}"
     RN="$(dirname "$(readlink -f "$0")")/rn-netns.sh"
     [ -f "$RN" ] || die "NOKIA_NET=retronet but $RN is missing"
-    RN_NS="$NETNS" bash "$RN" up || die "rn-netns.sh up failed — refusing to start networked"
+    # RN_STATION names the veth/chain/MAC; the address is the fixture's own
+    # (NOKIA_RN_IP; unset = nokia9300's default, which no other station gets).
+    RN_STATION="$TILE" RN_NS="$NETNS" RN_GUEST_IP="${NOKIA_RN_IP:-}" bash "$RN" up || die "rn-netns.sh up failed — refusing to start networked"
     [ -e "/run/netns/$NETNS" ] && [ -f "/etc/netns/$NETNS/resolv.conf" ] ||
       die "netns $NETNS or its resolv.conf is missing after rn-netns.sh up"
     # nspawn is STARTED inside the netns (nsenter --net) and shares it — not

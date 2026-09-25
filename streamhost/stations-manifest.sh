@@ -1379,8 +1379,8 @@ emit nokia9300rom \
   --tile nokia9300rom --udp 54220 --x11 --x11-display :120 --capture x11 \
   --pointer none --input-backend x11test --audio off --fps 25 \
   --x11-runtime-file "$T/nokia9300/x11-runtime.sh" --aux-file \
-  "$T/nokia9300/nokia9300-inner.sh" --aux-file \
-  "$T/nokia9300/x11test.keysyms" --env-append-file \
+  "$T/nokia9300/nokia9300-inner.sh" --aux-file "$T/nokia9300/rn-netns.sh" \
+  --aux-file "$T/nokia9300/x11test.keysyms" --env-append-file \
   "$T/nokia9300rom/station.env.fixture"
 
 # ---------------------------------------------------------------------------
