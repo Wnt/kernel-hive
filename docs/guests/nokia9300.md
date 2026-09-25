@@ -105,14 +105,15 @@ An EKA2L1 XDG data root: `EKA2L1/config.yml` and
 - Date and time FORMAT: "Friday 25th September 2026" (European) and a 24 h
   clock. The fork (L1) loads `C:\System\Data\LOCALE.D00` at boot, as
   `BaflUtils::InitialiseLocale` would; the HLE's old American default is gone.
-- No `hosts:` map yet: there is no network plane to name (see Network).
+- `hosts:` map empty on purpose: the retronet's wildcard DNS names everything (see Network).
 
 ## Sandbox
 
 `streamhost/stations/nokia9300/x11-runtime.sh` starts `systemd-nspawn`
 (`--as-pid2`, private PID/mount/net/user namespaces, host uids 2621440+, the
 rootfs `--volatile=overlay`, capabilities dropped, `~@mount` filtered, no new
-privileges, `--private-network`): the EKA2L1 build dir bound read-only at its
+privileges, started inside the retronet netns `rn-nokia9300` — see Network):
+the EKA2L1 build dir bound read-only at its
 own host path, the golden read-only at `/golden`, `work/` and the X socket dir
 the only writable binds; `/tmp/.X11-unix/X119` on the host is a symlink to the
 sandbox's socket. The runtime root is D1's trixie tree (Qt 6.8.2 + Mesa +
@@ -231,11 +232,17 @@ overlays a golden-manifest row pointing `reset-tile.sh` at the rig.
 
 ## Network
 
-None yet: the container runs `--private-network` (lo only). Opera's plane is
-agents N1–N7's — through a netns on retronet (the amigaos35/nextstep precedent)
-and/or EKA2L1's own `hosts:` map in `config.yml` for the names. No retronet
-reservation is held and no `rn-tapnet.sh` is committed until the plane is
-proven (AGENTS.md rule 15).
+**Retronet web plane, LIVE 2026-09-25.** Opera browses the archived 1998 web:
+Web → Open Web address → `www.altavista.com` → Go to. EKA2L1's HLE ESock uses
+host sockets and `getaddrinfo()`, so the launcher (`NOKIA_NET=retronet`) runs
+the whole container inside netns `rn-nokia9300` — one veth on `vmbr-rn`,
+static `10.99.0.43`, no default route, the gateway's wildcard DNS bound over
+`/etc/resolv.conf`, guard `NOKIA9300RN-IN`. No proxy, no CommDB entry and no
+golden change. nspawn is started under `nsenter --net`, because its own
+`--network-namespace-path` is refused under `--private-users`. The full
+design, containment proof and frames are in
+[`WEB-STATION-nokia9300.md`](../lab/retronet/WEB-STATION-nokia9300.md).
+`NOKIA_NET=off` is the rollback.
 
 ## Dark launch (before the branch lands)
 

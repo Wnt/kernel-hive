@@ -35,7 +35,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54219,
-      "notes": "HOST-NATIVE, SANDBOXED, NO CHECKPOINT: EKA2L1 (the Symbian HLE emulator, our fork github.com/Wnt/EKA2L1 branch s80-integration, GPL-3) runs the Nokia 9300's own firmware 5.22 (RAE-6: Symbian OS 7.0s, Series 80 v2) inside a systemd-nspawn container (private PID/mount/net/user namespaces, host uid range 2621440+, rootfs --volatile=overlay, the EKA2L1 build and the golden data dir bound read-only, only work/ and the X socket dir writable, capabilities dropped, @mount filtered). Xvfb :119 at 1280x400 lives INSIDE the container; its root IS the 640x200 inner screen at exactly 2x (nokia9300-inner.sh resizes and moves the Qt window so the display widget sits at 0,0; the menubar and status bar hang off the root). The daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test, SH_X11TEST_KEYMAP=x11test.keysyms). No QEMU/QMP, no exec channel, no network (lo only). NO POINTER: the 9300 has none. KEYS per agent K1's keymap contract v1 (provisional until framebuffer proof): F1-F4 = the four command buttons beside the screen, F5-F12 = Desk / Telephone / Messaging / Web / Contacts / Documents / Calendar / My own, Menu, F13-F17 = joystick centre/up/down/left/right, ISO_Level3_Shift = Chr; printable characters as their own keysyms. Kiosk frontend (B2): the window is the root, ekactl/1 control socket at <station>/work/run/ekactl.sock. Reset=relaunch, in-process: `quit` on the ekactl socket (reset-tile.sh, the Restore button, the daemon's auto-reset); the container's inner loop relaunches EKA2L1 from a fresh copy of the golden data dir whenever it exits (~2 s), with no daemon restart. Drive it with xdotool on DISPLAY=:119 from labrun, or `labctl shot nokia9300`."
+      "notes": "HOST-NATIVE, SANDBOXED, NO CHECKPOINT: EKA2L1 (the Symbian HLE emulator, our fork github.com/Wnt/EKA2L1 branch s80-integration, GPL-3) runs the Nokia 9300's own firmware 5.22 (RAE-6: Symbian OS 7.0s, Series 80 v2) inside a systemd-nspawn container (private PID/mount/net/user namespaces, host uid range 2621440+, rootfs --volatile=overlay, the EKA2L1 build and the golden data dir bound read-only, only work/ and the X socket dir writable, capabilities dropped, @mount filtered). Xvfb :119 at 1280x400 lives INSIDE the container; its root IS the 640x200 inner screen at exactly 2x (nokia9300-inner.sh resizes and moves the Qt window so the display widget sits at 0,0; the menubar and status bar hang off the root). The daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test, SH_X11TEST_KEYMAP=x11test.keysyms). No QEMU/QMP, no exec channel. Network = the retronet web plane (NOKIA_NET=retronet: the container runs inside netns rn-nokia9300 on vmbr-rn, static 10.99.0.43, DNS = the gateway, no default route) and Opera browses the archived web; docs/lab/retronet/WEB-STATION-nokia9300.md. NO POINTER: the 9300 has none. KEYS per agent K1's keymap contract v1 (provisional until framebuffer proof): F1-F4 = the four command buttons beside the screen, F5-F12 = Desk / Telephone / Messaging / Web / Contacts / Documents / Calendar / My own, Menu, F13-F17 = joystick centre/up/down/left/right, ISO_Level3_Shift = Chr; printable characters as their own keysyms. Kiosk frontend (B2): the window is the root, ekactl/1 control socket at <station>/work/run/ekactl.sock. Reset=relaunch, in-process: `quit` on the ekactl socket (reset-tile.sh, the Restore button, the daemon's auto-reset); the container's inner loop relaunches EKA2L1 from a fresh copy of the golden data dir whenever it exits (~2 s), with no daemon restart. Drive it with xdotool on DISPLAY=:119 from labrun, or `labctl shot nokia9300`."
     }
   },
   "render": {
@@ -120,12 +120,15 @@
         "--aux-file",
         "$T/nokia9300/nokia9300-inner.sh",
         "--aux-file",
+        "$T/nokia9300/rn-netns.sh",
+        "--aux-file",
         "$T/nokia9300/x11test.keysyms",
         "--env-append-file",
         "$T/nokia9300/station.env.fixture"
       ],
       "auxFiles": [
         "streamhost/stations/nokia9300/nokia9300-inner.sh",
+        "streamhost/stations/nokia9300/rn-netns.sh",
         "streamhost/stations/nokia9300/station.env.fixture",
         "streamhost/stations/nokia9300/x11test.keysyms"
       ]
@@ -170,8 +173,19 @@
   },
   "ui": "mobile",
   "network": {
-    "status": "none",
-    "note": "No network yet: the container runs --private-network (lo only). The retronet web plane for Opera is agents N1/N2's (EKA2L1 needs the Symbian OS 7.0s socket-server table first); no retronet reservation is held and no rn-tapnet.sh is committed until that plane is proven (AGENTS.md rule 15)."
+    "status": "host-only",
+    "note": "Retronet web plane via a NETNS CAGE (the amigaos35 shape): EKA2L1's ESock is HLE (host sockets; RHostResolver::GetByName is the host's getaddrinfo()), so x11-runtime.sh (NOKIA_NET=retronet) starts the systemd-nspawn container inside netns rn-nokia9300 (nsenter --net; nspawn's own --network-namespace-path is refused under --private-users), whose only interface is the guest end of veth nokia9300rn0/nokia9300rn0g; the host end is enslaved to vmbr-rn (no uplink). Static 10.99.0.43 (reservation kept in RETRONET_DHCP_RESERVATIONS), MAC per the fleet scheme in gitignored local.env (RN_NOKIA9300_MAC), no default route in the netns and no CAP_NET_ADMIN in the container, fail-closed NOKIA9300RN-IN chain above RETRONET-IN. The netns resolv.conf (the gateway's wildcard DNS 10.99.0.2) is bound over the container's /etc/resolv.conf, so every name Opera types resolves to the gateway's seamless :80 door; config.yml hosts: stays empty and Opera needs no proxy. Containment proven from the emulator's own netns: 1.1.1.1 unroutable at the stack, 10.99.0.1 dropped, gateway DNS+HTTP answer; Opera on http://1.1.1.1/ shows 'System: Unspecified error'. See docs/lab/retronet/WEB-STATION-nokia9300.md."
+  },
+  "retronet": {
+    "planes": [
+      "web"
+    ],
+    "address": "10.99.0.43",
+    "addressing": "static",
+    "link": "veth nokia9300rn0 on vmbr-rn",
+    "guard": "NOKIA9300RN-IN",
+    "joined": "2026-09-25",
+    "doc": "docs/lab/retronet/WEB-STATION-nokia9300.md"
   },
   "reset": {
     "stationDir": "nokia9300",
@@ -189,6 +203,6 @@
   "listing": {
     "state": "hidden",
     "since": "2026-09-24",
-    "reason": "Dark launch: the real Nokia 9300 firmware paints Desk, Documents, Sheet and Web in the EKA2L1 fork, but the command buttons, application keys and keymap (agents K1/B1), the kiosk frontend (B2) and Opera's network (N1/N2) are still being built. Watch it at /os/nokia9300; promote by dropping this block once the keys are proven on the framebuffer."
+    "reason": "Dark launch: the real Nokia 9300 firmware paints Desk, Documents, Sheet and Web in the EKA2L1 fork, but the command buttons, application keys and keymap (agents K1/B1) and the kiosk frontend (B2) were still being built (Opera's retronet web plane joined 2026-09-25). Watch it at /os/nokia9300; promote by dropping this block once the keys are proven on the framebuffer."
   }
 }

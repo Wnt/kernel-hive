@@ -22,8 +22,14 @@
 #   * writable: only $BASE/work (this launch's copy of the data dir, logs) and
 #     $SOCKDIR (the Xvfb socket dir, bound over the container's /tmp/.X11-unix;
 #     the host symlinks /tmp/.X11-unix/X<n> to it for the daemon's DISPLAY);
-#   * --private-network (lo only) until the retronet plane is proven — agents
-#     N1/N2 own it, and its rn-tapnet.sh stays uncommitted until then (rule 15);
+#   * the network: NOKIA_NET=retronet (production) joins the container to the
+#     retronet web plane — rn-netns.sh builds netns rn-nokia9300 (one veth on
+#     vmbr-rn, static reserved address, no default route, fail-closed guard)
+#     and nspawn is started IN it (nsenter --net), with the netns'
+#     resolv.conf (→ the gateway's wildcard DNS) bound over /etc/resolv.conf.
+#     EKA2L1's HLE ESock uses host sockets + getaddrinfo, so that is the whole
+#     join — docs/lab/retronet/WEB-STATION-nokia9300.md. NOKIA_NET=off (the
+#     default for rigs) keeps --private-network: lo only;
 #   * capabilities dropped, @mount filtered, no new privileges.
 # nokia9300-inner.sh (PID 2 inside) starts Xvfb and SUPERVISES EKA2L1 — a
 # fresh golden copy per launch, relaunch when it exits — and places the Qt
@@ -52,6 +58,9 @@
 #   NOKIA_X11_SOCKDIR    host dir bound over /tmp/.X11-unix
 #   NOKIA_MACHINE        nspawn machine name (default kh-$SH_STATION; rigs override)
 #   NOKIA_BASE           override for $BASE on a rig (unset in production)
+#   NOKIA_NET            retronet | off (default off; the fixture sets retronet)
+#   NOKIA_NETNS          the netns rn-netns.sh makes (default rn-$SH_STATION);
+#                        a rig also passes RN_VETH_HOST/RN_VETH_GUEST for its own
 #   SH_IDLE_PAUSE_*      the daemon's freezer reads mame.pid (kept current here)
 # =============================================================================
 set -euo pipefail
@@ -176,11 +185,34 @@ chown "$UIDBASE:$UIDBASE" "$WORK"
 # the container's mapped root could not read it there (perq).
 install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$INNER" "$WORK/inner.sh"
 
-nohup systemd-nspawn --quiet --register=no --keep-unit --as-pid2 \
+# --- the network: lo only, or the retronet netns cage ------------------------------
+NET_PREFIX=()
+NET_ARGS=(--private-network)
+case "${NOKIA_NET:-off}" in
+  off) ;;
+  retronet)
+    NETNS="${NOKIA_NETNS:-rn-$TILE}"
+    RN="$(dirname "$(readlink -f "$0")")/rn-netns.sh"
+    [ -f "$RN" ] || die "NOKIA_NET=retronet but $RN is missing"
+    RN_NS="$NETNS" bash "$RN" up || die "rn-netns.sh up failed — refusing to start networked"
+    [ -e "/run/netns/$NETNS" ] && [ -f "/etc/netns/$NETNS/resolv.conf" ] ||
+      die "netns $NETNS or its resolv.conf is missing after rn-netns.sh up"
+    # nspawn is STARTED inside the netns (nsenter --net) and shares it — not
+    # --network-namespace-path, which nspawn joins from inside the new user
+    # namespace and the kernel refuses (MEASURED 2026-09-25: "Failed to join
+    # network namespace: Operation not permitted" under --private-users; the
+    # netns belongs to the init userns). nsenter execs, so $! is still nspawn.
+    NET_PREFIX=(nsenter --net="/run/netns/$NETNS" --)
+    NET_ARGS=(--resolv-conf=off --bind-ro="/etc/netns/$NETNS/resolv.conf:/etc/resolv.conf")
+    ;;
+  *) die "NOKIA_NET=${NOKIA_NET} — want retronet or off" ;;
+esac
+
+nohup "${NET_PREFIX[@]}" systemd-nspawn --quiet --register=no --keep-unit --as-pid2 \
   --machine="$MACHINE" --uuid="$(printf '%032x' "$UIDBASE")" \
   --directory="$ROOTFS" --volatile=overlay \
   --private-users="$UIDBASE:65536" --private-users-ownership=off \
-  --private-network \
+  "${NET_ARGS[@]}" \
   --drop-capability=CAP_SYS_ADMIN,CAP_SYS_MODULE,CAP_SYS_RAWIO,CAP_SYS_PTRACE,CAP_MKNOD,CAP_NET_ADMIN,CAP_NET_RAW,CAP_SYS_BOOT,CAP_SYS_TIME,CAP_AUDIT_WRITE,CAP_AUDIT_CONTROL,CAP_SYS_CHROOT,CAP_SETFCAP,CAP_LINUX_IMMUTABLE \
   --no-new-privileges=yes \
   --system-call-filter='~@mount' \
