@@ -12,8 +12,7 @@
     "@gltf-transform/core",
     "@gltf-transform/extensions",
     "@gltf-transform/functions",
-    "meshoptimizer",
-    "sharp"
+    "meshoptimizer"
   ],
   "ignore": []
 }

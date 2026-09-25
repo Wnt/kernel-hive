@@ -110,8 +110,6 @@ export interface DeviceDrawing {
   mods: Record<string, ModRole>;
   /** The static line drawing under the keys (body, hinge, bezel, grille…). */
   Outline: ComponentType;
-  /** One line under the drawing naming the physical-keyboard shortcuts. */
-  shortcutNote: string;
 }
 
 /** className of the native `<input type="button">` KeyCap mounts inside each

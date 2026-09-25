@@ -15,7 +15,4 @@ export const NOKIA9300_DRAWING: DeviceDrawing = {
   keys: NOKIA9300_KEYS,
   mods: NOKIA9300_MODS,
   Outline: Nokia9300Outline,
-  shortcutNote:
-    'Press the drawn keys, or type: F1–F4 command buttons · F5–F12 Desk … My own · '
-    + 'arrows and Enter steer · Right Alt is Chr · the Menu key is Menu',
 };

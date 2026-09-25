@@ -2,6 +2,7 @@
 // The panel is a true 3.2:1 rectangle; the reference illustration shortens it.
 import { DEVICE_INK } from '../KeyCap';
 import { JOY, SCREEN } from './keys';
+import { NokiaWordmark } from './Wordmark';
 
 export function Nokia9300Outline() {
   const s = SCREEN;
@@ -40,16 +41,7 @@ export function Nokia9300Outline() {
       <rect x={696} y={34} width={143} height={11} rx={5.5} strokeWidth={2.5} />
       <rect x={s.x - 10} y={s.y - 9} width={s.w + 20} height={s.h + 18} rx={4} />
       <rect x={s.x - 1} y={s.y - 1} width={s.w + 2} height={s.h + 2} rx={1} strokeWidth={2.5} />
-      {/* Geometric block wordmark, drawn as paths so it does not depend on fonts. */}
-      <g transform="translate(694 480) scale(1.05 .85)" fill={DEVICE_INK} stroke="none">
-        <path d="M0 0V-27H7L24 -9V-27H31V0H24L7 -18V0Z
-          M42 -27H61Q68 -27 68 -20V-7Q68 0 61 0H42Q35 0 35 -7V-20Q35 -27 42 -27
-          M44 -21Q42 -21 42 -18V-9Q42 -6 45 -6H58Q61 -6 61 -9V-18Q61 -21 58 -21Z
-          M73 0V-27H80V-16L96 -27H106L87 -14L107 0H96L80 -11V0Z
-          M111 0V-27H118V0Z
-          M123 0L138 -27H147L162 0H154L151 -6H133L130 0Z
-          M136 -12H148L142 -23Z" fillRule="evenodd" />
-      </g>
+      <NokiaWordmark />
 
       {/* Tapered hinge barrels, with curved seams and a slim connecting spine. */}
       <path d="M442 500H1059V533H442Z" fill="var(--dev-body)" />

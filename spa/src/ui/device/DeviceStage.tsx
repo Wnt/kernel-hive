@@ -30,8 +30,6 @@ const THEME: CSSProperties & Record<`--${string}`, string> = {
   '--dev-latched': 'rgba(44, 98, 166, 0.18)',
 };
 
-const NOTE_PX = 30;
-
 const codeLabel = (code: string): string =>
   code.replace(/^Key|^Digit/, '').replace(/^Arrow/, '').replace('ContextMenu', 'Menu');
 
@@ -144,7 +142,6 @@ export function DeviceStage({
           {children}
         </div>
       </div>
-      <p style={S.note}>{drawing.shortcutNote}</p>
     </div>
   );
 }
@@ -152,15 +149,11 @@ export function DeviceStage({
 const S: Record<string, CSSProperties> = {
   fill: {
     position: 'absolute', inset: 0, containerType: 'size', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'safe center', gap: 6, overflow: 'auto', paddingBlock: 4,
+    alignItems: 'center', justifyContent: 'safe center', overflow: 'auto', paddingBlock: 4,
   },
   device: { position: 'relative', flex: '0 0 auto' },
   svg: { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', overflow: 'visible' },
   // The picture sits exactly on the drawn panel; overlays inside it (connect
   // spinner, power-on) are absolutely placed and stay within the panel.
   screen: { position: 'absolute', overflow: 'hidden', background: '#15171a' },
-  note: {
-    flexShrink: 0, margin: 0, maxWidth: 'calc(100cqw - 32px)', minHeight: NOTE_PX - 6, fontSize: 12, lineHeight: 1.35,
-    color: 'var(--ink-muted)', textAlign: 'center', fontFamily: 'var(--font-ui)',
-  },
 };

@@ -66,9 +66,14 @@ const APPS: [string, string, string][] = [
   ['app.own', 'My own', 'My own — the application the owner put on this button'],
 ];
 
+// Whole-column spans make every application seam continue into the number
+// row. Wider spans accommodate Telephone, Messaging, Contacts and Documents.
+// The photos' near-equal application widths are approximated to honour this
+// exact seam grid; the keyboard's outer bounds and all lower rows stay fixed.
+const APP_COLUMNS = [0, 1, 3, 5, 6, 8, 10, 11, 12];
 const appKeys: DeviceKey[] = APPS.map(([id, label, hint], i) => ({
   id, kind: 'key', keysym: F(5 + i), label, hint, codes: [`F${5 + i}`],
-  box: { x: KB_X + i * 1.5 * KB_U + GAP, y: APP_Y, w: 1.5 * KB_U - 2 * GAP, h: APP_H },
+  box: { ...cell(APP_COLUMNS[i], 0, APP_COLUMNS[i + 1] - APP_COLUMNS[i]), y: APP_Y, h: APP_H },
 }));
 
 // Command buttons: one per quarter of the screen height, right of the display.
