@@ -11,6 +11,9 @@ screen. The emulator does not substitute its own versions of them.
 **Year:** 2005 (firmware 5.22 is dated 16 November 2005; the 9300 was
 announced on 8 September 2004 with sales planned for Q1 2005).
 
+**Listed:** in the public gallery since 25 September 2026, at /os/nokia9300
+(it ran unlisted while the full ROM stack was proven).
+
 **What a visitor can do:** use the phone from its keyboard, which is the only
 way the device itself worked. There is no pointer and no touchscreen. The
 page draws the 9300 open with its Nordic key legends, and the drawn keys or
