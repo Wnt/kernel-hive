@@ -30,22 +30,64 @@ extra NIC and no retronet netns work is needed beyond the `hosts:` map
 already documented below. Both branches, plus every other network-relevant
 fix, are merged onto fork branch `s80-integration` @ `e43db215e` (agent I2),
 where Opera fetches and renders host pages exactly as described here — this
-document's proof is not stranded on a side branch. **The station itself
-does not yet carry the `hosts:` map**: it still has no network plane at
-all (it runs `--private-network`), so there is nothing to map yet, across
-every one of agent D2's five re-pins/re-bakes through 2026-09-25 (the
-station branch now tracks `s80-integration` @ `3f8b52782`, with T1's
-Telephone fix and M1's Messaging fix merged; see the main and shell
-documents). The map lands with the N-series' proven network plane once
-the station gets one, and per rule 15 its tap script stays uncommitted
-until then. **Confirmed against the live, hidden station by agent U1's
-visitor audit (2026-09-25):** Opera's cached home page is the only thing
-that works. Any other address gives "System: Unspecified error", and the
-home page's own "Nokia.com mobile" link cannot be reached with the
-keyboard (arrow keys and Enter do nothing on it) — both are the expected
-shape of having no network plane and no `hosts:` map yet, not new
-network-stack bugs; nothing in this document's own findings (N1–N7)
-changes as a result.
+document's proof is not stranded on a side branch. **The station now has
+a network plane, and it carries retronet, not a `hosts:` map (agent N8,
+2026-09-25, ~15:35–19:00 local / 18:35–19:00 UTC).** Rather than a
+`config.yml` `hosts:` entry, the whole nspawn container joins
+**retronet's web plane** through a dedicated network namespace: a veth
+pair (`nokia9300rn0` on the host bridge, `nokia9300rn0g` inside the
+namespace), a static retronet address claimed atomically for the
+station's own session, no default route, a fail-closed guard chain
+(`NOKIA9300RN-IN`) installed at `INPUT` and read back from the kernel to
+confirm it, and `/etc/netns/.../resolv.conf` pointed at the retronet
+gateway's own DNS — so `GetByName` resolves a corpus host name the
+ordinary way (EKA2L1's ESock is HLE, using host sockets and
+`getaddrinfo()` directly; DNS does all the naming, and `config.yml`'s
+`hosts:` map is deliberately left empty). **Trap found on the rig, worth
+recording for any future nspawn station on retronet:** nspawn's own
+`--network-namespace-path` fails under `--private-users` with "Operation
+not permitted" — nspawn tries to join the namespace from inside its own
+new user namespace, but the target network namespace belongs to the
+*init* user namespace. Fixed by starting nspawn under `nsenter
+--net=<netns path> -- systemd-nspawn ...` instead; because `nsenter`
+execs into nspawn, `$!`/`/proc/<pid>/exe` identity checks still resolve
+correctly. A Restore (in-process relaunch) keeps the same container and
+therefore the same network namespace, proven live: a new emulator PID
+after a Restore showed the same namespace inode, and a corpus page still
+rendered right after.
+
+**Opera needed zero settings changes to use this plane** — no proxy
+(`Opera.def` still has none; Opera's own HTTP/1.1 `Host:` header does
+the rest), no CommDB IAP entry (N2's HLE `Start()` fallback, above,
+still answers), no golden change, and N4's CommDB patch DLL is not
+needed either. **Proven live, on the real deployed station:** Opera
+renders AltaVista, Netscape and Yahoo from the corpus, including
+immediately after a Restore. **Negative test, from inside the guest's
+own network namespace:** the only route present is the retronet subnet
+itself; a non-corpus IP and a DNS resolver outside the namespace both
+fail outright (no route, so no packet even forms); the gallery's own
+management port times out (the guard chain drops it); only the retronet
+gateway's own DNS and HTTP answer. In the framebuffer, Opera at a
+non-corpus/nonexistent address (e.g. an address with no corpus entry)
+correctly shows "System: Unspecified error" — the same message this
+document used to cite as evidence of "no network plane at all"; it now
+means "no route to that specific address", which is retronet's intended
+containment, not a station defect. **One corpus content gap, not a
+station bug:** AltaVista's own archived page embeds at least one image
+at a literal IP address (not itself in the corpus; the archived source
+page's own address, which stays out of this doc per rule 1 — any address
+cited here is a scrubbed `192.0.2.x`-style placeholder, never the real
+one), so that image draws as a broken-image box — a gap in the corpus,
+flagged for whoever curates it next, not something to fix on this
+station. The "Nokia.com mobile" link
+on Opera's own home page still cannot be focused or followed with the
+keyboard — open, unrelated to the network plane, not investigated by N8.
+
+New docs from this pass, outside this file: `docs/lab/retronet/
+WEB-STATION-nokia9300.md` (the station's own retronet write-up) and
+`docs/guests/nokia9300.md`'s new §Network/§Sandbox sections and
+`hosts:` line — cross-reference these rather than duplicating their
+content here.
 
 ## The 7.0s ESock opcode table (agent N1, branch `s80-esock-70s`)
 

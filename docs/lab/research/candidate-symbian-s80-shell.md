@@ -23,6 +23,20 @@ D2); as of this fold it tracks `s80-integration` @ `3f8b52782`
 operator has since live-tested the station and ruled it stays HIDDEN
 ("still requires quite a lot of work") — see the main document's status
 header and agent U1's forensic/visitor audit for the current punch list.
+
+**A seventh pass (2026-09-25, 12:00–18:0x UTC) resolved Exit, the
+applist icon SIGSEGV, F5's app-key routing, the quit crash, Contacts'
+New-card crash, the Messaging storage note, Write message's editor,
+the kiosk's silent note-swallowing, and repaint remnants** — see the
+new sections below. Fork `s80-integration` reached **`4ef4b2fb6`**
+(agents I4, I5, I6, three proven merges). The station **landed live**
+(still HIDDEN) and then joined retronet's web plane (agent N8, see the
+network document). The operator's own live demo then found three new
+rendering defects (masked-blit black fields, a stale Sheet highlight,
+Sheet's point-reference formula-bar gap), now being raced by agents G1
+and G2 — **not yet resolved**; see the new "Draw modes and masked
+blits" section below.
+
 Nothing here is disassembly or a ROM byte dump — mechanisms and traces
 only, per the repo's abandonware rules.
 
@@ -624,6 +638,254 @@ Clock back to front instead of Desk (B1/K1's app-switch logic, "app is
 running, bringing group 85" in the log); both world-clock faces still
 show offset 0 (A2's known item).
 
+## Exit, the applist icon SIGSEGV, F5, and the quit crash (agent E1, branch s80-exit-and-icons @ aa901c3b2)
+
+Fork branch `s80-exit-and-icons` @ `aa901c3b2`, merged onto
+`s80-integration`. Four independent fixes, all dynamic-tracing only
+(log-ipc, log-svc, an IPC watch, gdb on our own binary, X1's SDK
+traces — no ROM disassembly).
+
+**Exit never ended an app.** `CEikonEnv::DestroyEnvironment` parks in
+`User::WaitForRequest` on the SkinServer's op-6 notification; the ROM
+SkinServer completes a stored op-6 request with `KErrCancel` on op 7
+only when the client handle in the stored request matches the
+canceller's. Our `server::accept` opened a **fresh server-side
+client-thread handle for every EKA1 message** and closed it on
+completion, so op 7 never matched op 6 and the app waited forever.
+Fixed: one handle per (receiving thread, sending session) — closed
+only when that session's own disconnect message completes, and only
+while it still names the client. Matches X1's independent SDK-emulator
+trace of a real close-session/cancel/close-session sequence.
+
+**The applist icon SIGSEGV.** `fbs_server::create_bitmap()` hands back
+an object at refcount 0; the applist registry cached AIF icon bitmaps
+without taking its own reference, so once every client holding a
+duplicate had released it, the icon bitmap was freed — the next
+`GetAppIcon` for that app read freed memory (drawing jigsaw default
+icons where the memory happened to still look bitmap-shaped, or
+crashing where it didn't). Fixed: the registry now holds its own
+reference, the way the window server already does for backed-up
+bitmaps. Proven 5/5 in both HLE-Eikon and ROM-Eikon mode on a minimal
+`F11 → F5 → F1 → Esc` repro. **This is the same class of bug agent
+S2 found crashing ROM-shell mode's own Calendar → Desk → Personal →
+Esc sequence** (see "ROM-shell mode's blocking crash" above); E1's fix
+is a strong lead for that crash too, but nobody has re-run S2's exact
+repro against a binary containing this fix, so it is not confirmed
+closed.
+
+**F5 mis-routing to Control panel.** Application-key handling now
+finds the target app by its **window group's own name UID**, not by
+ordinal/heuristic order, so F5 (Desk) reliably returns to Desk instead
+of re-surfacing whichever app was last opened via Control panel.
+
+**`ekactl quit` exiting rc 139.** gdb on the crash: a dead vtable
+inside `~s80_status_pane`, called during `~window_server` /
+`kernel_system::wipeout` — the pane's destructor was dereferencing a
+font FBS had already torn down. Fixed; quit now exits 0 in every
+tested case (4/4 on I4's binary, 5/5 on I5's, 11/11 on I6's). This
+makes D4's `SH_RESET_CTL_MARK` reset-vs-crash marker belt-and-braces
+rather than load-bearing.
+
+**Also fixed on this branch:** an EKA1 `PMrename` POSIX op (Web's Exit
+used to panic with `-5` on it, leaving a "Program closed: Web, -5"
+note stuck on top in ROM-Eikon mode).
+
+**Proof, both modes, from a fresh data dir:** Documents/Web/Sheet Exit
+all leave `ekactl list` at Desk only; five consecutive F11/F5 cycles
+leave Desk alive with intact icons; a triple Documents-relaunch after
+Exit opens a fresh document each time. **Open, not fixed here:** Opera
+specifically stays alive in the background after Web's Exit — its
+thread is idle with no pending IPC and no panic, and F8 instantly
+brings it back with its state intact; this looks like Opera's own
+deliberate behaviour on close (it does write its cache and
+visited-links journals via the fixed PMrename call), not a hang, but
+nobody has traced what Opera itself does differently on Exit. **Trap
+for anyone copying a binary out of this branch's build tree:** a bare
+copy of `eka2l1_qt` without `patch/ compat/ resources/ scripts/`
+beside it loses `s80-desk-content`'s `ecam.dll.map` patch, and Control
+panel then dies with `KERN-EXEC 3` (`NULL+0x1B8`) every time — copy
+the whole `build/bin` tree, always (this trap recurred across I4's,
+A5's, M2's, M3's and C2's reports too — treat it as a standing rule
+for this fork from here on, not a one-off).
+
+## The kiosk no longer hides guest error notes, and Write message opens an editor (agents M2, M3, branches s80-messaging-store @ b52791905 and s80-messaging-editor @ 45e4774bd)
+
+**The one-time storage note is gone (agent M2).** The real cause was
+not the message store or MsvServer at all: `mcentre.app`'s own
+`ConstructL` checks the message drive with `RFs::Att("C:")`, and real
+F32 has **no `Att` entry for a bare drive root** — it returns
+`KErrBadName`, so the note never shows on a device. EKA2L1's HLE
+`Fs::Entry`/`SetEntry` returned `KErrNone` for "C:", so the note
+showed on every launch, fresh data dir or not. Fixed:
+`fs_server_client::entry`/`set_entry` now complete with `KErrBadName`
+when the full path is only a drive root. **No golden message-store
+addition is needed at all** — this supersedes any earlier framing that
+a golden change was the fix path.
+
+**Every S80 system note is now visible and dismissable, not silently
+auto-answered (agent M3).** The HLE Eikon server used to route
+`RNotifier::Notify` to a host message box, which the kiosk frontend
+then auto-answered with its first button with no visitor ever seeing
+it. On a Series 80 device the notifier now hands the note to the
+window server instead (a new `epoc::s80_note` in `s80pane.{h,cpp}`),
+styled after the ROM Eikon server's own "Program closed" note (3px
+frame, `skindialogframe.mbm` #8 title bar, System-Light body text,
+System-bold command labels) and dismissed with the device's real keys
+(F1/Enter/joystick centre = button 1, F4 = button 2, Esc = button 2 if
+there is one else button 1; a key held while the note appears is still
+released normally). Other device kinds keep the old host-dialog path
+unchanged. Proven live: Messaging → Write → Multimedia message still
+correctly shows "System: Unable to find the specified object." (no
+MMS service exists), now visibly, with Esc dismissing it and the app
+staying responsive afterward.
+
+**Write message now opens the SMS editor (agent M3).** Root cause:
+the HLE MsvServer's `absorb_entry_to_buffer` copied only some fields
+into an **uninitialised** `entry_data` struct, so every `TMsvEntry`
+sent to a client carried host stack garbage in `iRelatedId`,
+`iPcSyncCount`, `iReserved`, `iError` and `iMtmData1-3`. `mcentre`
+follows the current entry's `iRelatedId` on OK; with a random id,
+`GetEntry` failed and the app raised the (now-visible) System note
+instead of opening an editor. Fixed: `fill_entry_data`/
+`apply_entry_data` build the whole image, both directions, from a
+zeroed struct. Proven: Write message → Text message opens the SMS
+editor (To:, character counter, CBA Send/Recipient/Sending
+options/Close), typing at visitor speed is exact, and Send files the
+message into Sent. **Differs from a real device:** this "send"
+always succeeds offline; a real 9300 with no network would instead
+fail the message into the Outbox — open, not changed, a deliberate
+HLE behaviour left as-is pending a decision.
+
+**Telephone's Call and Voice mailbox were never broken (agent M3,
+overturns an earlier "diagnosed, not fixed" framing).** Both keys
+correctly reach the ROM's own timed Ckn info note, "Telephone is
+turned off or not ready. Check the telephone and try again.", which
+stays on screen for roughly 0.3–5.2 seconds and then clears cleanly.
+The earlier framing of this as unfixed came from two artefacts: frames
+were shot after the note had already closed (a blinking caret kept the
+screen from settling until then), and a trap-trace diagnostic flagged
+`CleanupStack::PopAndDestroy`'s own harmless use of the trap handler
+(reading an image id of -1, meaning "no image", from the note's
+resource) as a false leave. No guest or fork change was needed.
+
+**Still open, unowned:** no MMS/Fax/Push service — the ROM's own
+`mailinit.exe`, which creates four invisible first-boot service
+entries (0x100000 SMS / 0x100001 Fax / 0x100002 Service message /
+0x100003 MMS / the 0x100004 MMSNotifications folder), never runs
+under EKA2L1; Write → Fax shows the guest's own "Fax cover page
+template is missing" note (probably faithful to a template-less
+device); an offline SMS "send" always lands in Sent rather than
+failing to Outbox; Messaging (like Opera and Contacts) stays in the
+background after its own Exit.
+
+## Contacts' New card no longer crashes the app (agent A5, branch s80-contacts-newcard @ 8c360782a)
+
+**The panic.** New card (F2) raised `Panic CONE 46` (`ECoePanicInvalidHandle`)
+from `CCoeRedrawer::RunL`, 2/2 repro on the pre-fix binary.
+
+**Root cause: a window-server bug, not a missing server or resource.**
+New card's editor builds a scrolling container from two windows — an
+outer `RWindow` (client handle `this|1`) and an inner child window
+(handle `this`) at the same origin, sized to cover its parent
+completely. Real WSERV only reports the part of an invalid region NOT
+covered by a window's children, worked out when the client fetches the
+redraw — so a real device never even sends a redraw for the fully
+covered outer window, and CONE never sees the odd handle. Our window
+server instead queued the outer window's activation redraw as soon as
+`Activate` ran, before its child was active; `GetRedraw` then handed
+back the outer window's own (bit-tagged, "invalid" by CONE's rules)
+handle, and CONE panicked.
+
+**Fix.** `redraw_fifo::get_visible_evt_opt` now drops a queued redraw
+whose owner window is fully covered by its own visible, opaque child
+windows (children with alpha or a shape region don't count) — checked
+at fetch time, the same point real WSERV computes it. The window keeps
+its invalid region for a later exposure to still report; if every
+queued redraw for a window is hidden this way, the client instead gets
+the null redraw, which CONE ignores and re-queues. New regression
+tests cover the New-card geometry, a partly-covered window, a window
+covered by two children, and a hidden redraw being dropped from the
+FIFO.
+
+**Proof.** F9 opens Contacts (No contacts, softkeys Open/New
+card/Copy all/Exit); F2 opens "<unnamed card>" with its field list,
+picture box and scrollbar (Contacts stays at the front); typing
+"Madekivi" then "Jonni" is exact; Done (F4) returns to a directory now
+listing "Madekivi, Jonni"; Exit (F4) brings Desk to the front. 2/2
+clean runs against 2/2 panics before the fix; a full regression matrix
+(Desk, Documents, Web, Control panel/F5) shows no regression.
+
+**Open, not in scope of this fix:** Contacts stays in the background
+after its own Exit (the same pattern as Opera's, above) — Desk gets
+the front and the focus, but Contacts is not ended; a thick black bar
+sits under the new contact's name in the directory's detail pane
+(probably an unset picture/thumbnail field) — **likely the same
+underlying masked-blit defect** the operator's own live demo later
+surfaced in the Insert-function dialog (see the new "Draw modes and
+masked blits" section below); both are believed to share one root
+cause, not yet fixed.
+
+## Repaint remnants, the 12-hour clock, and drive labels (agent C2, branch s80-cosmetics @ 62fa230e4)
+
+**Repaint remnants (mostly fixed).** Root cause: Series 80 list boxes
+and the dialogs drawn over them share **one off-screen bitmap** for
+highlighted-row rendering. The window server's stored redraw ("blit")
+commands were resolving their **texture at replay time, from the live
+bitmap** — so once a dialog had reused that shared bitmap, replaying a
+list's own stored row blit painted the dialog's leftover content
+instead. Real WSERV copies pixels at blit time, not replay time.
+Fixed: a stored blit command now resolves and holds its own texture in
+the bitmap cache at record time, for as long as its segment lives; a
+changed bitmap's content gets a new texture on the next record, while
+unchanged bitmaps (icons) still share one. Confirmed fixed: Control
+panel's Date-and-time dialog (10+ open/Esc cycles stay clean), the
+Date field's calendar popup, and Telephone's search row surviving a
+Menu open/close. **Not reproduced on the current head** (so either
+already fixed by an earlier merge, or were misdiagnosed originally):
+Office's double-highlight and Documents' half-drawn lines from an
+earlier audit. **Still open:** Recent calls' dialog paints past the
+200px screen bottom (a layout issue, not repaint); Sheet's cell font
+choice is nondeterministic between runs on identical binaries
+(pre-existing, unrelated); a list's focused row misses about 1px of
+its bottom border for roughly 3/4 of its width right after a dialog
+closes (minor, cosmetic).
+
+**The pane clock now follows the 12-hour locale setting.** The clock
+format was hard-coded 24-hour and never read `TLocale::TimeFormat`.
+Fixed: a `clock_time_locale` struct carries the 12-hour flag, the
+am/pm position/spacing and the ROM's own ELOCL "AM"/"PM" strings
+(found in `elocl.dll`), drawn in a smaller System-bold face sized to
+fit the 60px clock alongside the digits. Proven live-switching in
+Control panel ("5:39 PM" with a small PM). The station's own golden
+stays on 24-hour Helsinki time (agent L1's locale fix), so this only
+shows if a visitor changes the setting themselves.
+
+**Drive labels fixed.** Series 80 devices show **no** volume-name stub
+for C: (was `EKA2L1_<letter>`; the File manager names it "Communicator"
+itself) and mount D: as **removable** — on Series 80, D: is the memory
+card. Fixed: My own (File manager) now shows "Communicator" and
+"Memory card", matching the 9300 User Guide. **`C:\cword`** — a stale
+478-byte default Documents file left over from the old
+create-launch-command era (fixed separately by agent N7's launch-
+command fix, §H3 above) and no longer recreated on this head — was
+flagged for deletion from the golden and **has been removed**: golden
+v3.1 (the current live golden) is golden v3 minus this file.
+
+**C6 — the cursor sitting at the far right of an empty text field
+remains OPEN**, now with evidence and a theory. In Web's "Go to
+address" dialog, the guest itself sends `SetTextCursor` at an x
+position about 250px too far right for the field's empty state (after
+typing `abc` the positions are correct: 16/22/28; after erasing, the
+position correctly returns to 10, the true left edge) — so the empty
+paragraph's **first** FORM/TAGMA layout is the one that's wrong, not
+the server's cursor placement, which faithfully draws wherever it's
+told. Theory: a stale layout band survives from before the dialog laid
+the control out, or the empty paragraph's first-layout font
+measurement (paragraph-delimiter width, or `MaxNormalCharWidth`) is
+inflated in our FBS. Next cheap step: log every FBS text-measure call
+made while the dialog opens and compare it against the calls made
+after an edit clears the field.
+
 ## Commits on `fork/s80-shell` (all small, cherry-pickable)
 
 | Commit | What |
@@ -778,3 +1040,65 @@ VM has no packet driver. A Windows XP rig, which can still load the old NDIS
 chain, would be needed to get a real post-`Start` Opera trace from this
 oracle. (This is the same "Connecting… → silent fail → re-prompt" cycle the
 main document's network detail records as still untested on EKA2L1 itself.)
+
+## Draw modes and masked blits — the operator's live-demo defects (agents G1, G2, IN PROGRESS, not resolved)
+
+The operator's own live demo of the (by then live) station on
+2026-09-25 (15:12–15:17 UTC, phone/touch) found three rendering
+defects distinct from everything above. Two agents are racing them
+from I5's integration tree; **neither is finished as of this fold** —
+record leads and partial fixes only, do not mark either defect closed.
+
+**1. Insert function's black field and black scroll bar.** The
+focused category-list text area in Documents/Sheet's Insert-function
+dialog paints entirely solid black (the highlighted text must stay
+legible — inverted or hatched on a real device, not opaque), and the
+choice list's own scroll bar also paints solid black instead of
+rendering correctly. Agent G1's tracing: these are **not** a
+`SetDrawMode` bug — they are **masked blits** (window-server GC op 50,
+`BitBltMasked`) of specific bitmaps: the field highlight (136×22,
+handles `0x396`/`0x397`) and the scroll bar (handles `0x171`–`0x17b`).
+The likely cause is a gap in A1's earlier 12-bit (EColor4K) icon-mask
+fix — probably an **inverted-mask** case that fix didn't cover.
+**This is believed to be the same underlying defect as the thick black
+bar under a new contact's name in Contacts' New-card detail pane**
+(agent A5's open item, above) — both are masked-blit rendering
+failures on the same code path, not yet confirmed to share one exact
+fix but strongly suspected to.
+
+**2. Sheet's stale cell focus highlight.** A cell (e.g. B1) keeps its
+highlight even after focus has visibly moved to another cell (e.g.
+C1), so two cells appear highlighted at once. Agent G2 traced the root
+cause: `graphic_context::set_draw_mode` was a **no-op** on our head.
+Sheet erases its own cursor by drawing with `SetDrawMode(1 =
+EDrawModeNOTSCREEN)` plus a `DrawRect`, expecting the erase-XOR idiom
+to cancel the previous draw — with `SetDrawMode` doing nothing, the
+"erase" just painted the highlight again instead of removing it.
+**Partly fixed** by agent G1's core commit (branch `s80-draw-modes` @
+`50749b655`, base `17801342f`, one commit): `SetDrawMode`'s
+NOTSCREEN/XOR/NOTXOR/AND/OR/NOT variants and NOTPEN are now
+implemented as blend passes in the window-server's stored-command
+store (`gstore`), for rect fill+outline, line, plot and Clear
+(`ekatests`: 306, green). This fixes Sheet's cursor being properly
+erased on a move. **Still open** (owned by G2): a remaining 1px
+discrepancy where our `DrawRect` does a separate fill plus a 1px
+outline, where the device instead draws one solid 3px box — a
+`CFbsBitGc` `DrawRect` semantics gap, not a draw-mode gap.
+
+**3. Sheet's point-reference formula mode.** Building a formula by
+pointing at cells (e.g. after typing `=sum(`) never writes the pointed
+cell's coordinates (e.g. "A1") into the formula bar — it stays
+literally `=sum(` with nothing appended, and the stale-highlight bug
+above (item 2) shows up here too. The coordinator also observed the
+formula bar's own glyphs rendering at roughly half the size of the
+name box and cell text, with the caret floating visibly detached to
+the right of `=sum(` rather than sitting at the true insertion point.
+**Open, owned by G2**, not yet fixed; no root cause identified for the
+coordinate-insertion failure or the glyph-size/caret-position issues
+specifically (as distinct from the stale-highlight mechanism above).
+
+**Ownership, as split by the coordinator:** G1 owns the `SetDrawMode`
+core (pushed as an early standalone commit others can build on) and is
+continuing the masked-blit trace; G2 owns `CFbsBitGc DrawRect`
+semantics, the formula bar, and the Sheet-vs-real-device audit,
+rebasing on G1's commit.
