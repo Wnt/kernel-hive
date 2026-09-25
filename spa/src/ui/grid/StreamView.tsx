@@ -145,6 +145,7 @@ export default function StreamView({
   const {
     stream, phase, message, control, registerPaintCanvas,
     beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow, noteInput,
+    frameEpoch,
   } = useLiveStream(
     os,
     streamable,
@@ -182,6 +183,10 @@ export default function StreamView({
   const fsErrorTimer = useRef(0);
   const [restoreState, setRestoreState] = useState<'idle' | 'busy' | 'ok' | 'err'>('idle');
   const restoreTimer = useRef(0);
+  // In-page surface for the restore POST's 404/error path (U1 B1) — previously
+  // console-only, so the visitor saw the panel close and nothing else.
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const restoreErrorTimer = useRef(0);
 
   const controlRef = useRef(control);
   controlRef.current = control;
@@ -362,9 +367,10 @@ export default function StreamView({
 
   // ---- RESTORE TO CHECKPOINT (streamhost only) ---------------------------------
   const { restoreToGolden } = useRestoreFlow({
-    osId: os.osId, restoreState, setRestoreState,
+    osId: os.osId, restoreState, setRestoreState, setRestoreError, restoreErrorTimer,
     beginRestoreReconnect, finishRestoreReconnect, restoreTimer,
     phase, stationAttrs: osStationAttrs,
+    resetKeepsStream: os.resetKeepsStream, frameEpoch,
   });
 
   // ---- TYPE-IN DEMO PROGRAM (registry-declared stations only) -----------------
@@ -511,6 +517,7 @@ export default function StreamView({
           pointerLocked={pointerLocked}
           acquireLock={acquireLock}
           fsError={fsError}
+          restoreError={restoreError}
           showBanner={showBanner}
           restoreReconnect={restoreReconnect}
           bannerState={bannerState}

@@ -108,6 +108,10 @@ export interface OSBinding {
   emulatorFamily?: string;
   uiKind?: string;
   resetMode?: string;
+  /** See VMManifestEntry.resetKeepsStream (types.ts) — carried through the
+   *  same way as resetMode so StreamView's restore flow can read it off the
+   *  binding it already has. */
+  resetKeepsStream?: boolean;
 }
 
 // One entry per OS. 115 rows are streamhost; 2 are showcase posters.
@@ -265,5 +269,6 @@ export function bindingFromManifest(vm: RuntimeVMManifestEntry): OSBinding {
     emulatorFamily: vm.emulatorFamily,
     uiKind: vm.uiKind,
     resetMode: vm.resetMode,
+    resetKeepsStream: vm.resetKeepsStream,
   };
 }

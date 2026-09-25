@@ -31,6 +31,7 @@ const ENTRY_FIELDS = new Set([
   'archetypeId', 'transport', 'order', 'eraLabel', 'signalEndpoint',
   'endpoint', 'pointerRel', 'hardwareInput', 'coldBoot', 'bootVideo',
   'relativePointerOnly', 'listed', 'emulatorFamily', 'uiKind', 'resetMode',
+  'resetKeepsStream',
 ]);
 const ID = /^[a-z0-9][a-z0-9-]*$/;
 const ACCENT = /^#[0-9a-f]{6}$/i;
@@ -82,6 +83,7 @@ function parseEntry(value: unknown): RuntimeVMManifestEntry | null {
   // own `emulator.family` / `ui` / `reset.resetMode`. Optional: a poster entry
   // has no `reset` to report a mode for.
   if (!optionalString(entry.emulatorFamily) || !optionalString(entry.uiKind) || !optionalString(entry.resetMode)) return null;
+  if (!optionalBoolean(entry.resetKeepsStream)) return null;
 
   const bootVideo = typeof entry.bootVideo === 'string' ? { mp4: entry.bootVideo } : undefined;
   return { ...entry, bootVideo } as unknown as RuntimeVMManifestEntry;

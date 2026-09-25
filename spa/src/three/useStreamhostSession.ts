@@ -72,12 +72,12 @@ export function useStreamhostSession(
   //  onVideoFrame read the sink without a React re-render.
   const paintElRef = useRef<HTMLCanvasElement | null>(null);
   const paintCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const frameEpochRef = useRef(0); // bumped per painted frame — streamSessionTypes.ts's `frameEpoch`
   const registerPaintCanvas = useCallback((el: HTMLCanvasElement | null) => {
     if (paintElRef.current === el) return;
     paintElRef.current = el;
-    // desynchronized:true is the low-latency swap-chain hint — it lets the UA skip
-    // the normal DOM-paint sync so a drawImage lands on glass with minimal delay
-    // (the whole point of this path). alpha:false = opaque desktop, no blend.
+    // desynchronized:true is the low-latency swap-chain hint (skips normal DOM-paint
+    // sync, the whole point of this path); alpha:false = opaque desktop, no blend.
     paintCtxRef.current = el
       ? el.getContext('2d', { alpha: false, desynchronized: true }) as CanvasRenderingContext2D | null
       : null;
@@ -180,7 +180,7 @@ export function useStreamhostSession(
 
     const onVideoFrame = (frame: VideoFrame) => {
       if (cancelled) { try { frame.close(); } catch { /* noop */ } return; }
-      tel.painted(); // EVERY frame — the paint side freezes are derived from
+      tel.painted(); frameEpochRef.current++; // EVERY frame — paint freezes derive from
       const w = frame.displayWidth, h = frame.displayHeight;
 
       // ---- DIRECT-CANVAS PAINT PATH (2D grid) --------------------------------
@@ -595,5 +595,6 @@ export function useStreamhostSession(
   return {
     phase, message, control, stream, registerPaintCanvas,
     beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow, noteInput,
+    frameEpoch: frameEpochRef,
   };
 }
