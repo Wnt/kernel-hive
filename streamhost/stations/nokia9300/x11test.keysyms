@@ -1,7 +1,7 @@
 # nokia9300 SH_X11TEST_KEYMAP — browser XT set1 scancode -> X11 keysym for the
 # x11test sink (plain column only; see streamhost/src/x11_keys.rs). A station
 # file, NOT generated: it is stations/vice-native/us-layout.keysyms (generated
-# by scripts/dev/vice-keymap.py — its rows copied unedited) with two changes
+# by scripts/dev/vice-keymap.py — its rows copied unedited) with three changes
 # for agent K1's keymap contract v1 (Nokia 9300, 2026-09-24):
 #   * 0xe038 (right Alt / AltGr) -> ISO_Level3_Shift, the contract's keysym for
 #     the 9300's Chr key (was Alt_R; Alt_L/Alt_R stay Chr aliases in the fork);
@@ -9,11 +9,19 @@
 #     down / left / right. The SPA's KEYSYM_TO_SCANCODE carries the same five
 #     codes; nokia9300-inner.sh starts Xvfb from a patched XKB copy
 #     (-xkbdir) so keycodes 191..195 carry F13..F17 before the daemon
-#     resolves keysyms (a stock keymap has XF86Tools/XF86Launch5..8 there).
+#     resolves keysyms (a stock keymap has XF86Tools/XF86Launch5..8 there);
+#   * 0x0069..0x006e and 0x0076 (set1 F18..F24) -> the characters a US
+#     keyboard has no key for, which the SPA's nokia9300 device drawing types
+#     from the Nordic legends of the 9300 keyboard: ä ö å æ ø € £ (contract
+#     rule 1 — the fork maps the character to the device key that types it).
+#     Their capitals come from the X keymap's own level 2 under a held Shift
+#     (nokia9300-inner.sh binds adiaeresis/Adiaeresis and the rest in pairs),
+#     so the shifted column only documents it. The SPA's KEYSYM_TO_SCANCODE
+#     carries the same seven codes.
 # Rebuild after a regenerated us-layout table:
 #   grep -v '^#' stations/vice-native/us-layout.keysyms | grep -v '^0xe038' >rows
-#   then this header, the rows, and the six nokia9300 rows below.
-# keys: 108
+#   then this header, the rows, and the thirteen nokia9300 rows below.
+# keys: 115
 0x0001	0xff1b	0xff1b	# Escape
 0x0002	0x0031	0x0021	# 1 exclam
 0x0003	0x0032	0x0040	# 2 at
@@ -122,3 +130,10 @@
 0x0066	0xffcc	0xffcc	# F15 (joystick down)
 0x0067	0xffcd	0xffcd	# F16 (joystick left)
 0x0068	0xffce	0xffce	# F17 (joystick right)
+0x0069	0x00e4	0x00c4	# adiaeresis Adiaeresis (Nordic ä key)
+0x006a	0x00f6	0x00d6	# odiaeresis Odiaeresis (Nordic ö key)
+0x006b	0x00e5	0x00c5	# aring Aring (Nordic å key)
+0x006c	0x00e6	0x00c6	# ae AE (Chr legend on the Nordic ä key)
+0x006d	0x00f8	0x00d8	# oslash Ooblique (Chr legend on the Nordic ö key)
+0x006e	0x20ac	0x20ac	# EuroSign (Nordic Shift+4, UK Chr+4)
+0x0076	0x00a3	0x00a3	# sterling (Nordic Chr+3, UK Shift+3)

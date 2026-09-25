@@ -108,6 +108,23 @@ export const KEYSYM_TO_SCANCODE: Record<number, number> = {
   // F13..F17 (set1 0x64..0x68): the nokia9300 joystick. Only that station's
   // own daemon table (stations/nokia9300/x11test.keysyms) resolves them.
   0xffca: 0x64, 0xffcb: 0x65, 0xffcc: 0x66, 0xffcd: 0x67, 0xffce: 0x68,
+  // ISO_Level3_Shift (AltGr) is the right-Alt key on a PC — the nokia9300's
+  // Chr key (its station table turns 0xE038 back into ISO_Level3_Shift).
+  0xfe03: EXT | 0x38,
+  // Characters a US keyboard has no key for, on set1 F18..F24 (0x69..0x6e,
+  // 0x76): the nokia9300 device drawing types the Nordic legends of the 9300
+  // keyboard with them. Only that station's own daemon table
+  // (stations/nokia9300/x11test.keysyms) resolves them, to the X keysyms its
+  // Xvfb keymap binds; the capitals are the same codes under a held Shift.
+  // Checked BEFORE the Latin-1 → ASCII fallback below, which has no answer
+  // for any of them.
+  0x00e4: 0x69,          // adiaeresis ä (Shift: Ä)
+  0x00f6: 0x6a,          // odiaeresis ö (Shift: Ö)
+  0x00e5: 0x6b,          // aring å (Shift: Å)
+  0x00e6: 0x6c,          // ae æ (Shift: Æ)
+  0x00f8: 0x6d,          // oslash ø (Shift: Ø)
+  0x20ac: 0x6e,          // EuroSign €
+  0x00a3: 0x76,          // sterling £
 };
 
 // ---------------------------------------------------------------------------
