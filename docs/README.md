@@ -116,6 +116,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/netbsd14.md](guests/netbsd14.md) | NetBSD 1.4.1 i386 (1999) — XFree86 3.3 desktop, absolute pointer through the guest's X server (x11warp). |
 | [guests/nextstep.md](guests/nextstep.md) | NeXTSTEP R&D notes — NOT LIVE, install blocked. |
 | [guests/ninefront.md](guests/ninefront.md) | 9front (Plan 9 fork) station — warpd agent on :57793. |
+| [guests/nokia9300.md](guests/nokia9300.md) | Nokia 9300 (Series 80 v2, Symbian OS 7.0s, firmware 5.22) — host-native EKA2L1 fork in a systemd-nspawn sandbox, x11 capture, keyboard only (no pointer), retronet web plane; HIDDEN. |
 | [guests/openbsd.md](guests/openbsd.md) | OpenBSD 7.9 amd64 station — unattended autoinstall over loopback HTTP, fvwm from base Xenocara, usb-tablet InputClass pointer fix. |
 | [guests/os2warp.md](guests/os2warp.md) | OS/2 Warp 4 station (TCG-only; KVM triple-faults). |
 | [guests/os213.md](guests/os213.md) | IBM OS/2 1.30.2 Standard Edition (1990) — Presentation Manager's Desktop Manager shell, host-native TCG on `-machine isapc` (no PCI, no USB); PS/2 relative pointer only, no network (OS/2 1.3 has no bundled TCP/IP stack). |
