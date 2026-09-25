@@ -13,6 +13,7 @@
 mod abr;
 mod artist_ctl;
 mod audio;
+mod auto_reset;
 mod capture;
 mod cert;
 mod clock;
@@ -216,6 +217,8 @@ async fn main() -> Result<()> {
                 proc_match: cfg.idle_pause_proc_match.clone(),
             })
     };
+    // Before the pauser: IdlePauser::new keeps session bookkeeping alive for it.
+    auto_reset::install_from_env(&cfg.tile);
     // IdlePauser::new logs the ON line (it names the mechanism it resolved).
     let pauser = freezer.and_then(|f| {
         idle::IdlePauser::new(
@@ -226,6 +229,9 @@ async fn main() -> Result<()> {
         )
     });
     if pauser.is_none() {
+        if auto_reset::enabled() {
+            eprintln!("[streamhost] auto-reset WILL NOT FIRE: it counts sessions through the idle pauser, which needs a freezer (QEMU, or SH_IDLE_PAUSE_PIDFILE)");
+        }
         eprintln!(
             "[streamhost] idle auto-pause OFF (SH_IDLE_PAUSE_SECS={}{})",
             cfg.idle_pause_secs,

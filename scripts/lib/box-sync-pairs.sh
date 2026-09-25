@@ -452,7 +452,7 @@ box_sync_load_pairs() {
 #
 #   { "darklaunch": "<name>", "owner": "<the tool that wrote it>",
 #     "files": { "<box-absolute path>":
-#                  { "kind": "json-object-keys" | "json-entries",
+#                  { "kind": "json-object-keys" | "json-entries" | "json-tiles-keys",
 #                    "ids": ["row-id", ...] } } }
 #
 # The gate compares the labhost copy WITH THE DECLARED IDS REMOVED against the repo
@@ -463,7 +463,8 @@ box_sync_load_pairs() {
 # stale size-exclusion (a one-way ledger rots).
 #
 # Kinds: json-object-keys removes top-level object keys (serve/tiles.json);
-# json-entries removes doc["entries"] rows by their "id" (gallery-manifest).
+# json-entries removes doc["entries"] rows by their "id" (gallery-manifest);
+# json-tiles-keys removes doc["tiles"] keys (golden-manifest: a rig's Restore row).
 # Declarations on scrub-mode pairs are unsupported and ignored; a declared path
 # that is not a mirror pair has no effect (it hides nothing — the path was
 # never gated). File CONTENTS never travel in this pass — only paths,
@@ -498,7 +499,7 @@ for decl_path in sorted(glob.glob(os.path.join(os.environ["DLDIR"], "*.json"))):
         e["ids"].update(spec.get("ids", []))
 for path, e in sorted(merged.items()):
     names = ",".join(sorted(e["names"]))
-    if len(e["kinds"]) != 1 or e["kinds"] - {"json-object-keys", "json-entries"}:
+    if len(e["kinds"]) != 1 or e["kinds"] - {"json-object-keys", "json-entries", "json-tiles-keys"}:
         print(f"{path}\t{names}\tERROR:unknown or conflicting kind\t0")
         continue
     kind = e["kinds"].pop()
@@ -519,6 +520,14 @@ for path, e in sorted(merged.items()):
         nfound = sum(1 for i in ids if i in doc)
         for i in ids:
             doc.pop(i, None)
+    elif kind == "json-tiles-keys":
+        tiles = doc.get("tiles") if isinstance(doc, dict) else None
+        if not isinstance(tiles, dict):
+            print(f"{path}\t{names}\tERROR:no tiles object\t0")
+            continue
+        nfound = sum(1 for i in ids if i in tiles)
+        for i in ids:
+            tiles.pop(i, None)
     else:
         ents = doc.get("entries") if isinstance(doc, dict) else None
         if not isinstance(ents, list):

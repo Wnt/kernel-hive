@@ -24,6 +24,32 @@
 # MAME's UI keys on, f3 soft-resets the emulated MPF-II — a genuine ROM reboot,
 # beep and all — scroll_lock hands the keyboard back to the guest).
 #
+# IN-PROCESS CONTROL-SOCKET RESET (relaunch mode; nokia9300 is the first user).
+# A station whose emulator is SUPERVISED by its own launcher — an inner loop that
+# relaunches it from the golden whenever it exits — resets by asking the running
+# emulator to exit. The daemon keeps streaming the same display the whole time,
+# so the visitor's stream never drops (a service restart would drop it). The
+# station says so in station.env:
+#   SH_RESET_CTL_SOCK=<path>   a line-protocol control socket: one greeting line
+#                              on connect, one command line in, one `OK …`/`ERR …`
+#                              line out (EKA2L1's ekactl/1). Relative = to the
+#                              station dir, so rig and production share the line.
+#   SH_RESET_CTL_VERB=<verb>   the command that ends the emulator (`quit`).
+#   SH_RESET_CTL_MARK=<path>   optional: touched before the verb and removed if
+#                              it fails, so the supervisor can tell a requested
+#                              exit from a crash — EKA2L1 answers `quit` with
+#                              `OK bye` and then segfaults on its way out (rc 139,
+#                              measured 2026-09-25), which the inner loop would
+#                              otherwise count toward its crash back-off.
+# Success waits until the relaunched emulator answers `ping` on a fresh socket.
+#
+# DARK-LAUNCHED RIGS. A golden-manifest row may carry `stationPath` (the rig's
+# station dir, under /data/vms/) and `stationEnv` (its env file; rigs call it
+# stream.env). `scripts/dev/darklaunch-station.py publish --reset` writes that
+# row, so the Restore button reaches a rig that has no streamhost@ unit. A row
+# with a stationPath NEVER falls back to `systemctl restart streamhost@…`: that
+# would start the production unit of a station that is not deployed.
+#
 # Exit 0 on success; prints one status line. Local QEMU kill is by pidfile only
 # (inside qemu-streamhost.sh); PVE rollback is limited to the registry VMID.
 # ============================================================================
@@ -43,14 +69,15 @@ if [ ! -f "$MANIFEST" ]; then
 fi
 
 # Pull this station's fields out of the manifest with python3 (always present here).
-read -r TILEDIR RESETMODE SNAP PVE_VMID POSTKEYS < <(
+read -r TILEDIR RESETMODE SNAP PVE_VMID POSTKEYS STATIONPATH STATIONENV < <(
   python3 - "$MANIFEST" "$OSID" <<'PY'
 import json,sys
 m=json.load(open(sys.argv[1]))["tiles"]
 t=m.get(sys.argv[2])
-if not t: print("__MISSING__ __ __ __ -"); sys.exit(0)
+if not t: print("__MISSING__ __ __ __ - - -"); sys.exit(0)
 keys=",".join(t.get("postRestoreKeys") or []) or "-"
-print(t["stationDir"], t["resetMode"], t.get("snapshot") or "-", t.get("pveVmid") or "-", keys)
+print(t["stationDir"], t["resetMode"], t.get("snapshot") or "-", t.get("pveVmid") or "-", keys,
+      t.get("stationPath") or "-", t.get("stationEnv") or "-")
 PY
 )
 
@@ -60,7 +87,74 @@ if [ "$TILEDIR" = "__MISSING__" ]; then
 fi
 
 TDIR="$TILES_ROOT/$TILEDIR"
+RIG=0
+if [ "$STATIONPATH" != "-" ]; then
+  case "$STATIONPATH" in
+    /data/vms/*) ;;
+    *)
+      echo "reset $OSID: FAIL (stationPath '$STATIONPATH' is not under /data/vms/)" >&2
+      exit 4
+      ;;
+  esac
+  TDIR="$STATIONPATH"
+  RIG=1
+fi
+ENVF="$TDIR/station.env"
+[ "$STATIONENV" = "-" ] || ENVF="$STATIONENV"
 SOCK="$TDIR/qmp.sock"
+
+envval() { sed -n "s/^$1=//p" "$ENVF" 2>/dev/null | tail -1; }
+
+# ctl_reset <sock> <verb> [proc-match] [mark]: the in-process reset described in the
+# header. Prints the one-line detail; non-zero on any failure (the caller falls
+# back). A SIGSTOPped emulator (idle-paused) would never answer, so it is
+# resumed first, exactly as labctl does before it drives a paused guest.
+ctl_reset() {
+  local epid state
+  epid="$(cat "$TDIR/mame.pid" 2>/dev/null || true)"
+  state="$(awk '{print $3}' "/proc/${epid:-0}/stat" 2>/dev/null || true)"
+  if [ "$state" = T ] && { [ -z "${3:-}" ] || tr '\0' ' ' <"/proc/$epid/cmdline" | grep -qF -- "$3"; }; then
+    kill -CONT "$epid" 2>/dev/null || true
+  fi
+  [ -z "${4:-}" ] || : >"$4"
+  python3 - "$1" "$2" <<'PY'
+import socket, sys, time
+path, verb = sys.argv[1], sys.argv[2]
+def talk(cmd, timeout=10):
+    s = socket.socket(socket.AF_UNIX); s.settimeout(timeout); s.connect(path)
+    f = s.makefile("rwb"); f.readline()
+    f.write((cmd + "\n").encode()); f.flush()
+    reply = f.readline().decode().strip(); s.close()
+    return reply
+t0 = time.time()
+try:
+    r = talk(verb)
+except OSError as e:
+    print(f"ctl {verb}: {e}"); sys.exit(1)
+if not r.startswith("OK"):
+    print(f"ctl {verb}: {r or 'no reply'}"); sys.exit(1)
+gone = False
+while time.time() - t0 < 15:          # the old process lets go of the socket
+    try:
+        talk("ping", 2)
+    except OSError:
+        gone = True; break
+    time.sleep(0.1)
+if not gone:
+    print(f"ctl {verb}: acked but the emulator still answers after 15 s"); sys.exit(1)
+while time.time() - t0 < 60:          # the supervisor's relaunch answers
+    try:
+        if talk("ping", 2).startswith("OK"):
+            print(f"ctl {verb}, relaunched from the golden in {time.time() - t0:.1f} s"); sys.exit(0)
+    except OSError:
+        pass
+    time.sleep(0.2)
+print(f"ctl {verb}: the emulator exited but no relaunch answered within 60 s"); sys.exit(1)
+PY
+  local rc=$?
+  [ "$rc" = 0 ] || [ -z "${4:-}" ] || rm -f "$4"
+  return "$rc"
+}
 
 qmp_loadvm() {
   # human-monitor-command loadvm <snap> over the QMP unix socket. HMP loadvm
@@ -135,7 +229,7 @@ case "$RESETMODE" in
     GHID_PID=""
     GHID_SOCK="$TDIR/gallery-hid.sock"
     if [ "$TILEDIR" = "solaris" ] &&
-      grep -q '^SH_INPUT_BACKEND=gallery-hid$' "$TDIR/station.env" 2>/dev/null; then
+      grep -q '^SH_INPUT_BACKEND=gallery-hid$' "$ENVF" 2>/dev/null; then
       GHID_PID="$(systemctl show -p MainPID --value "streamhost@${TILEDIR}.service" 2>/dev/null)"
       case "$GHID_PID" in
         '' | 0 | *[!0-9]*)
@@ -185,7 +279,7 @@ case "$RESETMODE" in
       # dead-reckoning model. SIGUSR2 = "guest state replaced" -> the bridge
       # re-homes on the next motion (streamhost rel_bridge.rs; the daemon only
       # listens when SH_REL_HOME_ON includes `reset`). Best effort, never fatal.
-      if grep -q '^SH_INPUT_BACKEND=dbus-rel$' "$TDIR/station.env" 2>/dev/null; then
+      if grep -q '^SH_INPUT_BACKEND=dbus-rel$' "$ENVF" 2>/dev/null; then
         REL_PID="$(systemctl show -p MainPID --value "streamhost@${TILEDIR}.service" 2>/dev/null)"
         case "$REL_PID" in
           '' | 0 | *[!0-9]*) ;;
@@ -233,11 +327,23 @@ case "$RESETMODE" in
     # state in full, so the service restart is correct where the fast path is
     # not. Costs ~16 s instead of ~0.4 s; correctness wins. Delete the opt-out
     # when the driver repaints after a restore, not before.
-    if [ -f "$TDIR/station.env" ]; then
-      CTL="$(sed -n 's/^SH_MAMECTL_SOCK=//p' "$TDIR/station.env" | tail -1)"
-      DRV="$(sed -n 's/^MAME_NATIVE_DRIVER=//p' "$TDIR/station.env" | tail -1)"
-      CKPT="$(sed -n 's/^MAME_NATIVE_CHECKPOINT=//p' "$TDIR/station.env" | tail -1)"
-      INPROC="$(sed -n 's/^SH_MAME_RESET_INPROCESS=//p' "$TDIR/station.env" | tail -1)"
+    if [ -f "$ENVF" ]; then
+      RSOCK="$(envval SH_RESET_CTL_SOCK)"
+      RVERB="$(envval SH_RESET_CTL_VERB)"
+      if [ -n "$RSOCK" ] && [ -n "$RVERB" ]; then
+        case "$RSOCK" in /*) ;; *) RSOCK="$TDIR/$RSOCK" ;; esac
+        RMARK="$(envval SH_RESET_CTL_MARK)"
+        case "$RMARK" in '' | /*) ;; *) RMARK="$TDIR/$RMARK" ;; esac
+        if [ -S "$RSOCK" ] && OUT="$(ctl_reset "$RSOCK" "$RVERB" "$(envval SH_IDLE_PAUSE_PROC_MATCH)" "$RMARK" 2>&1)"; then
+          echo "reset $OSID: OK ($OUT on $TILEDIR, in-process; the stream stays up)"
+          exit 0
+        fi
+        echo "reset $OSID: in-process ctl reset failed on $TILEDIR (${OUT:-no socket at $RSOCK})" >&2
+      fi
+      CTL="$(envval SH_MAMECTL_SOCK)"
+      DRV="$(envval MAME_NATIVE_DRIVER)"
+      CKPT="$(envval MAME_NATIVE_CHECKPOINT)"
+      INPROC="$(envval SH_MAME_RESET_INPROCESS)"
       EPID="$(cat "$TDIR/mame.pid" 2>/dev/null || true)"
       ESTATE="$(awk '{print $3}' "/proc/${EPID:-0}/stat" 2>/dev/null || true)"
       # THE SAME FAST PATH FOR A NON-MAME mamectl STATION. Every condition
@@ -260,7 +366,7 @@ case "$RESETMODE" in
       # this station's frame publisher republishes a whole frame
       # unconditionally after every restore (Iris fork, `shmpub` FBSYNC hook),
       # which is the fix domainos's driver lacks.
-      KHCP="$(sed -n 's/^SH_RESET_INPROCESS_CHECKPOINT=//p' "$TDIR/station.env" | tail -1)"
+      KHCP="$(envval SH_RESET_INPROCESS_CHECKPOINT)"
       if [ "${INPROC:-1}" != 0 ] && [ -n "$KHCP" ] && [ -S "${CTL:-/nonexistent}" ] &&
         [ -f /root/mctl.py ] && [ -n "$ESTATE" ] && [ "$ESTATE" != T ] && [ "$ESTATE" != t ]; then
         if OUT="$(python3 /root/mctl.py "$CTL" --timeout 60 LOADST "$KHCP" 2>&1)"; then
@@ -292,6 +398,10 @@ case "$RESETMODE" in
     # Restarting the service re-maps it. (Observed 2026-08-04 after a boot-watchdog
     # relaunch: station streamed black while labctl shot, which opens the file by
     # path, showed a live desktop.)
+    if [ "$RIG" = 1 ]; then
+      echo "reset $OSID: FAIL (dark-launched rig at $TDIR: no in-process reset answered, and a rig has no streamhost@ unit to restart)" >&2
+      exit 5
+    fi
     systemctl restart "streamhost@${TILEDIR}.service" >/dev/null 2>&1 || {
       echo "reset $OSID: FAIL (cold service restart)" >&2
       exit 5

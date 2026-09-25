@@ -1363,7 +1363,7 @@ emit mvs38 \
 
 # nokia9300 (VMID 219) — host-native EKA2L1 (Wnt/EKA2L1 fork) running the Nokia 9300's own firmware
 # (Symbian OS 7.0s, Series 80 v2) inside a pinned 1280x400 Xvfb whose root is the 640x200 inner screen at
-# 2x; keyboard only over XTEST; reset = relaunch from the golden data dir (~4 s).
+# 2x; keyboard only over XTEST; reset = ekactl quit, relaunch from the golden data dir (~2 s).
 emit nokia9300 \
   --tile nokia9300 --udp 54219 --x11 --x11-display :119 --capture x11 \
   --pointer none --input-backend x11test --audio off --fps 25 \

@@ -184,13 +184,35 @@ as their own keysyms and the fork types the 9300 key that produces them.
 
 ## Boot and reset
 
-`resetMode: relaunch` — kill the container, a fresh golden copy, cold start of
-Desk: 6 s from launcher start to a placed Desk on the box (2026-09-25). Right
-after a relaunch the live C: equals the golden except what the ROM writes in its
-first second (ECom plugin cache, `sms_settings.dat`); B2's in-process `reset`
-does not restore C:, so the station never uses it. EKA2L1 has no save state on
-this path and the nspawn CRIU route is blocked by the sandbox's seccomp filter.
-`bootrec-tiles.conf` is not armed.
+`resetMode: relaunch`, **in-process**. The gallery's Restore button
+(`POST /restore/nokia9300` → `reset-tile.sh`) sends `quit` on EKA2L1's ekactl/1
+socket (`SH_RESET_CTL_SOCK=work/run/ekactl.sock`, `SH_RESET_CTL_VERB=quit`).
+EKA2L1 exits 0 and the container's inner loop copies the golden data dir fresh
+and cold-starts Desk: ~2 s to the relaunched socket, Desk painted a second or two
+later. The daemon and the X display never stop, so the visitor's stream does not
+reconnect. An exit with rc 0 is never counted toward the inner loop's crash
+back-off. A restart of `streamhost@nokia9300` (kill the container, 6 s
+launcher-to-Desk) is only the fallback when the socket does not answer.
+
+Right after a relaunch the live C: equals the golden except what the ROM writes
+in its first second (ECom plugin cache, `sms_settings.dat`). B2's in-process
+`reset` verb does not restore C:, so the station never uses it. EKA2L1 has no
+save state on this path, and the sandbox's seccomp filter blocks the nspawn CRIU
+route. `bootrec-tiles.conf` is not armed.
+
+**Auto-reset** (streamhost `auto_reset.rs`). The daemon runs the same
+`reset-tile.sh` 30 s after the last visitor leaves, or after 10 min with no
+input (`SH_AUTO_RESET_*`), but only if the guest saw input since the last reset.
+State rots quickly otherwise. Agent U1 measured one 23-minute session:
+
+- twelve apps piled up;
+- RSS grew from 309 to 565 MB;
+- focus drifted away from the painted screen;
+- a dozen app switches later, EKA2L1 segfaulted.
+
+A dark-launched rig reaches the same path through
+`darklaunch-station.py publish nokia9300 --rig DIR --entry FILE --reset`, which
+overlays a golden-manifest row pointing `reset-tile.sh` at the rig.
 
 ## Period software
 

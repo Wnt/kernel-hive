@@ -256,6 +256,9 @@ while :; do
     continue
   }
   [ -f /work/emulator.log ] && mv -f /work/emulator.log /work/emulator.log.1
+  # EKA2L1 truncates its --log-file at start: keep the previous run's (a crash's
+  # panic lines are otherwise gone the moment the loop relaunches).
+  [ -f /work/eka2l1.log ] && mv -f /work/eka2l1.log /work/eka2l1.log.1
   : >/work/.placing
   t0="$(date +%s)"
   "$BIN" --device "$DEVICE" --run "$APP" "${EXTRA[@]}" >/work/emulator.log 2>&1 &
@@ -293,6 +296,20 @@ while :; do
   rc=$?
   EPID=""
   up=$(($(date +%s) - t0))
+  if [ -e /work/reset-requested ] || [ "$rc" = 0 ]; then
+    # A RESET, not a crash: reset-tile.sh (the Restore button, the daemon's
+    # auto-reset) touches /work/reset-requested (SH_RESET_CTL_MARK) and sends
+    # `ekactl quit`. EKA2L1 acks `OK bye` and then usually segfaults on the way
+    # out (rc 139, measured 2026-09-25), so the exit code cannot tell a reset
+    # from a crash; the marker does. Relaunch at once and never count it toward
+    # the back-off, or three quick Restore presses would earn a visitor 60 s of
+    # black.
+    rm -f /work/reset-requested
+    log "EKA2L1 quit for a reset (rc=$rc after ${up} s) — relaunching from the golden"
+    fast=0
+    sleep 0.3
+    continue
+  fi
   log "EKA2L1 exited rc=$rc after ${up} s — relaunching from the golden"
   tail -5 /work/emulator.log 2>/dev/null
   if [ "$up" -lt 20 ]; then fast=$((fast + 1)); else fast=0; fi
