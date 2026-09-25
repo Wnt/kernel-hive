@@ -163,7 +163,7 @@
       "Web"
     ],
     "blurb": "A Nokia 9300 Communicator running its own firmware: closed it is a phone, opened it is a 640x200 landscape screen over a full QWERTY keyboard, with four command buttons beside the screen whose labels change with the application. Symbian OS 7.0s with the Series 80 v2 interface, firmware 5.22 (November 2005). The firmware's own window server (ewsrv.exe) draws every pixel of the screen.",
-    "notes": "Dark-launched streamhost station, HOST-NATIVE and CONTAINED: EKA2L1 (our fork of the Symbian emulator, GPL-3) runs the RAE-6 firmware on the full ROM stack (EKA2L1_ROM_WSERV=1 + EKA2L1_ROM_FBS=1: the ROM's own window server, font and bitmap server and Eikon) inside a systemd-nspawn sandbox with an Xvfb of its own; the daemon captures the X root and types over XTEST. The Qt window is placed so the 1280x400 root is the 640x200 screen at exactly 2x. The golden adds C:\\System\\Programs\\SysState.exe, the resident state publisher the ROM window server starts. Reset = relaunch from a pristine copy of the device data dir (ROM, Z: tree, C: drive). See docs/guests/nokia9300.md."
+    "notes": "Live streamhost station, HOST-NATIVE and CONTAINED: EKA2L1 (our fork of the Symbian emulator, GPL-3) runs the RAE-6 firmware on the full ROM stack (EKA2L1_ROM_WSERV=1 + EKA2L1_ROM_FBS=1: the ROM's own window server, font and bitmap server and Eikon) inside a systemd-nspawn sandbox with an Xvfb of its own; the daemon captures the X root and types over XTEST. The Qt window is placed so the 1280x400 root is the 640x200 screen at exactly 2x. The golden adds C:\\System\\Programs\\SysState.exe, the resident state publisher the ROM window server starts. Reset = relaunch from a pristine copy of the device data dir (ROM, Z: tree, C: drive). See docs/guests/nokia9300.md."
   },
   "emulator": {
     "family": "EKA2L1",
@@ -200,10 +200,5 @@
   "notes": [
     "Scaffolded from lisa on 2026-09-24 by agent D2 (Opus 5.5): host-native EKA2L1 under nspawn + Xvfb, x11 capture, XTEST keys only, 2x integer scale with the Qt window placed so the root is the 640x200 screen.",
     "2026-09-25, agent S1 (Opus 5.5), operator decision 28: switched to the full ROM stack (s80-integration @ 0dd7cab29, EKA2L1_ROM_WSERV=1 + EKA2L1_ROM_FBS=1, golden v3.1 + the SysState helper) and decommissioned the nokia9300rom comparison sibling; the HLE-only e7198fd8c build is kept as assets/nokia9300/eka2l1.prev for rollback."
-  ],
-  "listing": {
-    "state": "hidden",
-    "since": "2026-09-24",
-    "reason": "Dark launch: the full ROM stack is live (the firmware's own window server, font and bitmap server and Eikon paint Desk, Documents, Sheet, Web and the Control panel in the EKA2L1 fork; keys and Restore framebuffer-proven 2026-09-25). The operator lists it when satisfied with a visitor-style audit; watch it at /os/nokia9300 and promote by dropping this block."
-  }
+  ]
 }
