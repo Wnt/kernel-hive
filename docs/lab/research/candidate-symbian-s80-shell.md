@@ -843,12 +843,16 @@ Date field's calendar popup, and Telephone's search row surviving a
 Menu open/close. **Not reproduced on the current head** (so either
 already fixed by an earlier merge, or were misdiagnosed originally):
 Office's double-highlight and Documents' half-drawn lines from an
-earlier audit. **Still open:** Recent calls' dialog paints past the
-200px screen bottom (a layout issue, not repaint); Sheet's cell font
-choice is nondeterministic between runs on identical binaries
-(pre-existing, unrelated); a list's focused row misses about 1px of
-its bottom border for roughly 3/4 of its width right after a dialog
-closes (minor, cosmetic).
+earlier audit. Sheet's cell font choice being nondeterministic between
+runs — noted "pre-existing, unrelated" at the time of this fix — was
+later found and fixed by agent G2 during the Sheet-repaint audit
+(`TypefaceSupport`/`FontHeightInTwips` answers were built from
+unfilled metrics; fonts now load and answer deterministically — see
+"Draw modes and masked blits" below). **Still open:** Recent calls'
+dialog paints past the 200px screen bottom (a layout issue, not
+repaint); a list's focused row misses about 1px of its bottom border
+for roughly 3/4 of its width right after a dialog closes (minor,
+cosmetic).
 
 **The pane clock now follows the 12-hour locale setting.** The clock
 format was hard-coded 24-hour and never read `TLocale::TimeFormat`.
@@ -871,20 +875,21 @@ command fix, §H3 above) and no longer recreated on this head — was
 flagged for deletion from the golden and **has been removed**: golden
 v3.1 (the current live golden) is golden v3 minus this file.
 
-**C6 — the cursor sitting at the far right of an empty text field
-remains OPEN**, now with evidence and a theory. In Web's "Go to
-address" dialog, the guest itself sends `SetTextCursor` at an x
-position about 250px too far right for the field's empty state (after
-typing `abc` the positions are correct: 16/22/28; after erasing, the
-position correctly returns to 10, the true left edge) — so the empty
-paragraph's **first** FORM/TAGMA layout is the one that's wrong, not
-the server's cursor placement, which faithfully draws wherever it's
-told. Theory: a stale layout band survives from before the dialog laid
-the control out, or the empty paragraph's first-layout font
-measurement (paragraph-delimiter width, or `MaxNormalCharWidth`) is
-inflated in our FBS. Next cheap step: log every FBS text-measure call
-made while the dialog opens and compare it against the calls made
-after an edit clears the field.
+**C6 — the cursor sitting at the far right of an empty text field —
+FIXED, and it was never a caret bug (agent C3).** The field-first-
+layout theory below did not hold. Root cause: the fields were not
+actually empty — Web's "Go to address" opens holding the whole URL
+pre-selected, Save as opens holding the default name pre-selected, and
+Messaging's To: field holds a rejected recipient pre-selected after
+Send. FORM inverts a selection with `SetDrawMode(EDrawModeXOR)` plus a
+white `DrawRect` over the text; with `SetDrawMode` a no-op (the same
+root cause behind the Sheet and Insert-function defects above), the
+white rect painted opaque over the selected text, and the cursor at
+the far right was correctly sitting at the end of the now-invisible
+selection. Fixed by G1's `SetDrawMode` core, with no font or metric
+change needed — see "Draw modes and masked blits" below for the full
+fix and its cross-reference to the other defects it also closed. A
+truly empty field now puts the caret at the left edge, as expected.
 
 ## Commits on `fork/s80-shell` (all small, cherry-pickable)
 
@@ -1041,64 +1046,205 @@ chain, would be needed to get a real post-`Start` Opera trace from this
 oracle. (This is the same "Connecting… → silent fail → re-prompt" cycle the
 main document's network detail records as still untested on EKA2L1 itself.)
 
-## Draw modes and masked blits — the operator's live-demo defects (agents G1, G2, IN PROGRESS, not resolved)
+## Draw modes and masked blits — the operator's live-demo defects, ALL RESOLVED (agents G1, G2, G3, C3; merged by I7 onto `s80-integration` @ `b1fec4a28`; deployed by D2)
 
 The operator's own live demo of the (by then live) station on
-2026-09-25 (15:12–15:17 UTC, phone/touch) found three rendering
-defects distinct from everything above. Two agents are racing them
-from I5's integration tree; **neither is finished as of this fold** —
-record leads and partial fixes only, do not mark either defect closed.
+2026-09-25 (15:12–17:2x UTC, phone/touch) found five rendering defects
+distinct from everything above. All five are fixed, merged and
+deployed to the live station; this section replaces the earlier "IN
+PROGRESS" draft with the finished root causes. The method throughout:
+reproduce from the operator's own recorded input (the SPA's key
+recorder, `input.txt`, replayed at 2-second frame cadence) and confirm
+the fix against the operator's exact key sequence, not a hand-written
+repro — see "The operator's demo as the fidelity method" below.
 
-**1. Insert function's black field and black scroll bar.** The
-focused category-list text area in Documents/Sheet's Insert-function
-dialog paints entirely solid black (the highlighted text must stay
-legible — inverted or hatched on a real device, not opaque), and the
-choice list's own scroll bar also paints solid black instead of
-rendering correctly. Agent G1's tracing: these are **not** a
-`SetDrawMode` bug — they are **masked blits** (window-server GC op 50,
-`BitBltMasked`) of specific bitmaps: the field highlight (136×22,
-handles `0x396`/`0x397`) and the scroll bar (handles `0x171`–`0x17b`).
-The likely cause is a gap in A1's earlier 12-bit (EColor4K) icon-mask
-fix — probably an **inverted-mask** case that fix didn't cover.
-**This is believed to be the same underlying defect as the thick black
-bar under a new contact's name in Contacts' New-card detail pane**
-(agent A5's open item, above) — both are masked-blit rendering
-failures on the same code path, not yet confirmed to share one exact
-fix but strongly suspected to.
+**1. Insert function's black field and black scroll bar — FIXED
+(agent G1, branch `s80-draw-modes` @ `69689851f`).** Not a `SetDrawMode`
+bug: these are **masked blits** (window-server GC op 50,
+`BitBltMasked`) issued after `SetBrushStyle(ESolidBrush)` +
+`SetBrushColor(white)`. Two independent root causes, both frame-proven
+against the operator's own key sequence (Right, Enter, Right, Enter,
+F2, Enter): **(a)** blit textures were not being uploaded atomically —
+`BitBltMasked` filled with the brush instead of respecting the mask,
+painting the field and scroll bar solid; fixed so masked blits upload
+their texture at once and fill only what the mask leaves. **(b)** a
+redraw of a window with **no background** previously cleared what it
+did not explicitly paint, erasing content a covering child had left in
+place; fixed so such a redraw now keeps what it does not paint. **(b)
+is the same root cause as the thick black bar under a new contact's
+name in Contacts' New-card detail pane** (agent A5's earlier open
+item) — confirmed the same fix, not just suspected: both are gone in
+the same commit's frame proof.
 
-**2. Sheet's stale cell focus highlight.** A cell (e.g. B1) keeps its
-highlight even after focus has visibly moved to another cell (e.g.
-C1), so two cells appear highlighted at once. Agent G2 traced the root
-cause: `graphic_context::set_draw_mode` was a **no-op** on our head.
-Sheet erases its own cursor by drawing with `SetDrawMode(1 =
-EDrawModeNOTSCREEN)` plus a `DrawRect`, expecting the erase-XOR idiom
-to cancel the previous draw — with `SetDrawMode` doing nothing, the
-"erase" just painted the highlight again instead of removing it.
-**Partly fixed** by agent G1's core commit (branch `s80-draw-modes` @
-`50749b655`, base `17801342f`, one commit): `SetDrawMode`'s
-NOTSCREEN/XOR/NOTXOR/AND/OR/NOT variants and NOTPEN are now
-implemented as blend passes in the window-server's stored-command
-store (`gstore`), for rect fill+outline, line, plot and Clear
-(`ekatests`: 306, green). This fixes Sheet's cursor being properly
-erased on a move. **Still open** (owned by G2): a remaining 1px
-discrepancy where our `DrawRect` does a separate fill plus a 1px
-outline, where the device instead draws one solid 3px box — a
-`CFbsBitGc` `DrawRect` semantics gap, not a draw-mode gap.
+**2. Sheet's stale cell focus highlight — FIXED, four causes in
+series (agent G2, branch `s80-sheet-repaint` @ `28fcc585d`, on G1's
+`SetDrawMode` core `50749b655`).** A GC trace of the operator's own
+key sequence showed Sheet drawing **and erasing** its cursor in one
+window with `SetDrawMode(1 = EDrawModeNOTSCREEN)`, a solid brush and
+the default pen, each draw a set of bars (3px verticals, 1px top, 3px
+bottom). Four causes, found and fixed in order:
+   1. **`set_draw_mode` was a no-op** (the same root as defect 1's
+      GC-op-50 fix does *not* cover this — `set_draw_mode` itself is a
+      separate window-server entry point). Every "erase" painted
+      instead of inverting. Fixed by G1's core commit: NOTSCREEN, XOR,
+      NOTXOR, AND, OR, NOT-variants and NOTPEN are now blend passes in
+      the window server's stored-command store (`gstore`), bracketing
+      rect fill+outline, line, plot and Clear.
+   2. **`DrawRect` painted its edge pixels twice.** It filled the
+      whole rectangle, then drew a closed polyline one pixel past the
+      right and bottom edges — under NOTSCREEN a 3px bar came out as
+      two separate 1px lines (the demo's "double frame"). Fixed with
+      `gdi_split_rect_outline()`, following `CFbsBitGc`: the brush
+      fills only what the pen leaves, and the pen is four
+      non-overlapping edge bands (half outside the edge, half inside);
+      the border now stays inside the rectangle, matching Symbian.
+   3. **The redraw store replayed every stored segment unclipped** on
+      a full recomposite, so a segment a later redraw had superseded
+      painted again underneath it — with the cursor inside both, the
+      pixels inverted twice and the next erase left a 1px remnant line.
+      Fixed: each segment now replays clipped to the region where it
+      is still valid.
+   4. **An aged-out segment was dropped without a repaint**, on the
+      no-redraw-storing path Symbian 7.0s runs: `clean_old_nonredraw_
+      segments` dropped segments older than 2s without invalidating,
+      so a cursor *draw* could vanish while its later *erase* stayed,
+      painting a ghost frame. Fixed: a dropped segment now invalidates
+      its window, so the client repaints the grid and the cursor at
+      its real position.
+   Also fixed in the same pass: the formula bar's own frame (its axis-
+   aligned border lines were drawn through integer coordinates that a
+   naive line rasterizer could leave unlit at x=0/y=0 — fixed with
+   `gdi_axis_line_rect`, an exact pen-dot rectangle for a solid
+   axis-aligned line) and the Sheet cell font changing between runs
+   (found during the audit: `TypefaceSupport`/`FontHeightInTwips`
+   answers were built from uninitialised/unfilled metrics, so
+   available-font order was nondeterministic; fixed to follow FNTSTORE
+   — bitmap typefaces first in load order, then Open Font typefaces by
+   name — now deterministic: SwissA 10pt every run on the station
+   golden).
 
-**3. Sheet's point-reference formula mode.** Building a formula by
-pointing at cells (e.g. after typing `=sum(`) never writes the pointed
-cell's coordinates (e.g. "A1") into the formula bar — it stays
-literally `=sum(` with nothing appended, and the stale-highlight bug
-above (item 2) shows up here too. The coordinator also observed the
-formula bar's own glyphs rendering at roughly half the size of the
-name box and cell text, with the caret floating visibly detached to
-the right of `=sum(` rather than sitting at the true insertion point.
-**Open, owned by G2**, not yet fixed; no root cause identified for the
-coordinate-insertion failure or the glyph-size/caret-position issues
-specifically (as distinct from the stale-highlight mechanism above).
+**3. Sheet's point-reference formula mode — FIXED, two causes, not a
+TrueType atlas bug (agent G2).** The pointed cell's coordinates (e.g.
+"A1") *were* being drawn into the formula bar; they were then wiped by
+an **`EDrawModeXOR` selection rectangle** drawn over them (same
+`set_draw_mode` no-op as defect 2's cause 1 — G1's core fixes it too).
+The formula bar's glyphs rendering at roughly half size was a separate
+bug: the formula edwin asks for System at 176 twips, which is 18px on
+the 9300 (176 × 200 / 1956 = 17.99), but `get_nearest_font` **truncated**
+that to 17px, and the nearest bitmap System face at-or-below 17px is
+bold 16 — a visibly smaller, bolder face than the 20px name box. Fixed:
+`twips_to_pixels()` now rounds with the 9780-per-mille ratio FNTSTORE's
+own `VerticalTwipsToPixels` uses, on epoc7 only — the formula bar now
+gets System 18 regular, matching the device reference. This is a GDR
+bitmap face, not a TrueType one, so it is unrelated to defect 5's atlas
+fix below (confirmed: merging both together left the formula bar
+identical, only the Sheet cell text — TrueType — changed size).
 
-**Ownership, as split by the coordinator:** G1 owns the `SetDrawMode`
-core (pushed as an early standalone commit others can build on) and is
-continuing the masked-blit trace; G2 owns `CFbsBitGc DrawRect`
-semantics, the formula bar, and the Sheet-vs-real-device audit,
-rebasing on G1's commit.
+**4. Documents › Save as → "System / Unknown error" — FIXED (agent
+G3, branch `s80-documents-saveas` @ `f16c5cc57`).** The IPC log of the
+Save-as keypress showed AppListServer connect, op 0, op 2, then **op
+16** (`EAppListServAppIconByUid`, `RApaLsSession::GetAppIcon`) —
+Series 80's file-name dialog walks the whole app list and asks for
+**icon 0 of every app** for its document-type icons, before it can
+construct. The HLE AppListServer answered op 16 with "unimplemented
+opcode" → `KErrNotSupported`, so the dialog's construction failed
+before anything drew and Documents raised the generic error note.
+Fixed: `applist_server::get_app_icon_by_uid` reads the argument as an
+icon-list index the way `CApaAppData::Icon(TInt)` does in the real
+7.0s server (a value past the list is taken as a requested pixel size
+and picked by nearest match, like the existing op 28); unknown app or
+no icon returns `KErrNotFound`. The real **Save as** dialog now opens
+(My files, name field, Document, CBA OK/Browse/Change format/Cancel),
+and typing a name + OK writes the document under the new name.
+
+**5. The caret drawing on top of the last typed letter instead of
+after it — FIXED (agent G3, `097d5f5a4`).** Only reproducible with
+**TrueType text** — the station's golden carries SwissA TTFs in `Z:`,
+which earlier rigs' goldens lacked, so earlier proofs (bitmap System
+only) never hit this. Repro: type `hello` in Documents, then force any
+redraw of that text (Format › Font + Esc is enough). The guest itself
+measures and places the cursor correctly (`SetTextCursor` at x=47 for
+`hello` in SwissA h20). The bug was in the **replay** path: a stored
+`DrawText` command re-rasterized the run through the window server's
+own glyph atlas (`gstore`), which built a vectorizable font's atlas at
+`font_height_in_pixels()` — for scalable adapters, FreeType's **line
+height** (em + line gap) — not the pixel size FBS actually handed the
+guest (`metric_identifier`). So the replayed run came out larger and
+about 8px wider than the guest's own layout, and the caret (still at
+the guest's x=79) landed visually on the "o". Fixed two ways: (a) the
+atlas now builds a vectorizable font at `metric_identifier × scale`,
+matching what FBS gave the guest; (b) the atlas additionally records
+the **advance FBS handed the guest per character** and steps the pen
+by that recorded advance (scaled), so re-hinting or rounding in the
+rasterizer can never drift a replayed run off the guest's own layout.
+Bitmap (GDR) fonts are unchanged — this bug is specific to vectorizable
+fonts, i.e. TrueType, which is why it never showed on a bitmap-only
+golden.
+
+**Sibling bugs found and fixed on the way (agent C3, branch
+`s80-text-fields` @ `a80f93383`), same root cause pattern:**
+- **"Caret at the far right of an empty field" (item C6, previously
+  open) — FIXED, and it was never a caret bug.** The fields were not
+  actually empty: Web's "Go to address", Save as's default name
+  "hello", and the rejected recipient in Messaging's To: field each
+  open with their **whole text pre-selected**. FORM inverts a
+  selection the same way Sheet erases its cursor —
+  `SetDrawMode(EDrawModeXOR)` plus a white `DrawRect` over the text —
+  so with `SetDrawMode` a no-op, the white rect painted opaque over the
+  selected text, and the caret at the far right was correctly sitting
+  at the end of the (now invisible) selected text. G1's draw-mode core
+  fixes this with no font or metric change needed; a truly empty field
+  puts the caret at the left edge, as expected.
+- **The font-object leak in `get_nearest_font` — FIXED.** A request
+  for `'System' h15` resolves to the 10px bitmap face (the golden's
+  `linda.gdr` has no 15px System), but the reuse loop compared the
+  *requested* height against the *held object's design* height — a
+  miss every time, so every identical request allocated a new FBS font
+  object (16 requests → 16 objects, measured). Fixed: a bitmap
+  typeface now reuses the object made for the same bitmap
+  (`metric_identifier`); a scalable face keeps ±1px slack; both also
+  require matching adapter/face/style bits. Same 16 requests now map
+  to 1 object; no visible change (pixel-diffed against the prior head,
+  frame by frame).
+- **Documents' View menu repaint leftover — FIXED, three causes.** An
+  aged-out segment (the same aging mechanism as Sheet's defect-2 cause
+  4, independently discovered) brought a stale menu-item highlight
+  back; without redraw storing, an aged non-redraw segment is now kept
+  (`superseded_`) and replayed, with one invalidation, instead of
+  silently erased. The menu bar separately lost its "File" title when
+  the highlight moved to Edit: the visible-region walk now invalidates
+  the part of a redraw window that a moving sibling window stops
+  covering. And a relayed defect from worker I7's own proof — column
+  E's right border missing in exactly one Sheet row per run — turned
+  out to be `clip_bitmap_region` silently keeping the *previous* clip
+  in force when a replay's clip region came out empty; an empty clip
+  now correctly draws nowhere.
+
+**Integration (agent I7):** all four branches (`s80-documents-saveas`,
+`s80-draw-modes` core + final, `s80-sheet-repaint`) merged cleanly onto
+`s80-integration` @ `4ef4b2fb6` → `b1fec4a28`, proven on the station's
+own live golden (`ekatests`: 329 cases / 29,340 assertions), with the
+operator's full demo sequence re-run and every one of the five defects
+confirmed fixed and no regression found against the prior matrix.
+Agent D2 deployed the binary to the live hidden station and re-proved
+all five from the deployed SPA bundle.
+
+## The operator's demo as the fidelity method
+
+The wave's most effective bug-finding tool was not a hand-written
+repro: it was **replaying the operator's own recorded session**. The
+SPA's key recorder captured the operator's real input
+(`$J/D2/demo/input.txt`) during a live phone/touch test, alongside
+frames at a fixed 2-second cadence named by wall-clock timestamp
+(`$J/D2/demo/frames/`). Every fix in this wave was proven against that
+same exact key sequence, replayed with `fb-wait.py` between steps (no
+fixed sleeps), and the fixed build's frames were compared side by side
+against the operator's own numbered frames (e.g. `151525.png`,
+`151618.png`) — not against a description of the bug. This matters
+because several of the defects above (the formula-bar glyph size, the
+caret detachment) were only precisely specified by the operator's own
+screenshots and frame timestamps; a hand-rolled repro from the written
+bug description alone would have reproduced the visible symptom but
+not necessarily the exact same code path. Agents downstream of the
+demo (G1, G2, G3, C3, I7, D2) each re-ran the operator's key sequence
+as their acceptance test, not just their own unit/matrix tests.

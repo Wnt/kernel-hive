@@ -479,6 +479,16 @@ network fix with it.
    EKA2L1 — the fallback above always succeeds silently. The SDK-emulator
    oracle shows the real device's cycle instead: "Connecting…" for about
    19 s, a silent failure, and a re-prompt with no error dialog.
+5. **The ROM window-server track's second station, `nokia9300rom`
+   (2026-09-25), is not on retronet.** Its dark-launch (agent D5) shipped
+   with the network explicitly **off** (`NOKIA_NET=off`, `--private-network`)
+   — extending this doc's netns recipe to a second station needs its own
+   reserved address, tap and chain claims via `kh-claim`, not attempted.
+   The ESock/RConnection fixes above are HLE-side and apply equally to the
+   ROM-window-server station once someone does the claim work; nothing
+   about the ROM track changes ESock itself. See "The ROM track:
+   `nokia9300rom`" in the main research doc for what does and does not run
+   there.
 
 ## Frames (evidence, in the job's tmp directories)
 
