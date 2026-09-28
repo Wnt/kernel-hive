@@ -25,6 +25,15 @@
 //! Cross-field edges are never REORDERED relative to their own field, and a
 //! modifier is a field like any other: its press goes out the pass it
 //! arrives, so it is already down when the character it belongs to follows.
+//!
+//! ONE EXCEPTION: the pointer buttons (X 1-3) are a single FIFO. A chord is
+//! meaningful in its order — Minesweeper's L+R, rio's 1-then-2, an X server's
+//! Emulate3Buttons window — and per-button gates reordered a quick one: with
+//! L↓ R↓ R↑ L↑ inside one hold, R↑ waited out R's dwell while L↑ (whose own
+//! dwell had already run) passed it, so the guest saw L↑ before R↑ (job MB,
+//! 2026-09-28). So a pointer-button edge still in its dwell holds back every
+//! LATER pointer-button edge, whichever button it is. Keys and the wheel
+//! (X 4/5) are unaffected.
 //! Pure and time-injected so the state machine is unit-testable.
 
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -84,6 +93,13 @@ pub(crate) enum Field {
     Key(u8),
     /// X pointer button number (1=left, 2=middle, 3=right, 4/5=wheel).
     Button(u8),
+}
+
+impl Field {
+    /// A real pointer button (X 1-3): these share one FIFO — see the header.
+    fn is_pointer_button(self) -> bool {
+        matches!(self, Field::Button(1..=3))
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -147,18 +163,21 @@ impl Pacer {
 
     /// One drain pass at `now`. An edge still inside its own field's dwell
     /// blocks LATER EDGES OF THAT FIELD ONLY (per-field order can never
-    /// invert); every other field's edges apply the pass they arrive. Applied
+    /// invert); every other field's edges apply the pass they arrive — except
+    /// pointer buttons, where a waiting edge blocks every later pointer-button
+    /// edge (one FIFO, so a chord keeps its press/release order). Applied
     /// edges stamp their gate time with `now`, so a press+release pair pushed
     /// together emits the press and returns `now + hold` as the deadline for
     /// the release.
     pub(crate) fn drain(&mut self, now: Instant) -> (Vec<Edge>, Option<Instant>) {
         let mut out = Vec::new();
         let mut blocked: HashSet<Field> = HashSet::new();
+        let mut buttons_blocked = false;
         let mut deadline: Option<Instant> = None;
         let mut i = 0;
         while i < self.queue.len() {
             let e = self.queue[i];
-            if blocked.contains(&e.field) {
+            if blocked.contains(&e.field) || (buttons_blocked && e.field.is_pointer_button()) {
                 i += 1;
                 continue;
             }
@@ -172,6 +191,7 @@ impl Pacer {
                 .filter(|ready| *ready > now)
             {
                 blocked.insert(e.field);
+                buttons_blocked |= e.field.is_pointer_button();
                 deadline = Some(deadline.map_or(ready, |d| d.min(ready)));
                 i += 1;
                 continue;
@@ -380,6 +400,42 @@ mod tests {
         assert_eq!(deadline, Some(t0 + Duration::from_millis(100)));
         let (out, _) = p.drain(t0 + Duration::from_millis(100));
         assert_eq!(out, vec![btn(1, false)]);
+    }
+
+    /// A quick chord keeps its order: L↓ R↓ R↑ L↑ inside one hold must not come
+    /// out as L↑ before R↑ (per-button gates did that — L's dwell ran out first).
+    #[test]
+    fn a_quick_chord_keeps_its_release_order() {
+        let mut p = Pacer::new(40, 40, 60);
+        let t0 = Instant::now();
+        p.push(btn(1, true)).unwrap();
+        assert_eq!(p.drain(t0).0, vec![btn(1, true)]);
+        let t1 = t0 + Duration::from_millis(30);
+        p.push(btn(3, true)).unwrap();
+        assert_eq!(p.drain(t1).0, vec![btn(3, true)]);
+        // Both releases arrive at t0+60: L's hold is over, R's is not.
+        p.push(btn(3, false)).unwrap();
+        p.push(btn(1, false)).unwrap();
+        let (out, deadline) = p.drain(t0 + Duration::from_millis(60));
+        assert!(out.is_empty(), "L↑ must not pass the waiting R↑: {out:?}");
+        assert_eq!(deadline, Some(t1 + Duration::from_millis(60)));
+        let (out, _) = p.drain(t1 + Duration::from_millis(60));
+        assert_eq!(out, vec![btn(3, false), btn(1, false)]);
+        assert!(p.is_empty());
+    }
+
+    /// The button FIFO does not reach keys or the wheel: a waiting button
+    /// release holds back neither.
+    #[test]
+    fn the_button_fifo_leaves_keys_and_wheel_alone() {
+        let mut p = Pacer::new(40, 40, 60);
+        let t0 = Instant::now();
+        p.push(btn(1, true)).unwrap();
+        p.push(btn(1, false)).unwrap();
+        p.push(btn(4, true)).unwrap();
+        p.push(key(30, true)).unwrap();
+        let (out, _) = p.drain(t0);
+        assert_eq!(out, vec![btn(1, true), btn(4, true), key(30, true)]);
     }
 
     /// The queue is bounded; the overflow surfaces as a rejection, and edges
