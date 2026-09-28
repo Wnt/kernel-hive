@@ -41,6 +41,16 @@
 //  ⊕ arm badge (ui/grid/StreamView/TouchControlBadge), which rides a real
 //  pointerdown/pointerup pair through the recognizer and never comes past here.
 //
+//  And a MOUSE is not a pen either. Its right button is a real `buttons` bit,
+//  sent as an edge by input/mouseChord the moment it changes — including in the
+//  middle of a left press, which is how a Minesweeper chord (L+R held) reaches
+//  the guest. Classifying a mouse's contextmenu here turned that chord into
+//  "release left, press right" (a flag) inside the barrel window and dropped the
+//  right press after it; on Windows, where contextmenu fires after the right-UP,
+//  it added a stray standalone right-click (job MB, 2026-09-28). So only a PEN
+//  is classified; every other contextmenu — mouse, finger, or an untagged
+//  MouseEvent from a UA that does not say — is only preventDefault'ed.
+//
 //  TIME separates them — but ONLY wall-clock time read in the handler, never the
 //  event's own timeStamp. Chrome-Android synthesizes the long-press contextmenu
 //  from the originating pointerdown and gives it that event's timeStamp, so
@@ -72,8 +82,8 @@ import { rightHoldMs } from './rightClickHold';
 export const BARREL_WINDOW_MS = 250;
 
 /** Ignore a contextmenu/auxclick this soon after the pointer path already sent
- *  a right button — a real MOUSE right-click fires both, and the guest must not
- *  get two. */
+ *  a right button — a pen whose barrel surfaced as button 2 on its pointerdown
+ *  fires both, and the guest must not get two. */
 const RIGHT_SUPPRESS_MS = 500;
 
 export type CtxAction =
@@ -87,12 +97,11 @@ export type CtxAction =
 /** PURE decision for one contextmenu/auxclick. See the header for why time is
  *  the discriminator and not the event itself. */
 export function contextMenuAction(i: {
-  /** `pointerType` of the contextmenu/auxclick event itself. `'touch'` is a
-   *  FINGER and is rejected outright — see the header. Undefined on a UA that
-   *  dispatches these as a plain MouseEvent, which is a desktop mouse; the pen
-   *  logic below is then unchanged from before this input existed. */
+  /** `pointerType` of the contextmenu/auxclick event itself. Only `'pen'` is
+   *  classified; anything else (mouse, finger, undefined on a UA that dispatches
+   *  a plain MouseEvent) is ignored outright — see the header. */
   pointerType?: string;
-  /** A real PEN/MOUSE contact is currently holding a button. Finger contacts
+  /** A real PEN contact is currently holding a button. Finger contacts
    *  live in the touch recognizer, not here, so this is false for them — which
    *  is why `pointerType` has to be consulted before it. */
   heldContact: boolean;
@@ -104,12 +113,12 @@ export function contextMenuAction(i: {
   /** ms since a previous contextmenu synth (auxclick de-dup; 0 for contextmenu). */
   sinceCtxSynthMs?: number;
 }): CtxAction {
+  // Not a pen: a mouse's right button came from `buttons` (input/mouseChord), a
+  // finger has no barrel and this is the OS long-press. Rejected BEFORE the
+  // contact/timing gates — neither is tracked in `heldContact`.
+  if (i.pointerType !== 'pen') return 'ignore';
   if (i.sincePointerRightMs < RIGHT_SUPPRESS_MS) return 'ignore';
   if ((i.sinceCtxSynthMs ?? Infinity) < RIGHT_SUPPRESS_MS) return 'ignore';
-  // A finger has no barrel button, so this can only be the OS long-press. It is
-  // rejected BEFORE the contact/timing gates, because a finger contact is not
-  // tracked here and would otherwise fall straight through to 'synth'.
-  if (i.pointerType === 'touch') return 'ignore';
   // Nothing held: a barrel press with the pen tip off the glass. A stylus is the
   // only pointer that reaches here without a contact of its own.
   if (!i.heldContact) return 'synth';

@@ -16,6 +16,7 @@ import { createTapQuantiser } from '../../../input/tapQuantiser';
 import { allowPenHover } from '../../../input/penHover';
 import { penPress, penRelease } from '../../../input/penContact';
 import { contextMenuAction, convertContactToRight, synthRightClick } from '../../../input/penRightClick';
+import { MouseChord } from '../../../input/mouseChord';
 import { HoverAccumulator, StrokeAccumulator, type WireSnapshot } from '../../../input/pointerTelemetry';
 import { logClientEvent } from '../../../three/clientDebug';
 import { hapticTap } from '../../keyboard/haptics';
@@ -243,12 +244,18 @@ export function useStreamInput({
 
     let touching = false;
 
-    // Per-pointerId button we sent DOWN in the mouse/pen else-branch, so the
-    // matching pointerUP releases the SAME button. An S-Pen BARREL press maps to
-    // right (2); releasing 0 instead would strand the held right-button in the
-    // guest. The teardown-flush Set (pressedButtonsRef) also gets the mapped button.
+    // Per-pointerId button a PEN sent down, so the matching pointerUP releases the
+    // SAME button. An S-Pen BARREL press maps to right (2); releasing 0 instead
+    // would strand the held right-button in the guest. The teardown-flush Set
+    // (pressedButtonsRef) also gets the mapped button.
     const penDownBtn = new Map<number, number>();
-    // Right-click de-dup clocks: a real MOUSE right-click fires BOTH a
+    // A MOUSE sends one edge per changed `buttons` bit on every event of its
+    // contact — the only way a chord (L+R held) reaches the guest, because the
+    // second button's press and the first one's release arrive as pointermoves.
+    // See input/mouseChord. It shares pressedButtonsRef with every flush.
+    const chord = new MouseChord(
+      (b, down, x, y) => control.sendMouseButton(b, down, x, y), pressedButtonsRef.current);
+    // Right-click de-dup clocks: a pen/touch right press fires BOTH a
     // pointerdown(button 2) AND a native contextmenu/auxclick. Track when the
     // pointer path — and a contextmenu synth — last emitted a guest right-button so
     // the contextmenu/auxclick fallbacks below never double-fire it.
@@ -376,6 +383,8 @@ export function useStreamInput({
         // contextmenu must not add a second right button on top of this one.
         if (right) lastPointerRightMs = e.timeStamp;
         touch.begin(e.pointerId, g.x, g.y, e.timeStamp, e.clientX, e.clientY, right);
+      } else if (e.pointerType === 'mouse') {
+        chord.down(e, g.x, g.y);
       } else {
         // S-Pen BARREL button → guest RIGHT-click. The barrel surfaces as the
         // secondary-button bit (buttons&2): it may arrive as e.button===2 on the
@@ -423,6 +432,8 @@ export function useStreamInput({
           }
         }
         touching = false;
+      } else if (e.pointerType === 'mouse') {
+        chord.up(e, g?.x, g?.y);
       } else {
         // Release the EXACT button pressed for THIS pointer (a barrel press pressed
         // 2, so releasing 0 would strand the held right-button). Fall back to
@@ -451,18 +462,39 @@ export function useStreamInput({
     // coords mis-map (see input/moveSamples) — fall back to plain pointermove,
     // whose native coords are layout-viewport correct (proven by the down/up
     // path). At scale 1 the code path is identical to before.
+    // Chorded mouse buttons ride these events too: both are diffed (idempotent),
+    // whichever of the pair a UA delivers the changed `buttons` on first.
+    const chordEdges = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || touchExhibit) return;
+      const g = lockedRef.current ? lockedPoint() : (map(e.clientX, e.clientY) ?? lastGuestRef.current);
+      chord.move(e, g?.x, g?.y);
+    };
     const onMove = (e: PointerEvent) => {
       if (offSurface(e)) return;
       if (!supportsRawUpdate || pinched()) forwardMove(e);
+      chordEdges(e);
     };
-    const onRaw = (e: Event) => { if (!offSurface(e) && !pinched()) forwardMove(e as PointerEvent); };
+    const onRaw = (e: Event) => {
+      if (offSurface(e)) return;
+      if (!pinched()) forwardMove(e as PointerEvent);
+      chordEdges(e as PointerEvent);
+    };
+    // Capture lost mid-press (the picture re-rendered, the UA took it): release
+    // every bit that mouse still holds — no pointerup is coming for them.
+    const onLostCapture = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      const g = lastGuestRef.current;
+      chord.lost(e.pointerId, g?.x, g?.y);
+    };
     const onWheel = (e: WheelEvent) => {
       if (offSurface(e)) return;
       control.sendWheel(e.deltaX, e.deltaY);
       e.preventDefault();
     };
     // A native contextmenu is EITHER the S-Pen barrel or Android's long-press —
-    // input/penRightClick decides which and owns both outcomes. It gets the
+    // input/penRightClick decides which and owns both outcomes. A MOUSE's is
+    // never an edge (its right button already came from `buttons`); on Windows it
+    // fires after the right-UP and would otherwise inject a stray click. It gets the
     // event's OWN pointerType, because `held` below can only ever describe a
     // pen/mouse contact (finger contacts live in the touch recognizer, so a
     // finger long-press reads as `held === false` and used to be mistaken for a
@@ -524,6 +556,7 @@ export function useStreamInput({
     surface.addEventListener('pointermove', onMove);
     surface.addEventListener('pointerup', onUp);
     surface.addEventListener('pointercancel', onUp);
+    surface.addEventListener('lostpointercapture', onLostCapture);
     if (supportsRawUpdate) surface.addEventListener('pointerrawupdate', onRaw as EventListener);
     surface.addEventListener('wheel', onWheel, { passive: false });
     surface.addEventListener('contextmenu', onCtx, true);
@@ -535,6 +568,7 @@ export function useStreamInput({
       surface.removeEventListener('pointermove', onMove);
       surface.removeEventListener('pointerup', onUp);
       surface.removeEventListener('pointercancel', onUp);
+      surface.removeEventListener('lostpointercapture', onLostCapture);
       if (supportsRawUpdate) surface.removeEventListener('pointerrawupdate', onRaw as EventListener);
       surface.removeEventListener('wheel', onWheel);
       surface.removeEventListener('contextmenu', onCtx, true);

@@ -248,15 +248,19 @@ describe('contextmenu — barrel press vs Android long-press', () => {
     expect(contextMenuAction({ ...base, heldContact: false, sinceCtxSynthMs: 10 })).toBe('ignore');
   });
 
-  // A UA that dispatches contextmenu as a plain MouseEvent (no pointerType) is a
-  // desktop mouse: the pen logic is what it always was, so nothing regresses on
-  // a browser that does not tag the event.
-  it('an untagged contextmenu keeps the pre-pointerType behaviour', async () => {
+  // A MOUSE is never classified: its right button is a `buttons` bit that
+  // input/mouseChord already sent. Converting it here turned a Minesweeper chord
+  // (L+R) into a flag, and a Windows contextmenu (fired after the right-UP) into
+  // a stray right-click (job MB, 2026-09-28). An untagged MouseEvent is a
+  // desktop mouse too.
+  it('a mouse or untagged contextmenu is never an edge', async () => {
     const { contextMenuAction } = await import('./penRightClick');
-    const untagged = { ...base, pointerType: undefined };
-    expect(contextMenuAction({ ...untagged, heldContact: false })).toBe('synth');
-    expect(contextMenuAction({ ...untagged, sinceContactMs: 0 })).toBe('convert');
-    expect(contextMenuAction({ ...untagged, sinceContactMs: 900 })).toBe('ignore');
+    for (const pointerType of ['mouse', undefined]) {
+      const m = { ...base, pointerType };
+      expect(contextMenuAction({ ...m, heldContact: false })).toBe('ignore');
+      expect(contextMenuAction({ ...m, sinceContactMs: 0 })).toBe('ignore');
+      expect(contextMenuAction({ ...m, sinceContactMs: 900 })).toBe('ignore');
+    }
   });
 });
 
