@@ -20,6 +20,10 @@ export interface ReleaseSection {
 export interface ReleaseWeek {
   /** Week ordinal. Week 1 starts at the first public commit; week 0 predates it. */
   week: number;
+  /** Present only on a COMBINED update — one write-up covering several calendar
+   *  weeks (weeks 7-8 were the first): the first week it covers. `week` is the
+   *  last, so the heading reads "Weeks 7–8". */
+  firstWeek?: number;
   /** Short editorial headline for the week, e.g. "The retronet signs on". */
   title: string;
   /** ISO8601 start/end of the half-open week span, already in Helsinki time. */

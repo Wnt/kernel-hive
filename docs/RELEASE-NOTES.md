@@ -4,6 +4,63 @@ Every week, newest first.
 
 Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.madekivi.fi).
 
+<a id="week-8"></a>
+
+## Weeks 7–8 · A phone and twenty more · 2026-09-13 09:00 – 2026-09-27 09:00
+
+### Screenshots
+
+<table>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/nokia9300"><img src="../spa/public/posters/nokia9300/desktop.webp" width="200" alt="Nokia 9300 Communicator"></a><br><sub>Nokia 9300 Communicator</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/multics"><img src="../spa/public/posters/multics/desktop.webp" width="200" alt="Multics"></a><br><sub>Multics</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/its"><img src="../spa/public/posters/its/desktop.webp" width="200" alt="MIT ITS"></a><br><sub>MIT ITS</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/vax43bsd"><img src="../spa/public/posters/vax43bsd/desktop.webp" width="200" alt="4.3BSD"></a><br><sub>4.3BSD</sub></td>
+</tr>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/mvs38"><img src="../spa/public/posters/mvs38/desktop.webp" width="200" alt="IBM MVS 3.8j"></a><br><sub>IBM MVS 3.8j</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/vision"><img src="../spa/public/posters/vision/desktop.webp" width="200" alt="Visi On 1.0"></a><br><sub>Visi On 1.0</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/macsys1"><img src="../spa/public/posters/macsys1/desktop.webp" width="200" alt="Macintosh System 1.0"></a><br><sub>Macintosh System 1.0</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/perq"><img src="../spa/public/posters/perq/desktop.webp" width="200" alt="PERQ POS G.7"></a><br><sub>PERQ POS G.7</sub></td>
+</tr>
+</table>
+
+### New stations
+
+<u>The museum has its first phone: a [Nokia 9300 Communicator](https://kernelhive.madekivi.fi/os/nokia9300) from *2005*, running its own firmware, opens on the page as a drawing of the open clamshell whose every key you can press.</u> Type a letter in **Documents**, fill in a **Sheet**, or open **Web** and let its **Opera** browse the museum's archived web. Twenty more machines arrived in the same two weeks. The timesharing giants: [Multics](https://kernelhive.madekivi.fi/os/multics), [ITS](https://kernelhive.madekivi.fi/os/its), Berkeley's [4.3BSD](https://kernelhive.madekivi.fi/os/vax43bsd) on a *VAX-11/780*, and IBM's [MVS 3.8j](https://kernelhive.madekivi.fi/os/mvs38) on a *3270* terminal already logged into **ISPF**. Desktops from Pittsburgh to Tokyo: [Visi On](https://kernelhive.madekivi.fi/os/vision), the *1984* [Macintosh System 1.0](https://kernelhive.madekivi.fi/os/macsys1), the [PERQ](https://kernelhive.madekivi.fi/os/perq), the [Apple IIGS](https://kernelhive.madekivi.fi/os/apple2gs), [OS/2 1.3](https://kernelhive.madekivi.fi/os/os213), Fujitsu's [FM TOWNS](https://kernelhive.madekivi.fi/os/fmtowns), [RISC OS 3.11](https://kernelhive.madekivi.fi/os/riscos3), [Native Oberon](https://kernelhive.madekivi.fi/os/oberon) and General Magic's [Magic Cap](https://kernelhive.madekivi.fi/os/magiccap). Unix comes to the PC three ways, in [Linux 0.12](https://kernelhive.madekivi.fi/os/linux012), [Minix 2.0.4](https://kernelhive.madekivi.fi/os/minix2) and [SCO Xenix](https://kernelhive.madekivi.fi/os/xenix); [CP/M 2.2](https://kernelhive.madekivi.fi/os/cpm22) and the [MSX2](https://kernelhive.madekivi.fi/os/msx2) bring home computing, and a [PalmPilot](https://kernelhive.madekivi.fi/os/palmos) and [Mac OS X 10.3 Panther](https://kernelhive.madekivi.fi/os/macosx) carry the story into the 2000s.
+
+### Major features
+
+The Communicator is the work of our own fork of **EKA2L1**, an open-source Symbian emulator built for other phones, which had to learn the 9300's wide screen, its command buttons beside the display and its keyboard before the Desk would even paint. For the first days the emulator drew the screen with its own stand-in for Symbian's window system. By the end, the phone's own window server, fonts and application framework run from its firmware instead, so what you see is what a 9300 drew. The front door learned manners too: the machine you are driving now lives in the address bar, so a reload keeps it, and wandering off to another machine and coming back within about five minutes finds yours exactly as you left it.
+
+### Quality improvements
+
+[OS/2 1.3](https://kernelhive.madekivi.fi/os/os213)'s desktop used to be streaked with stripes; it draws clean now, and its screen changing mode can no longer freeze the picture for good. [Windows 3.11](https://kernelhive.madekivi.fi/os/win311) opens on a tidy **Program Manager** again. The period browsers on [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody) and [OS/2 Warp](https://kernelhive.madekivi.fi/os/os2warp) moved off a home page on which every click led nowhere, and Warp's **WebExplorer** now sits in a window beside the desktop instead of covering it.
+
+### Also this week
+
+- Press F1–F4 for the Communicator's four command buttons and F5–F12 for its application keys: Desk, Telephone, Messaging, Web, Contacts and the rest
+- Restore brings the 9300 back to its Desk without the picture ever going dark
+- [ITS](https://kernelhive.madekivi.fi/os/its) has no passwords anywhere, by design: one Control-Z is the whole ritual of logging in
+- [Multics](https://kernelhive.madekivi.fi/os/multics) erases a character with # and a whole line with @, and Control-C opens a new command level you leave with **release**
+- [MVS 3.8j](https://kernelhive.madekivi.fi/os/mvs38) is the last release IBM ever put in the public domain, which is why anyone can still boot it
+- [4.3BSD](https://kernelhive.madekivi.fi/os/vax43bsd) greets you with "Would you like to play a game?" and a full games directory: adventure, backgammon, chess, fortune, hangman
+- [Linux 0.12](https://kernelhive.madekivi.fi/os/linux012) has no mouse and no network, because neither existed yet; its boot banner shows brand-new swapping to disk switching itself on
+- [Minix 2.0.4](https://kernelhive.madekivi.fi/os/minix2) drops you into a shell inside its own complete kernel source, ready to read
+- On [SCO Xenix](https://kernelhive.madekivi.fi/os/xenix), Alt-F2 opens a second login on the same machine: Multiscreen, the ancestor of Linux's virtual consoles
+- [Visi On](https://kernelhive.madekivi.fi/os/vision) shipped in December *1983*, ahead of both the Macintosh and Windows: overlapping windows, a mouse and a command strip along the bottom
+- [Macintosh System 1.0](https://kernelhive.madekivi.fi/os/macsys1) is the *128K* Mac as shipped, with **MacWrite** and **MacPaint** 1.0 on a second 400K floppy
+- [Native Oberon](https://kernelhive.madekivi.fi/os/oberon) treats every word on its screen as a command you run with the middle mouse button
+- [RISC OS 3.11](https://kernelhive.madekivi.fi/os/riscos3) has no disk at all, the whole system lives in *ROM*, and Select, Menu and Adjust keep their three separate meanings
+- [Apple IIGS](https://kernelhive.madekivi.fi/os/apple2gs) boots **GS/OS 6.0.1** into its colour Finder, in the Apple II family's *4096-colour* Super Hi-Res
+- The [Kaypro II](https://kernelhive.madekivi.fi/os/cpm22) boots the genuine *1982* **CP/M 2.2** floppy to the A> prompt, with **WordStar 3.3** on the second drive
+- The [MSX2](https://kernelhive.madekivi.fi/os/msx2) is a Philips NMS 8250, one of dozens of machines built to a shared standard, with **MSX-BASIC** waiting in *ROM*
+- Palm OS 3 never switches its screen on under emulation, so the [PalmPilot](https://kernelhive.madekivi.fi/os/palmos) is the *1997* Professional that Palm OS 2.0 shipped on
+- Most of the new desktops arrived with a pointer that lands exactly where you put it, down to the pixel
+- [Windows XP](https://kernelhive.madekivi.fi/os/winxp) and [Windows 2000](https://kernelhive.madekivi.fi/os/win2000) gained two Finnish games on the desktop: **Death Rally** and **Stair Dismount**
+
+*26,217 lines of code.*
+
 <a id="week-6"></a>
 
 ## Week 6 · The Lisa and seven more · 2026-09-06 09:00 – 2026-09-13 09:00

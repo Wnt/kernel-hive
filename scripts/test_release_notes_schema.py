@@ -265,5 +265,66 @@ class ContinuityTest(unittest.TestCase):
         self.assertIn("must abut", str(caught.exception))
 
 
+class CombinedUpdateTest(unittest.TestCase):
+    """One file may write up several calendar weeks: numbered by its LAST week,
+    named after its `end`, with a `start` that reaches back to the first."""
+
+    def combined(self, **overrides) -> dict:
+        return week_doc(3, start="2026-08-09T09:00:00+03:00", end="2026-08-23T09:00:00+03:00", **overrides)
+
+    def test_the_span_is_read_from_start_and_end(self):
+        self.assertEqual(SCHEMA.span_weeks(week_doc(3)), 1)
+        self.assertEqual(SCHEMA.span_weeks(self.combined()), 2)
+        self.assertEqual(SCHEMA.first_week(self.combined()), 2)
+        self.assertEqual(SCHEMA.span_weeks(week_doc(1, **WEEK1)), 1)
+
+    def test_it_validates_like_any_other_week(self):
+        found: list[str] = []
+        RN.validate_week(self.combined(), Path("/tmp/2026-08-23.json"), found)
+        self.assertEqual(found, [])
+
+    def test_a_span_of_partial_weeks_is_refused(self):
+        found: list[str] = []
+        RN.validate_week(week_doc(3, start="2026-08-12T09:00:00+03:00"), Path("/tmp/2026-08-23.json"), found)
+        self.assertTrue(any("whole weeks" in line for line in found), found)
+
+    def test_it_fills_the_numbering_gap_it_covers(self):
+        docs = [week_doc(0, **WEEK0), week_doc(1, **WEEK1), self.combined()]
+        found: list[str] = []
+        RN._check_numbering(docs, found)
+        self.assertEqual(found, [])
+
+    def test_it_may_not_overlap_a_week_that_is_already_written(self):
+        docs = [week_doc(0, **WEEK0), week_doc(1, **WEEK1), week_doc(2), self.combined()]
+        found: list[str] = []
+        RN._check_numbering(docs, found)
+        self.assertTrue(any("not unique" in line for line in found), found)
+
+    def test_it_must_abut_the_week_before_the_first_one_it_covers(self):
+        slipped = week_doc(3, start="2026-08-10T09:00:00+03:00", end="2026-08-24T09:00:00+03:00")
+        docs = [week_doc(0, **WEEK0), week_doc(1, **WEEK1), slipped]
+        found: list[str] = []
+        RN._check_continuity(docs, found)
+        self.assertTrue(any("must abut" in line for line in found), found)
+
+    def test_status_and_brief_count_every_week_it_covers_as_written(self):
+        docs = [week_doc(0, **WEEK0), week_doc(1, **WEEK1), self.combined()]
+        with temp_tree(docs):
+            for start, end in (("2026-08-09", "2026-08-16"), ("2026-08-16", "2026-08-23")):
+                cover = RN.covering(helsinki(f"{start}T09:00:00"), helsinki(f"{end}T09:00:00"))
+                self.assertIsNotNone(cover, start)
+                self.assertEqual(cover[1].name, "2026-08-23.json")
+            self.assertIsNone(RN.covering(helsinki("2026-08-23T09:00:00"), helsinki("2026-08-30T09:00:00")))
+
+    def test_it_renders_under_a_weeks_heading(self):
+        docs = [week_doc(0, **WEEK0), week_doc(1, **WEEK1), self.combined()]
+        with temp_tree(docs):
+            weeks = RN.load_weeks()
+        self.assertEqual(weeks[0]["firstWeek"], 2)
+        self.assertNotIn("firstWeek", weeks[1])
+        self.assertTrue(RN.render_mod.heading(weeks[0]).startswith("Weeks 2–3 · "))
+        self.assertTrue(RN.render_mod.release_title(weeks[0]).startswith("Weeks 2–3 · "))
+
+
 if __name__ == "__main__":
     unittest.main()

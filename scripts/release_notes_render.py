@@ -65,8 +65,14 @@ def span(week: dict) -> str:
     return f"{start:%Y-%m-%d %H:%M} – {end:%Y-%m-%d %H:%M}"
 
 
+def week_label(week: dict) -> str:
+    """ "Week 8", or "Weeks 7–8" for a combined update (schema span_weeks)."""
+    first = week.get("firstWeek")
+    return f"Weeks {first}–{week['week']}" if first is not None else f"Week {week['week']}"
+
+
 def heading(week: dict) -> str:
-    return f"Week {week['week']} · {md(week['title'])} · {span(week)}"
+    return f"{week_label(week)} · {md(week['title'])} · {span(week)}"
 
 
 def md(text: str) -> str:
@@ -161,7 +167,7 @@ def render_readme_section(weeks: list[dict]) -> str:
     if new_stations is not None:
         lines += [md(new_stations["text"]), ""]
     lines += [
-        f"Read [week {newest['week']} in full]({ARCHIVE_PATH}#{anchor(newest)}), and every earlier "
+        f"Read [{week_label(newest).lower()} in full]({ARCHIVE_PATH}#{anchor(newest)}), and every earlier "
         f"week, in the [full archive]({ARCHIVE_PATH}).",
         "",
         GALLERY_INVITE,
@@ -172,7 +178,7 @@ def render_readme_section(weeks: list[dict]) -> str:
 def release_title(week: dict) -> str:
     """The GitHub release title: `Week N · <title>` — no dates, no code-line
     count; those belong to the body, not the tab a release list shows."""
-    return f"Week {week['week']} · {week['title']}"
+    return f"{week_label(week)} · {week['title']}"
 
 
 def release_body(week: dict) -> str:
@@ -220,3 +226,41 @@ def splice_readme(readme: str, section: str) -> str:
         raise SystemExit("release-notes: README.md has no '## Contributing' heading")
     head, tail = readme.split(marker, 1)
     return head.rstrip("\n") + "\n\n" + block + "\n" + marker + tail
+
+
+# The output contract `brief` prints last. Layout only: the numbers are the brief's.
+BRIEF_CONTRACT = """\
+Output contract
+---------------
+Write EXACTLY this file, and nothing else:
+
+    {path}
+
+    {{
+      "week": {number},
+      "title": "<2-6 words, specific, no week number in it>",
+      "start": "{start}",
+      "end":   "{end}",
+      "commitCount": {count},
+      "codeLines": {code_lines},
+      "summary": [
+        {{ "theme": "New stations",         "text": "..." }},
+        {{ "theme": "Major features",       "text": "..." }},
+        {{ "theme": "Quality improvements", "text": "..." }}
+      ],
+      "bullets": ["<highlight>", "..."]
+    }}
+
+  - summary: exactly 3 themed sections, in that order, 300-400 words in total.
+  - bullets: 1-20 entries, each ONE line of at most 160 characters, no leading
+    dash, no trailing period required. Highlights worth reading on their own,
+    not a changelog.
+  - Never invent a fact, a number, a date or a capability: every claim traces to
+    a commit above. If you cannot tell whether something landed or was only
+    attempted, say what the commits say, or leave it out.
+  - Never write a real IP, hostname, MAC, serial or domain — this repo is
+    public. Placeholders only.
+  - Voice and the full authoring brief: {prompt}
+
+Then: python3 scripts/release-notes.py render && python3 scripts/release-notes.py check
+"""

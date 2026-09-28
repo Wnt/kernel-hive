@@ -46,6 +46,12 @@ describe('releaseWeekViews', () => {
     expect(views.map((v) => v.heading)).toEqual(['Week 3', 'Week 2', 'Week 1', 'Week 0']);
   });
 
+  it('heads a combined update with every week it covers', () => {
+    const views = releaseWeekViews(doc([week(6), week(8, { firstWeek: 7 })]));
+    expect(views.map((v) => v.heading)).toEqual(['Weeks 7–8', 'Week 6']);
+    expect(views[0].key).toBe('week-8');
+  });
+
   it('expands only the newest week', () => {
     const views = releaseWeekViews(doc([week(3), week(2), week(1)]));
     expect(views.map((v) => v.defaultOpen)).toEqual([true, false, false]);

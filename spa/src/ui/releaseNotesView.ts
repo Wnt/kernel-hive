@@ -71,7 +71,7 @@ export function releaseWeekViews(doc: ReleaseNotesDoc): WeekView[] {
   return weeks.map((week, index) => ({
     key: `week-${week.week}`,
     number: week.week,
-    heading: `Week ${week.week}`,
+    heading: week.firstWeek === undefined ? `Week ${week.week}` : `Weeks ${week.firstWeek}–${week.week}`,
     title: week.title,
     range: formatRange(week),
     code: `${week.codeLines.toLocaleString('en-US')} line${week.codeLines === 1 ? '' : 's'} of code`,

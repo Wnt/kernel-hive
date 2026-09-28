@@ -292,28 +292,28 @@ the [`irix` branch README](https://github.com/Wnt/mame/tree/irix),
 The museum keeps a written account of every week. The latest one:
 
 <!-- release-notes:start -->
-### Week 6 · The Lisa and seven more · 2026-09-06 09:00 – 2026-09-13 09:00
+### Weeks 7–8 · A phone and twenty more · 2026-09-13 09:00 – 2026-09-27 09:00
 
 #### Screenshots
 
 <table>
 <tr>
-<td><a href="https://kernelhive.madekivi.fi/os/lisa"><img src="spa/public/posters/lisa/desktop.webp" width="200" alt="Lisa Office System 3.1"></a><br><sub>Lisa Office System 3.1</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/apple2e"><img src="spa/public/posters/apple2e/desktop.webp" width="200" alt="Apple //e"></a><br><sub>Apple //e</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/atari800xl"><img src="spa/public/posters/atari800xl/desktop.webp" width="200" alt="Atari 800XL"></a><br><sub>Atari 800XL</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/samcoupe"><img src="spa/public/posters/samcoupe/desktop.webp" width="200" alt="SAM Coupé"></a><br><sub>SAM Coupé</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/nokia9300"><img src="spa/public/posters/nokia9300/desktop.webp" width="200" alt="Nokia 9300 Communicator"></a><br><sub>Nokia 9300 Communicator</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/multics"><img src="spa/public/posters/multics/desktop.webp" width="200" alt="Multics"></a><br><sub>Multics</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/its"><img src="spa/public/posters/its/desktop.webp" width="200" alt="MIT ITS"></a><br><sub>MIT ITS</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/vax43bsd"><img src="spa/public/posters/vax43bsd/desktop.webp" width="200" alt="4.3BSD"></a><br><sub>4.3BSD</sub></td>
 </tr>
 <tr>
-<td><a href="https://kernelhive.madekivi.fi/os/a1000"><img src="spa/public/posters/a1000/desktop.webp" width="200" alt="Amiga 1000"></a><br><sub>Amiga 1000</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/a3000"><img src="spa/public/posters/a3000/desktop.webp" width="200" alt="Amiga 3000"></a><br><sub>Amiga 3000</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/medley"><img src="spa/public/posters/medley/desktop.webp" width="200" alt="Interlisp Medley"></a><br><sub>Interlisp Medley</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/sculpt"><img src="spa/public/posters/sculpt/desktop.webp" width="200" alt="Genode Sculpt OS"></a><br><sub>Genode Sculpt OS</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/mvs38"><img src="spa/public/posters/mvs38/desktop.webp" width="200" alt="IBM MVS 3.8j"></a><br><sub>IBM MVS 3.8j</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/vision"><img src="spa/public/posters/vision/desktop.webp" width="200" alt="Visi On 1.0"></a><br><sub>Visi On 1.0</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/macsys1"><img src="spa/public/posters/macsys1/desktop.webp" width="200" alt="Macintosh System 1.0"></a><br><sub>Macintosh System 1.0</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/perq"><img src="spa/public/posters/perq/desktop.webp" width="200" alt="PERQ POS G.7"></a><br><sub>PERQ POS G.7</sub></td>
 </tr>
 </table>
 
-<u>[Apple Lisa](https://kernelhive.madekivi.fi/os/lisa) arrives — the machine that had the Macintosh's ideas a year early, in *1984*.</u> **Lisa Office System 3.1** hands you all seven Lisa tools, from **LisaWrite** to **LisaProject**, on a document-centric desktop where a new page is torn off a stationery pad. Four home computers follow: [Apple //e](https://kernelhive.madekivi.fi/os/apple2e), booting **ProDOS 8** to a one-key menu for **AppleWorks** and **Dazzle Draw**; [Atari 800XL](https://kernelhive.madekivi.fi/os/atari800xl), with **The Last Word**, **River Raid** and **Star Raiders** waiting on a **MyPicoDos** menu; [SAM Coupé](https://kernelhive.madekivi.fi/os/samcoupe), Britain's *1989* answer to the *ZX Spectrum*, carrying **Manic Miner**, **Mr. Pac**, **Splat!** and a period word processor on one floppy; and two Amigas, the *1985* [Amiga 1000](https://kernelhive.madekivi.fi/os/a1000) with **Workbench 1.2** and the *1990* [Amiga 3000](https://kernelhive.madekivi.fi/os/a3000) with **Workbench 2.04**. Two more have nothing emulated underneath them at all: [Interlisp Medley](https://kernelhive.madekivi.fi/os/medley), Xerox PARC's *1987* Lisp desktop where every window on screen is a live object, and [Genode Sculpt OS](https://kernelhive.madekivi.fi/os/sculpt), a microkernel desktop that draws itself as a graph of its own parts you can rewire while it runs. Ninety-seven machines now.
+<u>The museum has its first phone: a [Nokia 9300 Communicator](https://kernelhive.madekivi.fi/os/nokia9300) from *2005*, running its own firmware, opens on the page as a drawing of the open clamshell whose every key you can press.</u> Type a letter in **Documents**, fill in a **Sheet**, or open **Web** and let its **Opera** browse the museum's archived web. Twenty more machines arrived in the same two weeks. The timesharing giants: [Multics](https://kernelhive.madekivi.fi/os/multics), [ITS](https://kernelhive.madekivi.fi/os/its), Berkeley's [4.3BSD](https://kernelhive.madekivi.fi/os/vax43bsd) on a *VAX-11/780*, and IBM's [MVS 3.8j](https://kernelhive.madekivi.fi/os/mvs38) on a *3270* terminal already logged into **ISPF**. Desktops from Pittsburgh to Tokyo: [Visi On](https://kernelhive.madekivi.fi/os/vision), the *1984* [Macintosh System 1.0](https://kernelhive.madekivi.fi/os/macsys1), the [PERQ](https://kernelhive.madekivi.fi/os/perq), the [Apple IIGS](https://kernelhive.madekivi.fi/os/apple2gs), [OS/2 1.3](https://kernelhive.madekivi.fi/os/os213), Fujitsu's [FM TOWNS](https://kernelhive.madekivi.fi/os/fmtowns), [RISC OS 3.11](https://kernelhive.madekivi.fi/os/riscos3), [Native Oberon](https://kernelhive.madekivi.fi/os/oberon) and General Magic's [Magic Cap](https://kernelhive.madekivi.fi/os/magiccap). Unix comes to the PC three ways, in [Linux 0.12](https://kernelhive.madekivi.fi/os/linux012), [Minix 2.0.4](https://kernelhive.madekivi.fi/os/minix2) and [SCO Xenix](https://kernelhive.madekivi.fi/os/xenix); [CP/M 2.2](https://kernelhive.madekivi.fi/os/cpm22) and the [MSX2](https://kernelhive.madekivi.fi/os/msx2) bring home computing, and a [PalmPilot](https://kernelhive.madekivi.fi/os/palmos) and [Mac OS X 10.3 Panther](https://kernelhive.madekivi.fi/os/macosx) carry the story into the 2000s.
 
-Read [week 6 in full](docs/RELEASE-NOTES.md#week-6), and every earlier week, in the [full archive](docs/RELEASE-NOTES.md).
+Read [weeks 7–8 in full](docs/RELEASE-NOTES.md#week-8), and every earlier week, in the [full archive](docs/RELEASE-NOTES.md).
 
 Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.madekivi.fi).
 <!-- release-notes:end -->

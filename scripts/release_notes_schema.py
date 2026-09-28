@@ -16,6 +16,7 @@ trimmed version of what somebody wrote — is worse than a red build.
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 from pathlib import Path
@@ -192,6 +193,8 @@ def validate_week(doc: object, path: Path, errors: list[str]) -> None:
     if start and end:
         if start >= end:
             fail("`start` must be earlier than `end`")
+        if _is_int(week) and week >= 2 and _wall_days(start, end) % 7:
+            fail("a week spans whole weeks — `start` and `end` are both Sunday 09:00 boundaries")
         stem = end.astimezone(TZ).date().isoformat()
         if path.stem != stem:
             fail(f"file name does not match `end` — this week's file is {stem}.json")
@@ -209,12 +212,36 @@ def validate_week(doc: object, path: Path, errors: list[str]) -> None:
         fail("`source` belongs to week 0 only")
 
 
+def span_weeks(doc: dict) -> int:
+    """How many calendar weeks one summary covers — 1, except for a COMBINED
+    update, where a quiet week is written up together with its neighbour as
+    ONE file whose `start` reaches back to the earlier week's start (weeks 7-8
+    were the first). Such a file is numbered by its LAST week, named after its
+    `end` like any other, and simply covers the week numbers before it; the
+    week maths, the numbering and the continuity checks all read the span from
+    `start`/`end` rather than from an extra key, so the locked schema does not
+    grow. Weeks 0 and 1 (the pre-public era and the stub) are always one."""
+    start, end = _parse_stamp(doc.get("start")), _parse_stamp(doc.get("end"))
+    if not _is_int(doc.get("week")) or doc["week"] <= 1 or start is None or end is None:
+        return 1
+    return max(1, _wall_days(start, end) // 7)
+
+
+def first_week(doc: dict) -> int:
+    return doc["week"] - span_weeks(doc) + 1
+
+
+def _wall_days(start: datetime, end: datetime) -> int:
+    # Local wall clock, so a span across the DST change is still whole weeks.
+    return (end.astimezone(TZ).replace(tzinfo=None) - start.astimezone(TZ).replace(tzinfo=None)).days
+
+
 def _check_numbering(docs: list[dict], errors: list[str]) -> None:
-    numbers = sorted(d["week"] for d in docs if _is_int(d.get("week")))
-    duplicates = sorted({n for n in numbers if numbers.count(n) > 1})
+    covered = sorted(n for d in docs if _is_int(d.get("week")) for n in range(first_week(d), d["week"] + 1))
+    duplicates = sorted({n for n in covered if covered.count(n) > 1})
     if duplicates:
         errors.append(f"week numbers are not unique: {duplicates}")
-    unique = sorted(set(numbers))
+    unique = sorted(set(covered))
     if unique and unique != list(range(len(unique))):
         errors.append(
             f"week numbers must run contiguously from 0, got {unique} — write the missing week(s) "
@@ -232,7 +259,7 @@ def _check_continuity(docs: list[dict], errors: list[str]) -> None:
     """
     ordered = sorted((d for d in docs if _is_int(d.get("week"))), key=lambda d: d["week"])
     for previous, current in zip(ordered, ordered[1:]):
-        if previous["week"] + 1 != current["week"]:
+        if previous["week"] + 1 not in (current["week"], first_week(current)):
             continue  # a gap: _check_numbering already refused it
         before, after = _parse_stamp(previous.get("end")), _parse_stamp(current.get("start"))
         if before and after and before != after:
@@ -240,3 +267,21 @@ def _check_continuity(docs: list[dict], errors: list[str]) -> None:
                 f"week {current['week']} starts {current['start']}, but week {previous['week']} ends "
                 f"{previous['end']} — consecutive weeks must abut"
             )
+
+
+def summary_spans(directory: Path) -> list[tuple[datetime, datetime, Path]]:
+    """(start, end, path) of every week file whose stamps parse. `status` and
+    `brief` ask "is this calendar week written?", and a combined update (see
+    span_weeks) writes every week it covers, not only the one it is named
+    after. Deliberately loose: validating the file is load_weeks' job."""
+    spans = []
+    for path in sorted(directory.glob("*.json")):
+        try:
+            doc = json.loads(path.read_text())
+        except json.JSONDecodeError:
+            continue
+        if isinstance(doc, dict):
+            start, end = _parse_stamp(doc.get("start")), _parse_stamp(doc.get("end"))
+            if start and end:
+                spans.append((start, end, path))
+    return spans

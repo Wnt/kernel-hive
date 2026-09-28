@@ -6,7 +6,7 @@ the result out. There is no cron, no hook and no CI job behind it — the trigge
 is you, by hand, on a Sunday after **09:00 Europe/Helsinki** (the moment the
 week closes).
 
-**The whole flow, end to end:** `brief` (§1) → author one JSON file (§2) →
+**The whole flow, end to end:** `brief` (§1; two weeks as one update: §1.0) → author one JSON file (§2) →
 `render` (§3) → `check` (§3) → read the README diff (§3) → commit and push
 (§3) → `publish` (§3) once it is live. Nothing later in that chain runs before
 the step before it is green.
@@ -50,6 +50,30 @@ recorded `commitCount` is more than 10% off a fresh count — the tripwire for a
 week authored before it closed (Lessons, below) — and when a fact file in the
 inbox (§1.2) is newer than the week it belongs to, meaning something landed
 after the write-up and the week needs a look.
+
+## 1.0 A combined update — two weeks in one write-up
+
+When a week was quiet, or a Sunday was missed and the operator asks for one
+update instead of two, write **one** file that covers several calendar weeks:
+
+```sh
+python3 scripts/release-notes.py brief --week 2026-09-27 --weeks 2
+```
+
+That cuts the brief across both windows — one commit list, one `codeLines`,
+the fork commits and the facts inbox of every covered Sunday — and prints the
+contract for one file, **named after the last week's end and numbered by the
+last week**, whose `start` reaches back to the first week's start. Weeks 7-8
+(2026-09-13 – 2026-09-27) were the first. Nothing else changes: the same three
+themes, the same 300-400 words, the same bullet rules — a combined update is
+one update, not two squeezed together.
+
+The span is read from `start`/`end`, never from an extra key, so the locked
+schema does not grow. `check` accepts the week numbers it covers as written
+(and refuses one that overlaps a week already written, or does not span whole
+weeks); `status` reports each covered week as written "in <file>, a combined
+update"; the headings read **Weeks 7–8**; `publish` tags and releases it once,
+as `week-<last>`. Weeks 0 and 1 always stand alone.
 
 ## 1.1 The emulator forks — half the week is not in this repo
 

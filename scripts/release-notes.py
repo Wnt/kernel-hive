@@ -82,6 +82,9 @@ GIT_FORMAT = "%aI%x1f%cI%x1f%s"
 from release_notes_schema import (  # noqa: E402  (after the sys.path preamble above)
     _check_continuity,
     _check_numbering,
+    first_week,
+    span_weeks,
+    summary_spans,
     validate_week,
 )
 
@@ -236,6 +239,8 @@ def _decorate(doc: dict, names: dict[str, str] | None = None) -> dict:
     }
     if "source" in doc:
         out["source"] = doc["source"]
+    if span_weeks(doc) > 1:  # a combined update: its heading reads "Weeks 7–8"
+        out["firstWeek"] = first_week(doc)
     return out
 
 
@@ -372,67 +377,46 @@ def _late_facts(path: Path, end: datetime) -> list[Path]:
     return [f for f in facts_files(end) if f.stat().st_mtime > written_at]
 
 
+def covering(start: datetime | None, end: datetime) -> tuple[datetime | None, Path] | None:
+    """(the file's own start, its path) for the summary that writes this
+    calendar week — its own file, or a combined update that spans it."""
+    if start is None:
+        return (None, week_path(end)) if week_path(end).exists() else None
+    return next(((s, p) for s, e, p in summary_spans(summary_dir()) if s <= start and end <= e), None)
+
+
 def cmd_status(now: datetime) -> int:
     epoch = repo_epoch(now)
     print(f"release-notes: weeks close {CUTOFF_LABEL}; the in-progress week is never published")
     rows = [(0, None, epoch)] + [(n, s, e) for n, s, e in closed_spans(epoch, now)]
     all_commits = read_commits(now)
     for number, start, end in rows:
-        path = week_path(end)
-        state = "written" if path.exists() else "MISSING"
-        if path.exists() and start is not None:
+        cover = covering(start, end)
+        path = cover[1] if cover else week_path(end)
+        state = "written" if cover else "MISSING"
+        if cover and path != week_path(end):
+            state = f"written — in {path.name}, a combined update"
+        elif cover and start is not None:
             try:
                 recorded = json.loads(path.read_text()).get("commitCount")
             except json.JSONDecodeError:
                 recorded = None
-            drift = _commit_count_drift(start, end, recorded, all_commits)
+            drift = _commit_count_drift(cover[0], end, recorded, all_commits)
             if drift:
                 state = f"written — {drift}"
-        if path.exists():
+        if cover:
             late_facts = _late_facts(path, end)
             if late_facts:
                 names = ", ".join(f.stem for f in late_facts)
                 state += f" — WARNING: facts arrived after authoring ({names}) — re-author this week"
         window = "pre-public era" if start is None else f"{start:%Y-%m-%d %H:%M}"
         print(f"  week {number:>2}  {window} – {end:%Y-%m-%d %H:%M}  {path.relative_to(REPO_ROOT)}  {state}")
-    missing = [n for n, _, e in rows if not week_path(e).exists()]
+    missing = [n for n, s, e in rows if not covering(s, e)]
     print(
         f"release-notes: {len(rows) - len(missing)}/{len(rows)} closed weeks written"
         + (f", missing {missing}" if missing else "")
     )
     return 0
-
-
-CONTRACT = """\
-Output contract
----------------
-Write EXACTLY this file, and nothing else:
-
-    {path}
-
-    {{
-      "week": {number},
-      "title": "<2-6 words, specific, no week number in it>",
-      "start": "{start}",
-      "end":   "{end}",
-      "commitCount": {count},
-      "summary": ["<paragraph 1>", "<paragraph 2>", "<paragraph 3>"],
-      "bullets": ["<highlight>", "..."]
-    }}
-
-  - summary: exactly 3 paragraphs, 300-400 words in total.
-  - bullets: 1-20 entries, each ONE line of at most 160 characters, no leading
-    dash, no trailing period required. Highlights worth reading on their own,
-    not a changelog.
-  - Never invent a fact, a number, a date or a capability: every claim traces to
-    a commit above. If you cannot tell whether something landed or was only
-    attempted, say what the commits say, or leave it out.
-  - Never write a real IP, hostname, MAC, serial or domain — this repo is
-    public. Placeholders only.
-  - Voice and the full authoring brief: {prompt}
-
-Then: python3 scripts/release-notes.py render && python3 scripts/release-notes.py check
-"""
 
 
 def _fork_lines(start: datetime, end: datetime) -> tuple[list[str], bool]:
@@ -451,7 +435,7 @@ def _fork_lines(start: datetime, end: datetime) -> tuple[list[str], bool]:
     return forks_mod.format_section(sources, picked, missing), bool(missing)
 
 
-def cmd_brief(now: datetime, want: str | None) -> int:
+def cmd_brief(now: datetime, want: str | None, weeks: int = 1) -> int:
     epoch = repo_epoch(now)
     spans = closed_spans(epoch, now)
     if not spans:
@@ -468,7 +452,7 @@ def cmd_brief(now: datetime, want: str | None) -> int:
             return 1
         number, start, end = picked[0]
     else:
-        unwritten = [s for s in spans if not week_path(s[2]).exists()]
+        unwritten = [s for s in spans if not covering(s[1], s[2])]
         if not unwritten:
             print("release-notes: every closed week already has a summary — nothing to write")
             return 0
@@ -477,10 +461,17 @@ def cmd_brief(now: datetime, want: str | None) -> int:
         # refuses outright — the notes would be blocked by following the happy
         # path. Filling from the bottom can never do that.
         number, start, end = unwritten[0]
+    # A COMBINED update (schema span_weeks): this week and the weeks-1 before
+    # it, as one file named after this week's end and numbered by it.
+    covered = [s for s in spans if s[0] <= number][-weeks:]
+    if weeks < 1 or len(covered) < weeks or (weeks > 1 and covered[0][0] < 2):
+        print(f"release-notes: --weeks {weeks} cannot reach back from week {number} (weeks 0 and 1 stand alone)")
+        return 1
+    start = covered[0][1]
     subjects = [subject for stamp, subject in read_commits(now) if start <= stamp < end]
     path = (week_path(end)).relative_to(REPO_ROOT)
     older = ([] if week_path(epoch).exists() else [0]) + [
-        n for n, _, e in spans if n < number and not week_path(e).exists()
+        n for n, s, e in spans if n < covered[0][0] and not covering(s, e)
     ]
     if older:
         print(
@@ -489,7 +480,7 @@ def cmd_brief(now: datetime, want: str | None) -> int:
             "(`--week <end-date>`; week 0 predates this repo and is written by hand)."
         )
         print("")
-    print(f"release-notes brief — week {number}")
+    print(f"release-notes brief — week {number}" + (f", covering weeks {covered[0][0]}-{number}" if weeks > 1 else ""))
     print(f"  window : {start:%Y-%m-%d %H:%M} – {end:%Y-%m-%d %H:%M} Europe/Helsinki (end exclusive)")
     print(f"  commits: {len(subjects)}")
     # Both numbers go into the file: `commitCount` as provenance, `codeLines` as
@@ -506,22 +497,23 @@ def cmd_brief(now: datetime, want: str | None) -> int:
     for line in fork_lines:
         print(line)
     print("")
-    fact_paths = facts_files(end)
+    fact_paths = [f for _, _, e in covered for f in facts_files(e)]
     if fact_paths:
         print("FACTS FROM THE FLOOR")
-        print(f"  (dropped by station waves at {facts_dir(end).relative_to(REPO_ROOT)}/ — raw material, not prose)")
+        print("  (dropped by station waves in registry/release-notes/facts/ — raw material, not prose)")
         print("")
         for fact_path in fact_paths:
             print(f"--- {fact_path.relative_to(REPO_ROOT)} ---")
             print(fact_path.read_text().rstrip("\n"))
             print("")
     print(
-        CONTRACT.format(
+        render_mod.BRIEF_CONTRACT.format(
             path=path,
             number=number,
             start=start.isoformat(),
             end=end.isoformat(),
             count=len(subjects),
+            code_lines=code_lines,
             prompt=render_mod.PROMPT_PATH,
         )
     )
@@ -565,6 +557,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="list the closed weeks and whether each has been written up")
     brief = sub.add_parser("brief", help="print the authoring brief for the OLDEST week with no summary yet")
     brief.add_argument("--week", metavar="END-DATE", help="the Sunday a week closed, e.g. 2026-08-23")
+    brief.add_argument("--weeks", type=int, default=1, help="a combined update: this week and the N-1 before it")
     publish = sub.add_parser("publish", help="ensure a git tag + GitHub release for every closed, written week")
     publish.add_argument("--week", metavar="END-DATE", help="limit to the week that closed on this Sunday")
     publish.add_argument(
@@ -578,7 +571,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "status":
         return cmd_status(now)
     if args.command == "brief":
-        return cmd_brief(now, args.week)
+        return cmd_brief(now, args.week, args.weeks)
     if args.command == "publish":
         return cmd_publish(now, args.week, args.dry_run, args.retag)
     return cmd_render(now)
