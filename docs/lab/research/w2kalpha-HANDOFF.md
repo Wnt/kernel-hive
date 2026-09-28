@@ -89,7 +89,7 @@ tree cold-boots instead, which is the rollback.
 | **ali_usb removal** | not started | lowers guest idle CPU | Remove `ali_usb` from es40.cfg — W2K's System process pegs a core polling the emulated USB (upstream es40 issues #114/#169). Device-set change → do BEFORE any checkpoint recapture; then verify idle CPU drop. |
 | **guest de-bloat** | not started | marginal idle/interactive gain, faster boot | Disable Indexing Service, Task Scheduler, transition effects, screensaver; keep pagefile. See `es40-tuning-research.md`. Fold into the checkpoint-polish pass. |
 | **idle_nap (WTINT)** | optional | ~idle CPU only | Upstream `cpuN.idle_nap`; unverified whether W2K's HAL issues WTINT. Operator declared idle-sleep a **non-goal** (station pauses when unwatched) — low priority. |
-| **LTO / PGO final packaging** | measured | PGO +10%, LTO null | Apply PGO as a final rebuild step, not the dev loop. es40.O2/O3/pgo/lto control binaries preserved on labhost. |
+| **LTO / PGO final packaging** | **declined 2026-08-11** — keep `-O3` | PGO ~1–2% on the post-JIT build (the earlier +10% predated the JIT work that took that headroom), LTO null | Not integrating: the gain does not pay for keeping the profile fresh. Measurement and optional recipe: [`es40-pgo-measurement.md`](es40-pgo-measurement.md). Control binaries `es40.O3/pgo/lto` in `/data/vms/sandbox/ALPHA-nt/es40src/src/` on labhost. |
 
 ## Key gotchas (do not relearn)
 

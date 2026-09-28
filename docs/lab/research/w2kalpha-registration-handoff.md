@@ -111,7 +111,9 @@ the canonical station doc is now [`docs/guests/w2kalpha.md`](../../guests/w2kalp
 2. **ctlsock multi-client** (unblocks labctl/watchdog-style probes while live).
 3. Post-restore RPCC re-anchor → instant-resume reset (<5 s vs 80 s) — the
    operator's original vision; prime suspect documented in HANDOFF §bug.
-4. Guest telnet channel (needs emulated NIC), de-bloat, PGO final rebuild.
+4. Guest telnet channel (needs emulated NIC), de-bloat. (PGO was re-measured
+   the same day at ~1–2% on the post-JIT build and declined —
+   [es40-pgo-measurement.md](es40-pgo-measurement.md).)
 5. Optional polish: boot video (`scripts/coldboot/`), demoProgram/type-in.
 
 ## Fleet/labhost state left behind

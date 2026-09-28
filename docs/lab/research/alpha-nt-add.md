@@ -444,8 +444,10 @@ The road there (all measured, `uibench/` harness + JIT_STATS builds):
    wedges under heavy load (CM freezes mid-load; cold boots fine) —
    suspected unrestored wall-clock timer baselines; restore-benching
    parked, cold mode used throughout.
-2. **PGO +10% / LTO null** on the launch metric (PGO re-applies as a
-   packaging step; iteration loop stays plain -O3).
+2. **PGO +10% / LTO null** on the launch metric, measured BEFORE the JIT
+   work below. Re-measured on the post-JIT build it is ~1–2%, so PGO is
+   declined and the production build stays plain -O3
+   ([es40-pgo-measurement.md](es40-pgo-measurement.md)).
 3. **JIT_STATS revealed the gate storm**: compiled 53% / interp 22% /
    dispatch 25%; 3.9M chain exits per 100M instr, 100% "gate" —
    check_int kicked by every NT IRQL write (IER rewrite per spinlock),

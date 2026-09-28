@@ -262,14 +262,12 @@ FX!32 has translated.) Evidence and the FX!32 inventory:
 
 - Station off: `systemctl stop streamhost@w2kalpha` (ExecStop kills by pidfile).
 - Checkpoint: `rm assets/w2kalpha/golden.axp` → the launcher cold-boots (put
-  `SH_IDLE_PAUSE_WARMUP_SECS` back to 120 if that becomes permanent). The
-  pre-restore assets are preserved as `es40.bak-preinstant-20260816`,
-  `nt.img.bak-preinstant-20260816` and `rom.bak-preinstant-20260816/`, and the
-  station dir keeps `station.env.bak-preinstant-20260816` +
-  `x11-runtime.sh.bak-preinstant-20260816`.
-- Binary: control builds preserved on labhost (`es40.O2/O3/pgo/lto` beside the
-  staged binary); the fork's commits are individually revertable (each was
-  A/B-verified in isolation).
+  `SH_IDLE_PAUSE_WARMUP_SECS` back to 120 if that becomes permanent). No
+  pre-instant-restore copies of the binary, disk, ROM or station files are
+  kept any more — a cold boot runs the current `nt.img` + `rom/`.
+- Binary: control builds `es40.O3`, `es40.pgo` and `es40.lto` are on labhost in
+  `/data/vms/sandbox/ALPHA-nt/es40src/src/`; the fork's commits are
+  individually revertable (each was A/B-verified in isolation).
 - Registry: set `enabled: false`, regenerate, republish the runtime manifests
   (three documents: `serve/tiles.json`, `webroot/gallery-manifest.json`,
   `serve/golden-manifest.json`).
@@ -306,4 +304,6 @@ restored memory image anyway).
 ## Remaining work (tracked in w2kalpha-HANDOFF.md)
 
 seed polish + re-capture (1:1 mouse) → then flip `reset.mouse` after a
-MOVEA/DOWN1 proof; guest de-bloat; PGO final rebuild (+10% measured).
+MOVEA/DOWN1 proof; guest de-bloat. PGO is measured and declined: ~1–2% on
+the post-JIT build, not worth the profile upkeep
+([es40-pgo-measurement.md](../lab/research/es40-pgo-measurement.md)).
