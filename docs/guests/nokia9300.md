@@ -1,13 +1,15 @@
 # Nokia 9300 Communicator — Series 80 v2 — gallery station notes
 
-Status: **DARK-LAUNCHED on the full ROM stack** (2026-09-25; baked by agent D2,
-switched to the ROM stack by agent S1 per operator decision 28) — registry entry
-`listing.state: hidden` (listing is the operator's call), host-native EKA2L1 in a
+Status: **LIVE and LISTED on the full ROM stack** (baked 2026-09-25 by agent
+D2, switched to the ROM stack by agent S1 per operator decision 28, listed per
+operator decision 29; **golden v4 with period software and media** since
+2026-09-28, agent CB3 per decision 32) — host-native EKA2L1 in a
 systemd-nspawn sandbox, the firmware's own window server, font and bitmap
 server and Eikon painting the screen, the daemon capturing a pinned 1280x400
-Xvfb whose root is the 640x200 inner screen at exactly 2x. Measured facts only; the museum's
-prose comes later. Research record: `docs/lab/research/candidate-symbian-s80.md`
-(branch `worktree-symbian-s80-research`).
+Xvfb whose root is the 640x200 inner screen at exactly 2x. Measured facts only;
+the museum's prose is on the poster (`registry/posters/nokia9300.md`). Research
+record: `docs/lab/research/candidate-symbian-s80.md` (branch
+`worktree-symbian-s80-research`).
 
 **Guest:** an emulated **Nokia 9300 Communicator** (type RAE-6; TI OMAP1510,
 ARM925T at 150 MHz, 64 MiB RAM, 640x200 inner display in 65,536 colours, full
@@ -32,9 +34,26 @@ buttons below it, a joystick and the keyboard.
 ## Emulator
 
 **EKA2L1**, the Symbian emulator, from our fork `github.com/Wnt/EKA2L1`,
-branch **`s80-integration` @ `0dd7cab29`** (GPL-3; pinned in
-`tiles/nokia9300.sh`), run on the **full ROM stack**. Agents I2–I10 merged every
-Series 80 branch of the 2026-09-24/25 wave onto upstream master `39858137e`:
+branch **`s80-integration` @ `0c22e86bb`** (GPL-3; pinned in
+`tiles/nokia9300.sh`), run on the **full ROM stack**. It is `0dd7cab29` (agent
+I10) plus the content wave of 2026-09-28:
+
+- **`s80-content` @ `93df7a8fb`** (CB1; ekatests 358/358): `--install-drive
+  <c|d|e>` for headless SIS installs (default C: on Series 80; the install no
+  longer crashes on the first icon outside ROM), installed apps' own masked
+  icons on Desk instead of the puzzle piece, file listing in Music player,
+  RealPlayer and Images (AppForDocument MIME types, the folder scan, file
+  dates), Music player playback through the bundled ffmpeg (silent: no audio
+  device), and the EKA1 7.0s `MessageConstructFromPtr` exec call (0x8000E8)
+  behind RMRReverse's "Program closed".
+- **`s80-opl-desk` @ `0c22e86bb`** (CB3): Desk's StartApp names an application
+  by its `.app` path and the server loaded that file as code; a translated OPL
+  program (UID2 `0x100055C1`: RMRSol, RMRGolf, RMRReverse, Atomic) is a file
+  store, so Desk logged `StartApp: cannot load` and nothing opened. It is now
+  handed to the OPL launcher (`0x10005D2E`), as a launch by UID already was.
+
+`0dd7cab29` itself is every Series 80 branch of the 2026-09-24/25 wave merged
+onto upstream master `39858137e` by agents I2–I10:
 
 - **The ROM track** (Z4, `s80-rom-full` @ `20ee52b11`, merged by I10): ROM boot
   (A: the ROM's own `ewsrv.exe`, a controlled startup through the resident
@@ -68,8 +87,10 @@ server and FBS (the pre-switch station).
 
 Built on labhost by `scripts/build-guests/emulators/build-eka2l1.sh` (pinned
 fork commit, trixie build root under nspawn, shared ccache, mold; the configure
-stamp is gated, so the binary logs `EKA2L1 v0.0.1 (s80-integration-0dd7cab290)`),
-sha256 `93edacff…e2ef`. The station runs the whole installed tree (`compat/
+stamp is gated, so the binary logs `EKA2L1 v0.0.1 (s80-integration-0c22e86bb8)`),
+sha256 `a48dbac9…850c`. The configure stamp carries the branch as well as the
+pin: `version.h` bakes `<branch>-<sha>`, so a pin built first under a test
+branch reconfigures when it is built again as `s80-integration`. The station runs the whole installed tree (`compat/
 patch/ resources/ scripts/ tools/` beside `eka2l1_qt`), not the binary alone.
 
 Run protocol: `eka2l1_qt --device RAE-6 --run 0x101f8e4f` (Desk) with
@@ -83,12 +104,16 @@ must precede `--run`; `--run` swallows the next token unless it starts with
 `--`. EKA2L1 ignores SIGTERM. It needs an X server with GLX; Xvfb + Mesa
 llvmpipe works.
 
-## Golden (never in git — Nokia firmware, SDK fonts)
+## Golden (never in git — Nokia firmware, SDK fonts, third-party SIS contents)
 
 An EKA2L1 XDG data root: `EKA2L1/config.yml` and
 `EKA2L1/data/{devices.yml, roms/rae-6/SYM.ROM, drives/{c,d,e,z}}`.
+**Golden v4** (2026-09-28, agent CB3) = golden v3.1 + the content wave's
+172-file delta, with the SysState overlay laid over it at install.
 
-- Base: agent I2's proof golden — agent F1's working data dir `xdg-9300` of
+### Base (v3.1)
+
+- Agent I2's proof golden — agent F1's working data dir `xdg-9300` of
   2026-09-24 (agent S's registration of the 9300 dump staged under
   `/data/assets-staging/symbian-s80/eka2l1-dumps/`) plus
   `C:\System\SharedData\10000865.ini`: the ROM's own default (UTF-16LE with
@@ -100,43 +125,92 @@ An EKA2L1 XDG data root: `EKA2L1/config.yml` and
   S80 DP2.0 SDK's Z: drive: both dumps lack them (the ROM's own `missing.txt`
   names them) and the UI otherwise falls back to a serif.
 - `devices.yml` `machine-uid: 270503387` = 0x101F8DDB, the 9300's own value.
-- `config.yml`: `keyboard-layout-index: 6` (golden v3; v2 had 0, UK EKDATA),
-  `enable-upnp: false`.
-- Golden v3: agent L1's Helsinki files in `C:\System\Data`: `Wldsvr.dat`
-  (177 B, home city Helsinki), `LOCALE.D00` (280 B, Finland TLocale:
-  EDateEuropean, 24 h, EU summer time) and `nitzlookup.db` (99 956 B).
-- Agent B6's Desk first-boot state (`apply-desk-state.sh`):
-  `C:\System\Data\Shortcuts.dat`, `C:\System\Apps\desk\desk.ini`,
-  `C:\System\SharedData\101f8e4f.ini`.
+- `config.yml`: `keyboard-layout-index: 6` (Nordic), `enable-upnp: false`.
+- Agent L1's Helsinki files in `C:\System\Data`: `Wldsvr.dat` (177 B, home
+  city Helsinki), `LOCALE.D00` (280 B, Finland TLocale: EDateEuropean, 24 h,
+  EU summer time) and `nitzlookup.db` (99 956 B).
+- Agent B6's Desk first-boot state (`apply-desk-state.sh`): `desk.ini` in
+  `C:\System\Apps\desk\` (unchanged in v4); v4 replaces the other two files.
 - `C:\cword` (478 B) is removed: a leftover of an old Create launch (C2).
-- Ledger (v3.1): 3258 files, 68 735 629 B; tree manifest sha256
-  `e5b0b53d5dd54a6885b6b31c98730cebb071b949c8d5dec7072141c92413d0ac` (sha256 of
+
+### Content (v4, CB1's delta, operator decision 32)
+
+Installed at bake time with `eka2l1_qt --device RAE-6 --install-drive c
+--install <sis>…` on a private copy, then booted once so Desk wrote its own
+link database. Everything lands on C:; no memory card is needed.
+
+| On Desk | Package | Notes |
+|---|---|---|
+| RMRSol, RMRGolf, RMRReverse | RMR Software (rmrsoft.com), OPL | need the OPL V156 / OPX V157 runtime (`C:\System\Apps\Opl`, `C:\System\OPX`; no Desk icon); a pre-set `RMRReverse.ini` (3D board), because a fresh install saves an invalid board type and divides by zero |
+| Atomic | Atomic 3.6, Steve Litchfield, OPL | Wayback copy of stevelitchfield.com; its start-up reminder ends the first game early; Exit = Cancel, OK, Ctrl+E |
+| MMC Apps › ProTourGolf | ProTour Golf (allaboutsymbian.com, Wayback) | its ten WAVs re-encoded from unsigned 8-bit to 16-bit PCM: the bundled ffmpeg cannot decode u8 and the game crashed on its first swing |
+| PuTTY | PuTTY 1.5.2 for S80 v2 (s2putty, SourceForge) | first-run random-seed and microphone prompts |
+| iSilo | iSilo 6.10 S80 (isilo.com, 2013) | manual + display sample in `C:\Documents\iSilo` |
+| Word To Go, Sheet To Go | Documents To Go for Series 80 2.000 (DataViz, Wayback 2005) | trial dialog, then "Make default? → No" |
+| WorldMate | WorldMate for Series 80 (MobiMate, Wayback 2005) | stays in the background after Exit |
+
+No trial or first-run state is baked, so every visitor starts on day 1 of each
+trial. `C:\System\Data\Shortcuts.dat` and `C:\System\SharedData\101f8e4f.ini`
+are Desk's own bytes after the installs (a boot with them baked rewrites
+neither). Everything needed to rebake is kept on labhost in
+`/data/assets-staging/symbian-s80/nokia9300-content-v4/`: `pkgs/` (the SIS and
+zip files, `MANIFEST.md` with each source URL and sha256), `golden-v4-delta/`
++ `golden-v4-delta.sha256`, `media-out/` (CB2's conversions, `README.md`,
+`ATTRIBUTION.md`), `DESK-STATE.md` and `MEDIA-PATHS.md`.
+
+**Media** (agent CB2's conversions; none of the apps looks in subfolders, so
+the files sit in each app's default "Communicator" folder, the `C:` root):
+
+- Images: `bluemarb.jpg` (The Blue Marble, NASA / Apollo 17, 1972),
+  `pillars.jpg` (Pillars of Creation, NASA / Hester and Scowen, Hubble, 1995),
+  plus the 640x200 wallpaper crops `bluemwp.jpg` and `pillwp.jpg`.
+- Music player: `dungeon.mp3` (Kevin MacLeod, "8bit Dungeon Boss", **CC BY
+  3.0 — the credit is a licence condition and is on the poster**),
+  `lvpod08.mp3` (LibriVox New Releases Podcast, May 2008, PD), and Mutopia PD
+  MIDI `furelise.mid`, `bachmin.mid` (BWV Anh. 114), `minwaltz.mid`.
+- Playback is **silent**: the Music player counts through a track (proven
+  00:00 → 00:05 → 00:09 for the MP3 and the MIDI) but the station has no
+  audio device. Accepted.
+- **Video is excluded.** RealPlayer answers every tried format (3GP, MP4,
+  nine variants, CB1-P) with "Format not supported": the 9300's video decoders
+  are programs for the OMAP1510's DSP, and the emulator's own video component
+  only serves later Symbian versions. Playing video needs a Series 80 video
+  component of our own. CB2's `.3gp/.mp4` files are not in the golden.
+
+### Ledger and install
+
+- Golden v4: **3428 files, 89 949 483 B**, tree manifest sha256
+  `a9c98801465d26cf6d6e5eaa288c63a74187c168f388a56ded1ecc0b85f7e0b0` (sha256 of
   `find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum` inside the
   root). `SYM.ROM` 17 825 792 B, sha256
   `ca4b0bc929519b046994c8501b0135b688d8d7910d6669f4791805e3ab373596`.
 - Staged on labhost at `/data/assets-staging/symbian-s80/nokia9300-golden/xdg`
-  (+ `MANIFEST.sha256`; `xdg.v3` = the previous golden);
-  `tiles/nokia9300.sh --golden` hash-gates it and installs `$STATION/golden`,
-  keeping the previous as `golden.prev`.
+  (+ `MANIFEST.sha256`); the previous goldens are kept beside it as
+  `xdg.v3.1` (+ `MANIFEST.sha256.v3.1`), `xdg.v3`, `xdg.v2`, `xdg.v1`.
+  `tiles/nokia9300.sh --golden` hash-gates it, lays the overlay over it and
+  installs `$STATION/golden`, keeping the previous as `golden.prev`.
+- A new content bake: build the tree on a private copy, lay the delta over
+  it, check the delta manifest, regenerate `GOLDEN_FILES` / `GOLDEN_BYTES` /
+  `GOLDEN_TREE_SHA` in `tiles/nokia9300.sh` from the real tree (never by hand),
+  stage, `--golden`, restart.
 - Time zone: Helsinki. The container runs `TZ=Europe/Helsinki` (`NOKIA_TZ`)
   and EKA2L1 seeds the kernel's UTC offset from it, but the guest's world
   server follows its HOME CITY (ROM default "New York, NY"; Telephone used to
-  write a New York `Wldsvr.dat`). Golden v3 carries L1's Helsinki
-  `Wldsvr.dat`, so the pane clock is Helsinki time: 17:07 at 14:07 UTC and
-  17:18 at 14:18 UTC through the real page (2026-09-25, bake5).
-- Date and time FORMAT: "Friday 25th September 2026" (European) and a 24 h
+  write a New York `Wldsvr.dat`). The golden carries L1's Helsinki
+  `Wldsvr.dat`, so the pane clock is Helsinki time.
+- Date and time FORMAT: "Monday 28th September 2026" (European) and a 24 h
   clock. The fork (L1) loads `C:\System\Data\LOCALE.D00` at boot, as
-  `BaflUtils::InitialiseLocale` would; the HLE's old American default is gone.
+  `BaflUtils::InitialiseLocale` would.
 - `hosts:` map empty on purpose: the retronet's wildcard DNS names everything (see Network).
 - **Overlay: `C:\System\Programs\SysState.exe`**, the resident state
   publisher that the ROM window server's `STARTUP` directive launches; it also
   publishes the window-group snapshots behind the ROM window bridge. Built from
   the pinned tree's `tools/s80-sysstate` (`build.sh` with the N-Gage SDK
-  toolchain), 2 800 B, sha256 `6062e081…faf2`; code-identical to Z4 F's
-  `6e8b2068…fac0` (only the E32 header timestamp differs). An older helper
-  boots but cannot serve `list`/`focus`/`switch`. It publishes SharedData
-  `state.val` itself: never bake a `state.val` or edit ROM `wsini` bytes.
-  Staged at `/data/assets-staging/symbian-s80/nokia9300-overlay` with its own
+  toolchain; unchanged from `0dd7cab29` to `0c22e86bb`), 2 800 B, sha256
+  `6062e081…faf2`. An older helper boots but cannot serve
+  `list`/`focus`/`switch`. It publishes SharedData `state.val` itself: never
+  bake a `state.val` or edit ROM `wsini` bytes. Staged at
+  `/data/assets-staging/symbian-s80/nokia9300-overlay` with its own
   `MANIFEST.sha256`; `tiles/nokia9300.sh --golden` checks it and lays it over
   the gated ledger golden (`GOLDEN_OVERLAY`, empty = the bare ledger).
 
@@ -263,6 +337,12 @@ overlays a golden-manifest row pointing `reset-tile.sh` at the rig.
 - Apps proven on s80-integration by agent I2: Desk, Documents, Web, File
   manager, Contacts, Clock (both faces), Sync, Write note, three at once.
   Since 3f8b52782 Messaging shows its folders and Telephone its directory.
+- Installed content (golden v4, see Golden › Content), proven on the live
+  station by CB3 on 2026-09-28: RMRSol, Atomic and iSilo launched from their
+  Desk icons, keys moved the card cursor / the falling piece / the manual,
+  Exit returned to Desk; RMRReverse and RMRGolf open from Desk (RMRGolf through
+  the real `/os/nokia9300` page); Music player plays `dungeon.mp3` and
+  `furelise.mid` (silent); Images opens the Blue Marble.
 
 ## Network
 
@@ -301,21 +381,23 @@ LIVE display before it can be patched for an x11 rig.
   the claims, relaunch, restart the daemon. The `darklaunch.d` declaration
   survives on `/data`.
 
-## Rollback to the HLE-only build
+## Rollback
 
-The previous install, the HLE window server build `s80-integration` @
-`e7198fd8c`, is kept as `assets/nokia9300/eka2l1.prev`, and the golden without
-the SysState overlay as `stations/nokia9300/golden.prev`. Together with an
-empty `NOKIA_EMU_ENV` they are the exact pre-switch combination. One command:
+The previous install, `s80-integration` @ `0dd7cab29` (golden v3.1, no
+content), is kept as `assets/nokia9300/eka2l1.prev`, and golden v3.1 + the
+SysState overlay as `stations/nokia9300/golden.prev`. The pair is the exact
+pre-content combination (the fixture did not change). One command:
 
 ```bash
-ssh lab 'A=/data/vms/streamhost/assets/nokia9300 S=/data/vms/streamhost/stations/nokia9300; mv $A/eka2l1 $A/eka2l1.rom && mv $A/eka2l1.prev $A/eka2l1 && mv $S/golden $S/golden.rom && mv $S/golden.prev $S/golden && sed -i "s/^NOKIA_EMU_ENV=.*/NOKIA_EMU_ENV=/" $S/station.env && systemctl restart streamhost@nokia9300'
+ssh lab 'A=/data/vms/streamhost/assets/nokia9300 S=/data/vms/streamhost/stations/nokia9300; mv $A/eka2l1 $A/eka2l1.v4 && mv $A/eka2l1.prev $A/eka2l1 && mv $S/golden $S/golden.v4 && mv $S/golden.prev $S/golden && systemctl restart streamhost@nokia9300'
 ```
 
-The next `station-up.sh nokia9300` re-emits the committed fixture, so a lasting
-rollback also empties `NOKIA_EMU_ENV` in
-`streamhost/stations/nokia9300/station.env.fixture` and re-pins
-`tiles/nokia9300.sh`.
+A lasting rollback also re-pins `tiles/nokia9300.sh` to `0dd7cab29` with the
+v3.1 ledger (3258 files, 68 735 629 B, tree `e5b0b53d…d0ac`) and restores the
+staged `xdg.v3.1` as `xdg`. Older combinations stay on the box: the HLE-only
+build `e7198fd8c` as `assets/nokia9300/eka2l1.hle-e7198fd8c` with
+`stations/nokia9300/golden.hle-v3.1` (the golden without the SysState
+overlay) and an empty `NOKIA_EMU_ENV`.
 
 ## Re-pin
 
@@ -341,7 +423,14 @@ the overlay dir, regenerate its `MANIFEST.sha256`, run `tiles/nokia9300.sh --gol
 - Full phone-side Starter boot is not used; the controlled service set replaces it.
 - Fonts are not device-identical (X2's rasteriser/metrics gap; the Sheet row
   pitch and Documents line pitch differ from the device).
-- Contacts, Opera and Messaging stay in the background after Exit.
+- Contacts, Opera, Messaging and WorldMate stay in the background after Exit.
+- **No video, no sound** (golden v4): RealPlayer plays nothing (the 9300's
+  decoders run on its DSP) and the Music player is silent (no audio device).
+- The content apps' own shareware reminders are part of the exhibit; Atomic's
+  start-up reminder ends the first game early (a new game with Ctrl+P plays).
+- An idle station is paused by the daemon (SIGSTOP on `mame.pid`): drive the
+  live station under `scripts/lib/guest_wake.py`'s `WakeLease`, or keys queue
+  up and frames go stale.
 
 - The status pane (lower left) shows the skin, a minute clock and the
   no-network and battery indicators; the clock follows the guest's home city

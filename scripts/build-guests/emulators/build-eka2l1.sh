@@ -65,7 +65,7 @@ set -euo pipefail
 
 EKA2L1_FORK_URL="${EKA2L1_FORK_URL:-https://github.com/Wnt/EKA2L1.git}"
 EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-integration}"
-EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-0dd7cab2905fa14a2b1d5377dd9541dd2cbd58c0}"
+EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-0c22e86bb8b51dc92ecc283471e8d10f2496aec4}"
 
 WORK="${WORK:-/data/vms/sandbox/BUILD-eka2l1}"
 BUILDROOT="${BUILDROOT:-$WORK/buildroot}"
@@ -202,9 +202,12 @@ $DIRTY"
 echo "  source: $SRC at $EKA2L1_FORK_PIN (local branch $EKA2L1_FORK_BRANCH)"
 
 # ---------------------------------------------------------------------------
-# 2. configure (only when the pin or the flags moved) and build
+# 2. configure (only when the branch, the pin or the flags moved) and build
 # ---------------------------------------------------------------------------
-STAMP="$EKA2L1_FORK_PIN ${CMAKE_FLAGS[*]}"
+# The branch is in the stamp: version.h bakes "<branch>-<sha>", so one pin
+# built first under a test branch and then under s80-integration must
+# reconfigure, or the provenance gate below refuses the stale name.
+STAMP="$EKA2L1_FORK_BRANCH $EKA2L1_FORK_PIN ${CMAKE_FLAGS[*]}"
 CONFIGURE_S=0
 if [ ! -f "$BLD/build.ninja" ] || [ "$(cat "$BLD/.kh-configure" 2>/dev/null)" != "$STAMP" ]; then
   say "configure (Release, ccache, mold, libuv from the submodule, no network)"

@@ -73,19 +73,23 @@ MEDIA="${MEDIA:-/data/assets-staging/symbian-s80/nokia9300-golden/xdg}"
 UIDBASE="${UIDBASE:-2621440}"
 GOLDEN_OVERLAY="${GOLDEN_OVERLAY-/data/assets-staging/symbian-s80/nokia9300-overlay}"
 # The fork commit the station runs — ONE combination with the golden, the
-# SysState overlay and the launch switches: s80-integration @ 0dd7cab29
-# (agent I10) = every Series 80 branch of the wave (I2-I9) + the full ROM
-# stack s80-rom-full @ 20ee52b11 (Z4: ROM boot, ROM input, the ROM window
-# bridge, ROM fbserv) + the sub-byte bitmap expander (G4).
+# SysState overlay and the launch switches: s80-integration @ 0c22e86bb
+# (content wave, 2026-09-28) = 0dd7cab29 (agent I10: every Series 80 branch
+# of the wave I2-I9 + the full ROM stack s80-rom-full @ 20ee52b11 + the
+# sub-byte bitmap expander G4) + s80-content @ 93df7a8fb (CB1: --install-drive,
+# installed apps' own Desk icons, media listing, Music player playback, the
+# EKA1 MessageConstructFromPtr call RMRReverse needs) + s80-opl-desk (CB3:
+# Desk starts an OPL app through the OPL launcher).
 export EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-integration}"
-export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-0dd7cab2905fa14a2b1d5377dd9541dd2cbd58c0}"
+export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-0c22e86bb8b51dc92ecc283471e8d10f2496aec4}"
 
-# The golden ledger (measured 2026-09-24, docs/guests/nokia9300.md §Golden).
+# The golden ledger (golden v4, measured 2026-09-28: v3.1 + the content
+# wave's 172-file delta; docs/guests/nokia9300.md §Golden).
 # TREE = sha256 of `find . -type f -print0 | LC_ALL=C sort -z | xargs -0
 # sha256sum` run inside $MEDIA.
-GOLDEN_FILES=3258
-GOLDEN_BYTES=68735629
-GOLDEN_TREE_SHA=e5b0b53d5dd54a6885b6b31c98730cebb071b949c8d5dec7072141c92413d0ac
+GOLDEN_FILES=3428
+GOLDEN_BYTES=89949483
+GOLDEN_TREE_SHA=a9c98801465d26cf6d6e5eaa288c63a74187c168f388a56ded1ecc0b85f7e0b0
 ROM_REL=EKA2L1/data/roms/rae-6/SYM.ROM
 ROM_BYTES=17825792
 ROM_SHA=ca4b0bc929519b046994c8501b0135b688d8d7910d6669f4791805e3ab373596
