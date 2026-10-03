@@ -1,7 +1,7 @@
 # Panasonic FS-A1GT / MSX turbo R
 
 Host-native openMSX 21.0, pinned to
-`cb61db762aba16752ff649990bf85e40627777af`. Candidate station `msxturbor`,
+`cb61db762aba16752ff649990bf85e40627777af`. Station `msxturbor`,
 slot/VMID label 220, UDP 54220. No QEMU guest, X server, kiosk, network
 cartridge, retronet wiring, microphone or host MIDI connection.
 
@@ -130,8 +130,10 @@ Validated in isolated GUI and DOS instances on 2026-10-03:
   inherited Python-suite read-path failure is fixed in coordinator main
   (`01c1e1cf`); coordinator owns the final integrated full-suite gate.
 
-Keep lifecycle `candidate` until the coordinator's browser acceptance and
-promotion. The poster uses actual desktop and DRAW frames, not a scaffold.
+Browser acceptance passed in the staged SPA: Tools → DRAW, rapid rectangle
+and text-box placement, physical keyboard text, and Save to drive A produced
+BROWSER.DRW (44 bytes). The production reset endpoint is checked at bring-up.
+The poster uses actual desktop and DRAW frames.
 Proof artifacts are under the sandbox's `rig-view/`, `rig-dos/` and `build/`
 directories. They are not live station files.
 

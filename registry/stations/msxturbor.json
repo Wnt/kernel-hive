@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "msxturbor",
   "era_year": 1991,
-  "enabled": false,
+  "enabled": true,
   "build": {
     "rows": [
       {
@@ -48,7 +48,7 @@
     "goldenOrder": 93
   },
   "stationDir": "msxturbor",
-  "lifecycle": "candidate",
+  "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
     "udpPort": 54220,
@@ -179,13 +179,13 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "Native MSX mouse on joystick port A; browser verification pending.",
-    "keyboard": "Japanese JIS matrix derived from the pinned openMSX unicode map; browser verification pending.",
-    "fixture": "Fresh cold boot with firmware enabled and original system disk 3. DOS profile uses original system disk 2 with firmware disabled. Runtime proof pending."
+    "mouse": "Native MSX mouse; browser menu, rapid drawing, text placement and file-save controls verified.",
+    "keyboard": "Japanese JIS matrix; physical browser keyboard and GUI filename entry verified.",
+    "fixture": "Fresh cold boot with firmware enabled and original system disk 3. Relaunch restores original disks and fresh SRAM/CMOS profile."
   },
   "migrationExceptions": [],
   "notes": [
-    "Offline host-native integration; no retronet. Candidate until framebuffer, input, reset and browser acceptance gates pass."
+    "Offline native openMSX integration; no RetroNet. Browser desktop, input, drawing and file-save acceptance passed."
   ],
   "keyboard": {
     "charMap": {

@@ -236,6 +236,10 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#b9bcc0', accentTint: '#5b7fa6', tintMix: 0.45,
     badge: 'NOKIA 9300', spec: 'SERIES 80 • SYMBIAN OS 7.0s • 2005', kit: 'mobile',
   },
+  msxturbor: {
+    caseTint: '#292b2e', accentTint: '#376ca8', tintMix: 0.55,
+    badge: 'PANASONIC FS-A1GT', spec: 'R800 • MSX VIEW • 1991', kit: 'eightBit',
+  },
   svi328: {
     caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
     badge: 'SPECTRAVIDEO SV-328', spec: 'Z80 • 1983', kit: 'eightBit',
@@ -243,9 +247,5 @@ export const EXHIBIT_IDENTITIES_3 = {
   svi328cpm: {
     caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
     badge: 'SV-328 CP/M', spec: '80 COLUMNS • 1984', kit: 'eightBit',
-  },
-  svi728: {
-    caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
-    badge: 'SPECTRAVIDEO 728', spec: 'Z80 • 1984', kit: 'eightBit',
   },
 } as const satisfies Record<string, ExhibitIdentity>;

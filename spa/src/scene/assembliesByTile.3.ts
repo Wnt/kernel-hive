@@ -163,13 +163,13 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'pizzaBox', body: 'modernMini', monitor: 'lcdA',
     keyboard: 'keyboardH',
   },
+  msxturbor: {
+    kind: 'homeMicro', body: 'pizzaBoxB', monitor: 'homeCrtD', mouse: 'paramMouseB',
+  },
   svi328: {
     kind: 'homeMicro', body: 'paramTower', monitor: 'homeCrtD',
     },
   svi328cpm: {
     kind: 'homeMicro', body: 'towerE', monitor: 'homeCrtD',
     },
-  svi728: {
-    kind: 'homeMicro', body: 'pizzaBoxC', monitor: 'homeCrtB',
-  },
 } as const satisfies Record<string, Assembly>;
