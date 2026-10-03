@@ -113,7 +113,9 @@ Validated in isolated GUI and DOS instances on 2026-10-03:
   `220824867fdc443c4dc03effc80a04c7ad3bc492dc5c581b759295eff5cfb9a3`.
 - IFB1 shows VSHELL, ViewDRAW 1.1 and MSX-DOS 2.30 / MSX-BASIC 4.1.
   Native input opens DRAW through 道具 (Tools), places a rectangle, creates
-  a text box and types through the period Japanese input mode.
+  a text box and types through the period Japanese input mode. GUI Save
+  also completed: the title changed to HIVE and the writable disk copy
+  contains the 60-byte `HHIVE.DRW` file.
 - Native keyboard saved `HIVE.BAS`, cleared memory with NEW, reloaded it and
   listed the original `10 PRINT "HIVE TURBO R"` program on the framebuffer.
 - BASIC BEEP produced 2,306,048 captured PCM bytes, 22,340 nonzero S16 samples
@@ -132,5 +134,9 @@ directories. They are not live station files.
 
 DRAW uses click-to-start / click-to-finish placement. Finish the second corner
 before selecting another toolbar item; a plain drag can leave an object active.
+To save from DRAW, open the top-left application menu, choose 保存, choose
+drive A, wait for its directory listing, enter a name in the bottom field,
+then click 保存. Drive C is the read-only ROM disk.
+
 The Japanese application input mode may produce kana from Latin-position keys;
 this is original guest behavior, not UTF-8 host text injection.
