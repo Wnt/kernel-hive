@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (118 of the 120
+//    - transport   : how its LIVE framebuffer texture is obtained (119 of the 121
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -114,7 +114,7 @@ export interface OSBinding {
   resetKeepsStream?: boolean;
 }
 
-// One entry per OS. 118 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 119 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -249,6 +249,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   macosx:      { osId: 'macosx', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#5d8fc7', eraLabel: '2003 · Mac OS X 10.3 Panther — Power Mac G4', pointerRel: false },
   nokia9300:   { osId: 'nokia9300', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#5B7FA6', eraLabel: '2005 · Series 80 v2 (Symbian OS 7.0s)' }, // ideal: a Nokia 9300 Communicator lying open — the 640x200 screen above the QWERTY keyboard, the four command buttons to the right of the screen
   svi328:      { osId: 'svi328', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#5655dd', eraLabel: '1983 · Spectravideo SV-328 · SV BASIC 1.1' },
+  svi328cpm:   { osId: 'svi328cpm', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3cc454', eraLabel: '1984 · Spectravideo SV-328 · CP/M-80 2.24' },
   svi728:      { osId: 'svi728', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#56799b', eraLabel: '1984 · MSX BASIC 1.0' },
   svi738:      { osId: 'svi738', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#56799b', eraLabel: '1985 · CP/M-80 2.28' },
 };

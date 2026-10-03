@@ -1,4 +1,4 @@
-// GENERATED shard 3/3 of ASSEMBLIES_BY_TILE — rows in registry lineup order, written by
+// GENERATED shard 3/4 of ASSEMBLIES_BY_TILE — rows in registry lineup order, written by
 // scripts/dev/spa-scene-rows.py (the index is ./assembliesByTile.ts). Edit a ROW here if you must;
 // never the layout, and never add a row by hand — the rebuild places it.
 import type { Assembly } from './machines';
@@ -166,10 +166,10 @@ export const ASSEMBLIES_BY_TILE_3 = {
   svi328: {
     kind: 'homeMicro', body: 'paramTower', monitor: 'homeCrtD',
     },
+  svi328cpm: {
+    kind: 'homeMicro', body: 'towerE', monitor: 'homeCrtD',
+    },
   svi728: {
     kind: 'homeMicro', body: 'pizzaBoxC', monitor: 'homeCrtB',
-  },
-  svi738: {
-    kind: 'homeMicro', body: 'pizzaBoxC', monitor: 'homeCrtE',
   },
 } as const satisfies Record<string, Assembly>;

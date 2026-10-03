@@ -324,6 +324,22 @@ const DEMO_PROGRAMS = {
     "runCommand": "RUN",
     "perCharMs": 500
   },
+  "svi328cpm": {
+    "label": "Type in a demo program (CP/M MBASIC)",
+    "lines": [
+      "mbasic",
+      "NEW",
+      "10 PRINT \"SPECTRAVIDEO CP/M\"",
+      "20 FOR I=1 TO 5",
+      "30 PRINT I,I*I",
+      "40 NEXT I"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 500,
+    "enterDelayMs": [
+      20000
+    ]
+  },
   "svi728": {
     "label": "Type a Spectravideo BASIC demo",
     "lines": [

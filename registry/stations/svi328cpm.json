@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "id": "svi328cpm",
+  "era_year": 1984,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 90,
+        "prelude": "",
+        "value": {
+          "key": "svi328cpm",
+          "script": "tiles/svi328cpm.sh",
+          "outputDir": "native/svi328cpm",
+          "class": "retro",
+          "estimated": "~1m media + cached native build",
+          "automation": "full",
+          "produces": "Pristine CP/M 2.24 disk with MBASIC and WELCOME.TXT",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/svi328cpm",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54222,
+      "notes": "Offline native MAME: drawshm framebuffer, mamesock keyboard, FIFO audio; no QEMU or network."
+    }
+  },
+  "render": {
+    "signalOrder": 116,
+    "stationsManifestOrder": 95,
+    "stationsManifestPrelude": "\n# svi328cpm \u2014 Spectravideo SV-328, native PAL MAME, offline.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 123,
+    "bindingPrelude": "",
+    "goldenOrder": 95
+  },
+  "stationDir": "svi328cpm",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54222,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 222
+  },
+  "guestDoc": "docs/guests/svi328cpm.md",
+  "credentialsRef": "guest/svi328cpm",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "svi328cpm",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":222",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/svi328cpm/svi328cpm_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/svi328cpm/fb.shm",
+      "SH_PORT": "54222",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/svi328cpm/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/svi328cpm/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": "%3A:;,;:%3A"
+    },
+    "vmidLabel": 222,
+    "bringUpOrder": 123,
+    "x11": {
+      "display": ":222",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "svi328cpm",
+        "--udp",
+        "54222",
+        "--x11",
+        "--x11-display",
+        ":222",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/svi328cpm/svi328cpm.keymap",
+        "--env-append-file",
+        "$T/svi328cpm/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/svi328cpm/svi328cpm.keymap",
+        "streamhost/stations/svi328cpm/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#3cc454",
+    "eraLabel": "1984 \u00b7 Spectravideo SV-328 \u00b7 CP/M-80 2.24"
+  },
+  "museum": {
+    "id": "svi328cpm",
+    "displayName": "Spectravideo SV-328 \u2014 CP/M",
+    "year": 1984,
+    "lineage": "Spectravideo SV-328 \u2192 expanded CP/M office system",
+    "arch": "Zilog Z80A, 3.58 MHz; TMS9929A PAL video; SV-806 80-column card",
+    "ramMB": 0,
+    "ramKB": 64,
+    "era": "1980s",
+    "accent": "#376ca8",
+    "eraSoftware": [
+      "CP/M-80 2.24",
+      "MBASIC 5.21",
+      "ED / ASM / LOAD"
+    ],
+    "periodBrowser": "none \u2014 offline, before the web",
+    "iconicApps": [
+      "MBASIC"
+    ],
+    "blurb": "A keyboard, a disk prompt and 80 columns: turn the SV-328 into a small programming workstation.",
+    "notes": "Host-native MAME svi328 (PAL), v111 BIOS. Spectravideo CP/M-80 version 2.24 for SV-605B, A> on the SV-806 80-column display. Reset cold-boots from a pristine writable disk copy."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/svi328cpm.sh",
+    "driver": "svi328"
+  },
+  "ui": "text-console",
+  "reset": {
+    "stationDir": "svi328cpm",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "N/A \u2014 keyboard-only exhibit",
+    "keyboard": "Generated from the running driver KEYDUMP; pacing tested on the matrix. Production browser acceptance is recorded in guest documentation.",
+    "fixture": "Spectravideo CP/M-80 version 2.24 for SV-605B, A> on the SV-806 80-column display."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "Offline, independently implemented from upstream driver and archived media. No RetroNet. Separate BASIC and expanded CP/M stations; cold relaunch reset."
+  ],
+  "demoProgram": {
+    "label": "Type in a demo program (CP/M MBASIC)",
+    "lines": [
+      "mbasic",
+      "NEW",
+      "10 PRINT \"SPECTRAVIDEO CP/M\"",
+      "20 FOR I=1 TO 5",
+      "30 PRINT I,I*I",
+      "40 NEXT I"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 500,
+    "enterDelayMs": [
+      20000
+    ]
+  },
+  "keyboard": {
+    "charMap": {
+      ":": ";",
+      ";": ":"
+    }
+  }
+}

@@ -368,7 +368,7 @@ export const OS_FAMILY: Record<string, Family> = {
   // ordinary PC-ish key layout (the GRAPH/CODE/KANA/dead keys are cosmetic,
   // not chords a visitor needs) — no dedicated profile until a real MSX
   // keyboard matrix quirk shows up on the framebuffer.
-  msx2: 'generic', svi728: 'generic', svi738: 'generic',
+  msx2: 'generic', svi328: 'generic', svi328cpm: 'generic', svi728: 'generic', svi738: 'generic',
   freedos: 'dos', msdoswin1: 'dos',
   // SCO Xenix 386 2.3.4: a System V text console, so the linux-tty rows' job
   // exactly (^C/^D/^Z on a PC-101 board) — plus the one thing that IS the

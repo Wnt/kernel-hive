@@ -12,6 +12,7 @@ import type { Assembly } from './machines';
 import { ASSEMBLIES_BY_TILE_1 } from './assembliesByTile.1';
 import { ASSEMBLIES_BY_TILE_2 } from './assembliesByTile.2';
 import { ASSEMBLIES_BY_TILE_3 } from './assembliesByTile.3';
+import { ASSEMBLIES_BY_TILE_4 } from './assembliesByTile.4';
 
 // Every registry lineup entry is bound explicitly. Keep entries that do not
 // fit in today's 22 slots here so a future hall expansion requires no modeling
@@ -20,5 +21,6 @@ export const ASSEMBLIES_BY_TILE = {
   ...ASSEMBLIES_BY_TILE_1,
   ...ASSEMBLIES_BY_TILE_2,
   ...ASSEMBLIES_BY_TILE_3,
+  ...ASSEMBLIES_BY_TILE_4,
 } as const satisfies Record<string, Assembly>;
 

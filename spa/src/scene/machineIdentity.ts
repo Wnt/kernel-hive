@@ -2,6 +2,7 @@ import type { ASSEMBLIES_BY_TILE } from './machines';
 import { EXHIBIT_IDENTITIES_1 } from './machineIdentity.1';
 import { EXHIBIT_IDENTITIES_2 } from './machineIdentity.2';
 import { EXHIBIT_IDENTITIES_3 } from './machineIdentity.3';
+import { EXHIBIT_IDENTITIES_4 } from './machineIdentity.4';
 
 type StationKit = 'eightBit' | 'office90' | 'workstation' | 'modern' | 'mobile';
 
@@ -23,6 +24,7 @@ export const EXHIBIT_IDENTITIES = {
   ...EXHIBIT_IDENTITIES_1,
   ...EXHIBIT_IDENTITIES_2,
   ...EXHIBIT_IDENTITIES_3,
+  ...EXHIBIT_IDENTITIES_4,
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

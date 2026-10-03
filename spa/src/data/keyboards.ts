@@ -190,6 +190,12 @@ const KEYBOARDS = {
       ";": ":"
     }
   },
+  "svi328cpm": {
+    "charMap": {
+      ":": ";",
+      ";": ":"
+    }
+  },
   "svi728": {
     "charMap": {}
   },

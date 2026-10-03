@@ -303,6 +303,9 @@ const POSTER_INDEX = {
   "svi328": {
     "hero": "/posters/svi328/desktop.webp"
   },
+  "svi328cpm": {
+    "hero": "/posters/svi328cpm/desktop.webp"
+  },
   "svi728": {
     "hero": "/posters/svi728/desktop.webp"
   },
