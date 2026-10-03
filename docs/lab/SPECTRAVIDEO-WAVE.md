@@ -50,14 +50,31 @@ evidence; enabling an environment flag alone is insufficient.
 
 ## Status
 
-SVI-728, SVI-738 and SV-328 BASIC are published at main commit a50b5e0d
-with native services, exhibition notes, genuine framebuffer images, Type demo
-actions and licensed hardware galleries. All three web demos passed in VNC
-Chrome. SV-328 BASIC also produced nonzero browser WebAudio PCM, and the
-production reset returned its clean startup prompt. Runtime declarations
-match the box; the publication landing lock has been released.
+Production browser acceptance is complete for SV-328 BASIC, SVI-728,
+SVI-738, MSX turbo R and SymbOS. Each has its own station evidence in the guest documents. The three
+available BASIC/CP/M Type demos passed in VNC Chrome. Both desktop stations
+passed browser application, keyboard, pointer and file-save trials; their
+actual production Restore buttons returned HTTP 200 and clean desktops.
+SV-328 BASIC also produced nonzero browser WebAudio PCM.
 
-The remaining three stations are in browser acceptance. Their galleries are
-already acquired with author, source and licence records. GUI pointer behavior
-and repeated SV-328 CP/M cold boots must pass before those stations are listed.
-Each guest document records its own evidence.
+SV-328 CP/M passed three private cold-boot trials, Type demo, disk save/reload
+and pristine reset, but failed a later production trial after idle. It is
+hidden from gallery listings at commit `3b61d256`, with the production service
+stopped while private rigs investigate. Its idle/resume and production demo
+must pass before it is restored to the accepted lineup.
+
+All six exhibitions have notes, genuine framebuffer images and licensed
+hardware galleries. The production asset audit checked six poster documents,
+six heroes, twelve attributed hardware photos, all eighteen image responses,
+and the six required Museo8bits author-homepage links. The turbo R photos are
+explicitly labelled as its FS-A1ST sibling rather than the emulated FS-A1GT.
+
+Integrated validation passed: 1268 Python tests (one skipped), 2319 SPA tests
+across 124 files, applicable language lint/build gates, generated registry
+parity and strict file-size checks. Emulator builds used compiler caching;
+the individual guest documents record measured cache results.
+
+The two temporary staging sites (`spectra-wave` and `symbos`) have been removed.
+Private desktop proof rigs are stopped; the CP/M repair rig remains active.
+Station port/slot reservations and reusable build caches are retained. The
+publication landing lock has been released during private CP/M repair.

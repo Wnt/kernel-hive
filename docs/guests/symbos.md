@@ -119,8 +119,10 @@ Notepad, and complete physical keyboard text `browser test!` (including Shift).
 Evidence: `work/symbos-browser-accepted.png` in the task workspace. The browser
 context is closed. A private copy of the shared native launcher changed only
 BASE to the proof directory; device flags and reset template came from the fixture.
-The coordinator performs the final production Restore-button acceptance and
-integrated gates.
+Production browser acceptance also passed on 2026-10-03: the actual web
+Restore button returned HTTP 200, and the video returned to the clean SymbOS
+desktop with its clock reset. The integrated language, registry and size gates
+passed; full-suite results are recorded in the wave ledger.
 Rollback disables the registry row and regenerates surfaces; stop only this
 station and restore its previous immutable template. Never capture a new golden
 or edit an attached disk as a rollback shortcut.

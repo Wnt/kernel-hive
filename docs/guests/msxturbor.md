@@ -135,7 +135,10 @@ Validated in isolated GUI and DOS instances on 2026-10-03:
 
 Browser acceptance passed in the staged SPA: Tools → DRAW, rapid rectangle
 and text-box placement, physical keyboard text, and Save to drive A produced
-BROWSER.DRW (44 bytes). The production reset endpoint is checked at bring-up.
+BROWSER.DRW (44 bytes). Production browser acceptance also passed on 2026-10-03: the actual web
+Restore button returned HTTP 200 and the video returned to the clean 640×480
+VSHELL desktop. Mouse input opened Tools and physical Escape dismissed it.
+The isolated test context was closed with the clean desktop retained.
 The poster uses actual desktop and DRAW frames.
 Proof artifacts are under the sandbox's `rig-view/`, `rig-dos/` and `build/`
 directories. They are not live station files.
