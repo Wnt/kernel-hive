@@ -311,6 +311,20 @@ const DEMO_PROGRAMS = {
     "runCommand": "df -h /",
     "perCharMs": 80
   },
+  "svi728": {
+    "label": "Type a Spectravideo BASIC demo",
+    "lines": [
+      "10 SCREEN 1",
+      "20 COLOR 15,4,4",
+      "30 PRINT \"HELLO SPECTRAVIDEO!\"",
+      "40 FOR I=1 TO 8",
+      "50 PRINT I;I*I",
+      "60 NEXT I",
+      "70 PLAY \"CDEFGAB\""
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 260
+  },
   "vax43bsd": {
     "label": "Log in as root (no password — it is 1986), then look around",
     "lines": [

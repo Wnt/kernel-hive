@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "id": "svi728",
+  "era_year": 1984,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 88,
+        "prelude": "",
+        "value": {
+          "key": "svi728",
+          "script": "tiles/msx2.sh",
+          "outputDir": "native/msx2",
+          "class": "retro",
+          "estimated": "measured in guest documentation",
+          "automation": "full",
+          "produces": "MSX BASIC 1.0 on the International SVI-728.",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/svi728",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54223,
+      "notes": "Host-native MAME 0.289; drawshm video, mamesock keys, FIFO audio, relaunch reset; offline keyboard-only station."
+    }
+  },
+  "render": {
+    "signalOrder": 114,
+    "stationsManifestOrder": 93,
+    "stationsManifestPrelude": "\n# svi728 \u2014 MSX BASIC 1.0 on the International SVI-728.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 121,
+    "bindingPrelude": "",
+    "goldenOrder": 93
+  },
+  "stationDir": "svi728",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54223,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 223
+  },
+  "guestDoc": "docs/guests/svi728.md",
+  "credentialsRef": "guest/svi728",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "svi728",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":123",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/svi728/svi728_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/svi728/fb.shm",
+      "SH_PORT": "54223",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/svi728/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/svi728/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": ""
+    },
+    "vmidLabel": 223,
+    "bringUpOrder": 121,
+    "x11": {
+      "display": ":123",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "svi728",
+        "--udp",
+        "54223",
+        "--x11",
+        "--x11-display",
+        ":123",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/svi728/svi728.keymap",
+        "--env-append-file",
+        "$T/svi728/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/svi728/svi728.keymap",
+        "streamhost/stations/svi728/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#56799b",
+    "eraLabel": "1984 \u00b7 MSX BASIC 1.0 on the International SVI-728."
+  },
+  "museum": {
+    "id": "svi728",
+    "displayName": "Spectravideo SVI-728",
+    "year": 1984,
+    "lineage": "Spectravideo \u2192 MSX1",
+    "arch": "Zilog Z80A, 3.58 MHz",
+    "ramMB": 0,
+    "ramKB": 64,
+    "era": "1980s",
+    "accent": "#376ca8",
+    "eraSoftware": [
+      "MSX BASIC 1.0"
+    ],
+    "periodBrowser": "none \u2014 pre-web 8-bit era",
+    "iconicApps": [
+      "MSX BASIC"
+    ],
+    "blurb": "MSX BASIC 1.0 on the International SVI-728.",
+    "notes": "Cold boot and writable session reset. No network or pointer hardware; see guest documentation for input and media provenance."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/svi728.sh",
+    "driver": "svi728"
+  },
+  "ui": "home-computer",
+  "reset": {
+    "stationDir": "svi728",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "Keyboard-only",
+    "keyboard": "Generated from this exact MAME driver; browser verification is the release gate.",
+    "fixture": "MSX BASIC 1.0 on the International SVI-728. Cold boot; no savestate."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "Spectravideo visitor-feedback wave, 2026-10-03."
+  ],
+  "demoProgram": {
+    "label": "Type a Spectravideo BASIC demo",
+    "lines": [
+      "10 SCREEN 1",
+      "20 COLOR 15,4,4",
+      "30 PRINT \"HELLO SPECTRAVIDEO!\"",
+      "40 FOR I=1 TO 8",
+      "50 PRINT I;I*I",
+      "60 NEXT I",
+      "70 PLAY \"CDEFGAB\""
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 260
+  },
+  "keyboard": {
+    "charMap": {}
+  }
+}
