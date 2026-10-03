@@ -129,3 +129,6 @@ The local full SPA suite passed 123 files / 2269 tests; eslint, knip, tsc, Vite
 build, full Bash shfmt/shellcheck, registry drift and strict file-size checks
 passed. The custom native observer compiled and linked against cached MAME
 0.289 objects; the final ROM audit accepts the Philips set.
+
+The canonical native builder emits `assets/symbos/mame-native/msx2`
+(`NATIVE_SUBTARGET=msx2`); the production fixture uses that same binary path.
