@@ -33,7 +33,7 @@ legacy software, not covered by this repository's MIT license.
 
 The cached Philips ROM set is staged with `stage-romset.py`, then verified by
 MAME's ROM audit. Cached station binary SHA-256:
-`883f13ee7b84c688a7e9ec817e3da47e364be2679f00f59116ce8531bb8fa9a4`.
+`fcb509b2c1fa7394ecc4b406e282f108c5fd6ce3200d785feeafc3c2a60124a6`.
 Build source and pointer patch list are in `emulators/native.d/symbos.sh`.
 
 ## Rebuild the boot master
@@ -113,7 +113,19 @@ Audio is disabled: these GUI activities have no proven sound-output path.
 No mouse wheel device is claimed.
 
 Registry and scene rows must validate together, with a unique hardware tuple.
-The coordinator performs final streamed browser acceptance and integration gates.
+Browser acceptance on the isolated native fixture passed: decoded 1024×768
+video, an ordered click reopening HIVE.TXT, a real browser double-click opening
+Notepad, and complete physical keyboard text `browser test!` (including Shift).
+Evidence: `work/symbos-browser-accepted.png` in the task workspace. The browser
+context is closed. A private copy of the shared native launcher changed only
+BASE to the proof directory; device flags and reset template came from the fixture.
+The coordinator performs the final production Restore-button acceptance and
+integrated gates.
 Rollback disables the registry row and regenerates surfaces; stop only this
 station and restore its previous immutable template. Never capture a new golden
 or edit an attached disk as a rollback shortcut.
+
+The local full SPA suite passed 123 files / 2269 tests; eslint, knip, tsc, Vite
+build, full Bash shfmt/shellcheck, registry drift and strict file-size checks
+passed. The custom native observer compiled and linked against cached MAME
+0.289 objects; the final ROM audit accepts the Philips set.
