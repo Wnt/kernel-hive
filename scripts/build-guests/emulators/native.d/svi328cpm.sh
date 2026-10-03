@@ -4,7 +4,7 @@ NATIVE_SUBTARGET=svi328
 NATIVE_SOURCES=src/mame/svi/svi318.cpp
 NATIVE_GEOM=1024x768
 NATIVE_MAME_ARGS=(-bios v111 -exp sv601 -exp:sv601:6 sv801 -exp:sv601:0 sv806 -numscreens 1 -view0 "Screen 0")
-NATIVE_EXTRA_PATCHES=()
+NATIVE_EXTRA_PATCHES=(mame-sv801-ready.patch)
 NATIVE_SKIP_WARNINGS=0
 
 native_stage_roms() {
@@ -22,4 +22,9 @@ native_boot_gate() {
   chmod u+w "$3.disk.imd"
   NATIVE_MAME_ARGS+=(-flop1 "$3.disk.imd")
   native_gate_nonblack "$1" "$2" "$3" 5000 15
+  NATIVE_MAME_ARGS+=(-autoboot_script "$HERE/native.d/svi328cpm-idle.lua" -autoboot_delay 1)
+  native_gate_nonblack "$1" "$2" "$3.idle" 5000 120
+  grep -q 'SV801-IDLE-MBASIC-PASS:' "$3.idle/mame.log" ||
+    die "SV-801 motor-off read regression; see $3.idle/mame.log"
+  NATIVE_MAME_ARGS=("${NATIVE_MAME_ARGS[@]:0:${#NATIVE_MAME_ARGS[@]}-4}")
 }

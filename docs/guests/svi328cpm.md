@@ -13,11 +13,15 @@ not a claim that MAME emulates a literal SV-605B enclosure.
 ## Native runtime
 
 The narrow `svi328` MAME binary uses the fleet 0.289 pin and the shared
-ctlsock/drawshm/no-UI patches. Its build is cached: 43 cacheable compiles,
-5 hits, 38 misses, with generated `ccache gcc`/`ccache g++` make commands.
-The final rebuild hit all 7 cacheable compiles. The CP/M build gate uses
-the actual SV-601/SV-801/SV-806 configuration and a fresh disk copy.
-The same binary is copied into separate BASIC and CP/M assets directories.
+ctlsock/drawshm/no-UI patches plus the station-scoped SV-801 READY wiring
+patch. The initial build used the shared compiler cache; the READY rebuild
+hit 7 of 8 cacheable compiles, with one miss for the changed controller.
+The final reproducible rebuild hit all 8 compiles. Its binary SHA256 is
+`6d0502f498ca2f140b5f45c86819a8e1db8b9c07573c1167ccaf226fdc3933bf`.
+The CP/M build gate uses the actual SV-601/SV-801/SV-806 configuration and
+a fresh disk copy, waits for the guest motor countdown to expire, then
+launches MBASIC and verifies its computed result `328` on the SV-806 display.
+BASIC and CP/M assets remain separate; BASIC retains its existing binary.
 SV-806 is **Screen 0**, and the ordinary VDP is **Screen 1** in the built
 configuration. Use one output window and `-view0 "Screen 0"`; selecting
 Screen 1 shows the VDP's blank blue CP/M scene. Framebuffer is 1024×768,
@@ -52,11 +56,29 @@ text, and lowercase `mbasic` launches BASIC-80 Rev. 5.21 with **29752 Bytes
 free** and `Ok` directly from a fresh cold-boot `A>` prompt. The Type fixture
 uses the proven lower-case `mbasic` command.
 
-The earlier raw-sector conversion passed individual tests but failed a repeated
-cold-boot browser demo: `mbasic` returned `MBASIC?`, and a fresh DIR could report
-NO FILE. Its ascending physical sector order differed from the native disk's
-interleave. The final ImageDisk fixture preserves that interleave rather than
-synthesizing tracks from sorted raw bytes.
+The final ImageDisk fixture preserves the acquisition's physical interleave.
+Earlier failures were initially associated with raw-sector conversion, but the
+native ImageDisk fixture reproduced the same failure after guest idle time.
+Sector ordering was not the demonstrated cause.
+
+The original CP/M BIOS stops the motor when its countdown at RAM `F078`
+expires. The next command spins it up and reads immediately. Unpatched MAME
+rejects that read until the drive has seen two index pulses, while the BIOS
+ignores the NOT READY status bit and accepts a zero-byte transfer. Thus the
+first delayed `mbasic` returned `MBASIC?`, and DIR could return NO FILE.
+The production browser exposed this after a delayed first command. Native
+regression probes use physical matrix keys with 150 ms holds and 350 ms gaps;
+natural keyboard posting at its default 50 ms can drop letters and is not
+accepted as a disk-read proof.
+
+The [original SV-801 STM-001-C schematic, March 1984, page 1](https://hansotten.file-hunter.com/uploads/files/STM-C_SVI801.pdf)
+connects FD1793 IC1 pin 32 READY to +5 V through R1 (1K); drive connector
+pin 34 is reserved. `mame-sv801-ready.patch` models that wiring with
+`set_force_ready(true)` on this controller alone. Firmware, boot tracks,
+CP/M filesystem and MBASIC bytes remain unchanged. The paired physical-key
+regression waited for the countdown to reach zero at 40.08 emulated seconds:
+the original binary echoed complete `mbasic` then returned `MBASIC?`; the
+READY-corrected binary loaded BASIC-80 and computed `300+28` as `328`.
 
 | Asset | Source / measured SHA256 |
 |---|---|
@@ -87,10 +109,10 @@ an original numbered loop. RUN prints **SPECTRAVIDEO CP/M** and the five
 squares **1 1**, **2 4**, **3 9**, **4 16**, **5 25**; LIST permits editing,
 and SYSTEM returns to CP/M. The first-command loading delay is 20000 ms.
 
-The final ImageDisk fixture passed three independent cold process launches
-through the production daemon in the staged SPA. Trial 1 used physical browser
-keys to start MBASIC; trials 2 and 3 used the actual Type demo button followed
-by visitor Enter on RUN. Both full demos showed the title, all five square
+The ImageDisk fixture initially passed three independent cold process launches
+through the production daemon in the staged SPA, with idle suspension disabled.
+Those early-command tests did not cover the BIOS motor timeout. Trial 1 used physical browser keys to start MBASIC; trials 2 and 3 used
+the actual Type demo button followed by visitor Enter on RUN. Both full demos showed the title, all five square
 values and `Ok`. No Ctrl+C or warm-boot preamble was used.
 
 Browser-entered `SAVE "VISITOR"`, NEW, `LOAD "VISITOR"` and LIST restored
@@ -104,6 +126,7 @@ logical overlays without requiring proprietary media.
 ## Source references
 
 - [Pinned MAME machine](https://github.com/mamedev/mame/blob/mame0289/src/mame/svi/svi318.cpp)
+- [Original SV-801 controller schematic](https://hansotten.file-hunter.com/uploads/files/STM-C_SVI801.pdf)
 - [Pinned MAME disk format](https://github.com/mamedev/mame/blob/mame0289/src/lib/formats/svi_dsk.cpp)
 - [Preserver's physical/CP/M disk format](https://www.samdal.com/svdiskformat.htm)
 - [SV-806 original manual](https://hansotten.file-hunter.com/uploads/files/SVI-806_80ColumnUsersManual.pdf)

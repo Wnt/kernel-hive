@@ -1,0 +1,21 @@
+SV-801: model the controller READY pull-up rather than drive spin-up readiness.
+
+The March 1984 STM-001-C schematic, page 1, connects FD1793 IC1 pin 32
+(READY) to +5 V through R1 (1K). The floppy connector's pin 34 is reserved.
+https://hansotten.file-hunter.com/uploads/files/STM-C_SVI801.pdf
+
+Without this wiring, a read immediately after the CP/M motor idle timer
+expires is rejected while the drive awaits two index pulses. The original
+BIOS ignores the NOT READY status bit and treats the zero-byte transfer as
+successful: MBASIC? or DIR NO FILE. Preserve the firmware and disk bytes.
+
+--- a/src/devices/bus/svi3x8/slot/sv801.cpp
++++ b/src/devices/bus/svi3x8/slot/sv801.cpp
+@@ -39,5 +39,7 @@
+ {
+ 	FD1793(config, m_fdc, 8_MHz_XTAL / 8);
++	// SV-801 IC1 pin 32 READY is pulled high by R1 (STM-001-C, March 1984).
++	m_fdc->set_force_ready(true);
+ 	m_fdc->intrq_wr_callback().set(FUNC(sv801_device::intrq_w));
+ 	m_fdc->drq_wr_callback().set(FUNC(sv801_device::drq_w));
+ 
