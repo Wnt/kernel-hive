@@ -4,6 +4,9 @@
 import type { Assembly } from './machines';
 
 export const ASSEMBLIES_BY_TILE_4 = {
+  svi728: {
+    kind: 'homeMicro', body: 'pizzaBoxC', monitor: 'homeCrtB',
+  },
   svi738: {
     kind: 'homeMicro', body: 'pizzaBoxC', monitor: 'homeCrtE',
   },
