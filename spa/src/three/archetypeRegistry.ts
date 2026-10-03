@@ -249,6 +249,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   macosx:      { osId: 'macosx', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#5d8fc7', eraLabel: '2003 · Mac OS X 10.3 Panther — Power Mac G4', pointerRel: false },
   nokia9300:   { osId: 'nokia9300', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#5B7FA6', eraLabel: '2005 · Series 80 v2 (Symbian OS 7.0s)' }, // ideal: a Nokia 9300 Communicator lying open — the 640x200 screen above the QWERTY keyboard, the four command buttons to the right of the screen
   svi328:      { osId: 'svi328', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#5655dd', eraLabel: '1983 · Spectravideo SV-328 · SV BASIC 1.1' },
+  svi328cpm:   { osId: 'svi328cpm', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3cc454', eraLabel: '1984 · Spectravideo SV-328 · CP/M-80 2.24' },
   svi728:      { osId: 'svi728', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#56799b', eraLabel: '1984 · MSX BASIC 1.0' },
   svi738:      { osId: 'svi738', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#56799b', eraLabel: '1985 · CP/M-80 2.28' },
   symbos:      { osId: 'symbos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#376ca8', eraLabel: '2025 · SymbOS 4.0 — a modern desktop on an MSX2', pointerRel: false },

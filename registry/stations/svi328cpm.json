@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "svi328cpm",
   "era_year": 1984,
-  "enabled": false,
+  "enabled": true,
   "build": {
     "rows": [
       {
@@ -48,7 +48,7 @@
     "goldenOrder": 95
   },
   "stationDir": "svi328cpm",
-  "lifecycle": "candidate",
+  "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
     "udpPort": 54222,
