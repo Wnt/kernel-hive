@@ -50,9 +50,14 @@ evidence; enabling an environment flag alone is insufficient.
 
 ## Status
 
-SVI-728 and SVI-738 are published at main commit 01c1e1cf with native
-services, exhibition notes, framebuffer images and Type demo actions. Their
-web demos passed in staging; production boot/reset screens were inspected.
-The other four stations remain in implementation or browser acceptance.
-Licensed hardware galleries have been acquired for all six and await the
-next publication. Each guest document records its own evidence.
+SVI-728, SVI-738 and SV-328 BASIC are published at main commit a50b5e0d
+with native services, exhibition notes, genuine framebuffer images, Type demo
+actions and licensed hardware galleries. All three web demos passed in VNC
+Chrome. SV-328 BASIC also produced nonzero browser WebAudio PCM, and the
+production reset returned its clean startup prompt. Runtime declarations
+match the box; the publication landing lock has been released.
+
+The remaining three stations are in browser acceptance. Their galleries are
+already acquired with author, source and licence records. GUI pointer behavior
+and repeated SV-328 CP/M cold boots must pass before those stations are listed.
+Each guest document records its own evidence.
