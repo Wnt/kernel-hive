@@ -50,18 +50,20 @@ evidence; enabling an environment flag alone is insufficient.
 
 ## Status
 
-Production browser acceptance is complete for SV-328 BASIC, SVI-728,
-SVI-738, MSX turbo R and SymbOS. Each has its own station evidence in the guest documents. The three
-available BASIC/CP/M Type demos passed in VNC Chrome. Both desktop stations
-passed browser application, keyboard, pointer and file-save trials; their
-actual production Restore buttons returned HTTP 200 and clean desktops.
-SV-328 BASIC also produced nonzero browser WebAudio PCM.
+All six production stations passed browser acceptance on 2026-10-03. All four
+BASIC/CP/M Type demo buttons entered and executed their programs in VNC Chrome.
+Both desktop stations passed browser application, keyboard, pointer and
+file-save trials; their actual production Restore buttons returned HTTP 200
+and clean desktops. SV-328 BASIC also produced nonzero browser WebAudio PCM.
+Each guest document records its own evidence.
 
-SV-328 CP/M passed three private cold-boot trials, Type demo, disk save/reload
-and pristine reset, but failed a later production trial after idle. It is
-hidden from gallery listings at commit `3b61d256`, with the production service
-stopped while private rigs investigate. Its idle/resume and production demo
-must pass before it is restored to the accepted lineup.
+SV-328 CP/M initially failed after its floppy motor stopped. The native
+SV-801 controller now models the physical READY pull-up documented in the
+original service schematic. A paired physical-key regression reproduces the
+failure with the original binary and passes with the corrected binary after
+the guest motor countdown expires. The actual production web Restore and
+Type/RUN workflow also passed after an extended idle interval. Original BIOS,
+boot tracks and program bytes were preserved.
 
 All six exhibitions have notes, genuine framebuffer images and licensed
 hardware galleries. The production asset audit checked six poster documents,
@@ -72,9 +74,10 @@ explicitly labelled as its FS-A1ST sibling rather than the emulated FS-A1GT.
 Integrated validation passed: 1268 Python tests (one skipped), 2319 SPA tests
 across 124 files, applicable language lint/build gates, generated registry
 parity and strict file-size checks. Emulator builds used compiler caching;
-the individual guest documents record measured cache results.
+the individual guest documents record measured cache results. The final CP/M
+native rebuild hit all eight cacheable compilations and passed the new
+motor-idle regression as well as the framebuffer and geometry gates.
 
 The two temporary staging sites (`spectra-wave` and `symbos`) have been removed.
-Private desktop proof rigs are stopped; the CP/M repair rig remains active.
-Station port/slot reservations and reusable build caches are retained. The
-publication landing lock has been released during private CP/M repair.
+Private station and diagnostic rigs are stopped. Station port/slot reservations,
+source worktrees, rollback binaries and reusable build caches are retained.

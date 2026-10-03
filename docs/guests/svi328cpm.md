@@ -119,6 +119,21 @@ Browser-entered `SAVE "VISITOR"`, NEW, `LOAD "VISITOR"` and LIST restored
 all four original numbered lines from the writable disk. SYSTEM followed by
 `DIR VISITOR.BAS` listed the created file. A cold relaunch restored the exact
 pristine ImageDisk hash, and `DIR VISITOR.BAS` then reported NO FILE.
+The READY-corrected binary also passed the actual web Type demo after more
+than 206 emulated seconds at the untouched cold prompt, with production's
+12-second startup standby and 60-second idle policy enabled. Visitor Enter
+executed RUN and displayed the title and all five squares. Browser SAVE,
+NEW, LOAD and LIST restored the exact four program lines; SYSTEM and DIR
+showed VISITOR.BAS. A full private relaunch restored the pristine disk hash,
+and the browser directory listing confirmed that VISITOR.BAS was absent.
+
+Final production browser acceptance passed on 2026-10-03. The actual web
+Restore button returned HTTP 200 and recreated the exact pristine disk hash.
+After 96 wall-clock seconds (over 72 emulated seconds) at the cold prompt,
+the actual Type button loaded MBASIC and entered every program line correctly.
+Visitor Enter executed RUN, showing the title, all five square values and Ok.
+The production binary hash matches the cached, regression-tested build above.
+
 The synthetic regression test in `scripts/test_svi_cpm_media.py` checks
 unsorted physical sector IDs, mixed compressed/full sectors and byte-exact
 logical overlays without requiring proprietary media.
