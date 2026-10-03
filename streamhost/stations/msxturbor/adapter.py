@@ -149,27 +149,76 @@ class Adapter:
         else:
             raise ValueError("unsupported verb")
 
+    @staticmethod
+    def request(line):
+        parts = line.decode("ascii").strip().split()
+        if len(parts) < 2:
+            raise ValueError("empty request")
+        seq = parts.pop(0)
+        if not seq.isdecimal() or len(seq) > 20:
+            raise ValueError("invalid sequence")
+        return seq, parts
+
+    @classmethod
+    def move_request(cls, line):
+        if line is None:
+            return None
+        try:
+            seq, parts = cls.request(line)
+            if len(parts) == 3 and parts[0] == "MOVEA":
+                int(parts[1]), int(parts[2])
+                return seq, parts
+        except ValueError:
+            pass
+        return None
+
     async def client(self, reader, writer):
         writer.write(b"HELLO mamectl/1 openmsx-native\n")
         await writer.drain()
+        queue = asyncio.Queue(maxsize=128)
+
+        async def receive():
+            try:
+                while line := await reader.readline():
+                    await queue.put(line)
+            except (ValueError, ConnectionError):
+                pass
+            await queue.put(None)
+
+        receiver = asyncio.create_task(receive())
+        empty = object()
+        pending = empty
         try:
-            while line := await reader.readline():
-                parts = line.decode("ascii").strip().split()
-                if not parts:
-                    raise ValueError("empty request")
-                seq = parts.pop(0)
-                if not seq.isdecimal() or len(seq) > 20:
-                    raise ValueError("invalid sequence")
+            while True:
+                line = await queue.get() if pending is empty else pending
+                pending = empty
+                if line is None:
+                    break
+                seq, parts = self.request(line)
+                if self.move_request(line):
+                    # Only adjacent absolute motion is replaceable. Stop at
+                    # every key/button edge: it must use its preceding target.
+                    while not queue.empty():
+                        following = queue.get_nowait()
+                        move = self.move_request(following)
+                        if move is None:
+                            pending = following
+                            break
+                        writer.write(f"{seq} OK\n".encode())
+                        seq, parts = move
                 try:
                     async with self.lock:
                         await self.inject(parts)
                     writer.write(f"{seq} OK\n".encode())
                 except ValueError:
+                    self.position = None
                     writer.write(f"{seq} ERR rejected\n".encode())
                 await writer.drain()
         except (ValueError, ConnectionError, asyncio.TimeoutError):
             pass
         finally:
+            receiver.cancel()
+            await asyncio.gather(receiver, return_exceptions=True)
             async with self.lock:
                 await self.release()
             writer.close()

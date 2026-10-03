@@ -69,7 +69,10 @@ are released on disconnect. Mouse packets wait for two actual joystick-port samp
 so a busy redraw cannot merge homing and target movement. Button edges
 also wait three completed guest frames after motion or the previous edge,
 allowing MSX View to process its software cursor. Repeated absolute targets
-are no-ops, while preserving that pending edge barrier. Keyboard edges
+are no-ops, while preserving that pending edge barrier. A bounded 128-request
+receive queue combines adjacent absolute movements into their latest target,
+acknowledging every sequence. It never combines across a key or button edge:
+that edge first receives its preceding pointer target. Keyboard edges
 also wait for two guest matrix-row reads, retaining the 40 ms minimum hold/gap. GUI readiness waits
 for the real VSHELL content pane: the preceding blue BIOS screen can appear
 stable for several seconds and is not a valid readiness signal. The keymap is derived from the pinned
