@@ -1,5 +1,6 @@
 """The visitor protocol must never become a general Tcl command channel."""
 
+import asyncio
 import unittest
 
 from adapter import Adapter
@@ -15,6 +16,33 @@ class ProtocolTest(unittest.IsolatedAsyncioTestCase):
             return "2" if value == "hive_mouse" or (value.startswith("keymatrixup") and value.endswith(" 0")) else "0"
 
         self.adapter.command = command
+
+    async def test_wire_acknowledgements_match_daemon_sequence_first_contract(self):
+        reader = asyncio.StreamReader()
+        reader.feed_data(b"17 KEY 1 0 1\n18 KEY 0 0 1\n19 exec evil\n")
+        reader.feed_eof()
+
+        class Writer:
+            data = bytearray()
+
+            def write(self, data):
+                self.data.extend(data)
+
+            async def drain(self):
+                pass
+
+            def close(self):
+                pass
+
+            async def wait_closed(self):
+                pass
+
+        writer = Writer()
+        await self.adapter.client(reader, writer)
+        self.assertEqual(
+            writer.data.splitlines(),
+            [b"HELLO mamectl/1 openmsx-native", b"17 OK", b"18 OK", b"19 ERR rejected"],
+        )
 
     async def test_rejects_tcl_and_invalid_matrix_bits(self):
         for line in (

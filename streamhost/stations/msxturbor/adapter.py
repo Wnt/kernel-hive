@@ -136,9 +136,9 @@ class Adapter:
                 try:
                     async with self.lock:
                         await self.inject(parts)
-                    writer.write(f"OK {seq}\n".encode())
+                    writer.write(f"{seq} OK\n".encode())
                 except ValueError:
-                    writer.write(f"ERR {seq} rejected\n".encode())
+                    writer.write(f"{seq} ERR rejected\n".encode())
                 await writer.drain()
         except (ValueError, ConnectionError, asyncio.TimeoutError):
             pass
