@@ -325,6 +325,22 @@ const DEMO_PROGRAMS = {
     "runCommand": "RUN",
     "perCharMs": 260
   },
+  "svi738": {
+    "label": "Type a CP/M BASIC program",
+    "lines": [
+      "MBASIC",
+      "10 PRINT \"HELLO FROM SPECTRAVIDEO CP/M\"",
+      "20 FOR I=1 TO 8",
+      "30 PRINT I;I*I",
+      "40 NEXT I",
+      "50 END"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 260,
+    "enterDelayMs": [
+      20000
+    ]
+  },
   "vax43bsd": {
     "label": "Log in as root (no password — it is 1986), then look around",
     "lines": [

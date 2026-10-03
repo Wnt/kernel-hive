@@ -187,6 +187,7 @@ MANIFEST=(
   "mvs38          |tiles/mvs38.sh                                        |MVS38             |terminal    |~12m                                   |full                         |assets/mvs38/{tk5,rootfs} — the pinned TK5 distribution of MVS 3.8j (its own SDL Hyperion Hercules, the DASD volumes, conf/ and scripts/), made executable, plus the container rootfs (relaunch reset). Nothing is built from source: the TK5 zip is the artifact, pinned by size and SHA-256 in assets/mvs38/MANIFEST.sha256."
   "nokia9300      |tiles/nokia9300.sh                                    |Nokia9300         |graphical   |~30m                                   |none                         |assets/nokia9300 (eka2l1/: the Wnt/EKA2L1 s80-integration build via emulators/build-eka2l1.sh; rootfs/: the nspawn trixie runtime root, uid-shifted to 2621440) and golden/ (the RAE-6 device data dir: SYM.ROM, the Z: tree, the C: drive and EKA2L1 config.yml; relaunch reset)"
   "svi728         |tiles/msx2.sh                                         |native/msx2       |retro       |measured in guest documentation        |full                         |MSX BASIC 1.0 on the International SVI-728."
+  "svi738         |tiles/msx2.sh                                         |native/msx2       |retro       |measured in guest documentation        |full                         |CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21."
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

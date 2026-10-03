@@ -187,6 +187,9 @@ const KEYBOARDS = {
   "svi728": {
     "charMap": {}
   },
+  "svi738": {
+    "charMap": {}
+  },
   "vic20": {
     "letterCase": "upper-only"
   },

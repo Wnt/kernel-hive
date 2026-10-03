@@ -166,4 +166,7 @@ export const ASSEMBLIES_BY_TILE_3 = {
   svi728: {
     kind: 'homeMicro', body: 'pizzaBoxC', monitor: 'homeCrtB',
   },
+  svi738: {
+    kind: 'homeMicro', body: 'pizzaBoxC', monitor: 'homeCrtE',
+  },
 } as const satisfies Record<string, Assembly>;

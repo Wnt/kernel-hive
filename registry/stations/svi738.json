@@ -1,21 +1,21 @@
 {
   "schemaVersion": 1,
-  "id": "svi728",
-  "era_year": 1984,
+  "id": "svi738",
+  "era_year": 1985,
   "enabled": true,
   "build": {
     "rows": [
       {
-        "order": 91,
+        "order": 92,
         "prelude": "",
         "value": {
-          "key": "svi728",
+          "key": "svi738",
           "script": "tiles/msx2.sh",
           "outputDir": "native/msx2",
           "class": "retro",
           "estimated": "measured in guest documentation",
           "automation": "full",
-          "produces": "MSX BASIC 1.0 on the International SVI-728.",
+          "produces": "CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21.",
           "flags": []
         }
       }
@@ -23,7 +23,7 @@
   },
   "operator": {
     "labctl": {
-      "dir": "/data/vms/streamhost/stations/svi728",
+      "dir": "/data/vms/streamhost/stations/svi738",
       "qmp": null,
       "pointer_mode": "none",
       "warpd_port": null,
@@ -34,24 +34,24 @@
       "exec_user": null,
       "exec_key": null,
       "console": "x11",
-      "udp_port": 54223,
+      "udp_port": 54224,
       "notes": "Host-native MAME 0.289; drawshm video, mamesock keys, FIFO audio, relaunch reset; offline keyboard-only station."
     }
   },
   "render": {
-    "signalOrder": 117,
-    "stationsManifestOrder": 96,
-    "stationsManifestPrelude": "\n# svi728 \u2014 MSX BASIC 1.0 on the International SVI-728.\n",
+    "signalOrder": 118,
+    "stationsManifestOrder": 97,
+    "stationsManifestPrelude": "\n# svi738 \u2014 CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21.\n",
     "bringUpGroup": 6,
-    "bindingOrder": 124,
+    "bindingOrder": 125,
     "bindingPrelude": "",
-    "goldenOrder": 96
+    "goldenOrder": 97
   },
-  "stationDir": "svi728",
+  "stationDir": "svi738",
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
-    "udpPort": 54223,
+    "udpPort": 54224,
     "fps": 60,
     "audio": true,
     "touch": false,
@@ -68,46 +68,46 @@
       ],
       "backend": "mamesock"
     },
-    "slot": 223
+    "slot": 224
   },
-  "guestDoc": "docs/guests/svi728.md",
-  "credentialsRef": "guest/svi728",
+  "guestDoc": "docs/guests/svi738.md",
+  "credentialsRef": "guest/svi738",
   "runtime": {
     "stationEnv": {
-      "SH_STATION": "svi728",
+      "SH_STATION": "svi738",
       "SH_STATION_RUNTIME": "x11",
       "SH_INPUT_BACKEND": "mamesock",
       "SH_AUDIO": "on",
       "SH_CAPTURE": "shm",
-      "SH_X11_DISPLAY": ":123",
-      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/svi728/svi728_cmd",
-      "SH_SHM_PATH": "/data/vms/streamhost/stations/svi728/fb.shm",
-      "SH_PORT": "54223",
+      "SH_X11_DISPLAY": ":124",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/svi738/svi738_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/svi738/fb.shm",
+      "SH_PORT": "54224",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_HASH_FILE": "/data/vms/streamhost/stations/svi728/cert_hash_b64.txt",
-      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/svi728/signaling.json",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/svi738/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/svi738/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_KEY_MAP": ""
     },
-    "vmidLabel": 223,
-    "bringUpOrder": 124,
+    "vmidLabel": 224,
+    "bringUpOrder": 125,
     "x11": {
-      "display": ":123",
+      "display": ":124",
       "geometry": "1024x768x32",
       "capture": "shm",
       "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
       "resetMode": "relaunch",
       "emitArgs": [
         "--tile",
-        "svi728",
+        "svi738",
         "--udp",
-        "54223",
+        "54224",
         "--x11",
         "--x11-display",
-        ":123",
+        ":124",
         "--capture",
         "shm",
         "--pointer",
@@ -121,13 +121,13 @@
         "--x11-runtime-file",
         "$T/mame-native/x11-runtime.sh",
         "--aux-file",
-        "$T/svi728/svi728.keymap",
+        "$T/svi738/svi738.keymap",
         "--env-append-file",
-        "$T/svi728/station.env.fixture"
+        "$T/svi738/station.env.fixture"
       ],
       "auxFiles": [
-        "streamhost/stations/svi728/svi728.keymap",
-        "streamhost/stations/svi728/station.env.fixture"
+        "streamhost/stations/svi738/svi738.keymap",
+        "streamhost/stations/svi738/station.env.fixture"
       ]
     }
   },
@@ -135,12 +135,12 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#56799b",
-    "eraLabel": "1984 \u00b7 MSX BASIC 1.0 on the International SVI-728."
+    "eraLabel": "1985 \u00b7 CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21."
   },
   "museum": {
-    "id": "svi728",
-    "displayName": "Spectravideo SVI-728",
-    "year": 1984,
+    "id": "svi738",
+    "displayName": "Spectravideo SVI-738 CP/M",
+    "year": 1985,
     "lineage": "Spectravideo \u2192 MSX1",
     "arch": "Zilog Z80A, 3.58 MHz",
     "ramMB": 0,
@@ -148,49 +148,55 @@
     "era": "1980s",
     "accent": "#376ca8",
     "eraSoftware": [
-      "MSX BASIC 1.0"
+      "CP/M 2.2",
+      "Microsoft BASIC-80 5.21",
+      "CP/M development tools"
     ],
     "periodBrowser": "none \u2014 pre-web 8-bit era",
     "iconicApps": [
-      "MSX BASIC"
+      "Microsoft BASIC-80",
+      "ED",
+      "ASM"
     ],
-    "blurb": "MSX BASIC 1.0 on the International SVI-728.",
+    "blurb": "CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21.",
     "notes": "Cold boot and writable session reset. No network or pointer hardware; see guest documentation for input and media provenance."
   },
   "emulator": {
     "family": "MAME",
     "version": "0.289",
-    "source": "scripts/build-guests/emulators/native.d/svi728.sh",
-    "driver": "svi728"
+    "source": "scripts/build-guests/emulators/native.d/svi738.sh",
+    "driver": "svi738sw"
   },
   "ui": "home-computer",
   "reset": {
-    "stationDir": "svi728",
+    "stationDir": "svi738",
     "pointer": "none",
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "Keyboard-only",
     "keyboard": "Generated from this exact MAME driver; browser verification is the release gate.",
-    "fixture": "MSX BASIC 1.0 on the International SVI-728. Cold boot; no savestate."
+    "fixture": "CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21. Cold boot; no savestate."
   },
   "migrationExceptions": [],
   "notes": [
     "Spectravideo visitor-feedback wave, 2026-10-03."
   ],
   "demoProgram": {
-    "label": "Type a Spectravideo BASIC demo",
+    "label": "Type a CP/M BASIC program",
     "lines": [
-      "10 SCREEN 1",
-      "20 COLOR 15,4,4",
-      "30 PRINT \"HELLO SPECTRAVIDEO!\"",
-      "40 FOR I=1 TO 8",
-      "50 PRINT I;I*I",
-      "60 NEXT I",
-      "70 PLAY \"CDEFGAB\""
+      "MBASIC",
+      "10 PRINT \"HELLO FROM SPECTRAVIDEO CP/M\"",
+      "20 FOR I=1 TO 8",
+      "30 PRINT I;I*I",
+      "40 NEXT I",
+      "50 END"
     ],
     "runCommand": "RUN",
-    "perCharMs": 260
+    "perCharMs": 260,
+    "enterDelayMs": [
+      20000
+    ]
   },
   "keyboard": {
     "charMap": {}
