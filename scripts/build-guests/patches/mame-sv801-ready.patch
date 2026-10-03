@@ -11,11 +11,10 @@ successful: MBASIC? or DIR NO FILE. Preserve the firmware and disk bytes.
 
 --- a/src/devices/bus/svi3x8/slot/sv801.cpp
 +++ b/src/devices/bus/svi3x8/slot/sv801.cpp
-@@ -39,5 +39,7 @@
+@@ -36,3 +36,5 @@
+ void sv801_device::device_add_mconfig(machine_config &config)
  {
- 	FD1793(config, m_fdc, 8_MHz_XTAL / 8);
+-	FD1793(config, m_fdc, 8_MHz_XTAL / 8);
++	FD1793(config, m_fdc, 8_MHz_XTAL / 8);
 +	// SV-801 IC1 pin 32 READY is pulled high by R1 (STM-001-C, March 1984).
 +	m_fdc->set_force_ready(true);
- 	m_fdc->intrq_wr_callback().set(FUNC(sv801_device::intrq_w));
- 	m_fdc->drq_wr_callback().set(FUNC(sv801_device::drq_w));
- 
