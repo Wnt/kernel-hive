@@ -1,3 +1,4 @@
+import { publicAssetUrl } from '../data/publicAssetUrl';
 import { Fragment, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { usePosterDoc } from '../data/posterDocs';
@@ -42,7 +43,7 @@ function renderRuns(runs: PosterInlineRun[], keyPrefix: string): ReactNode {
 function PosterFigure({ image, hero = false }: { image: PosterImage; hero?: boolean }) {
   return (
     <figure className={hero ? 'exhibit-poster-hero' : 'exhibit-poster-figure'}>
-      <img src={image.src} alt={image.alt} />
+      <img src={publicAssetUrl(image.src)} alt={image.alt} />
       <figcaption>
         {image.caption}
         {image.credit && <span className="exhibit-poster-credit"> {image.credit}</span>}
@@ -73,7 +74,7 @@ function Block({ block, index }: { block: PosterBlock; index: number }) {
     case 'image':
       return (
         <figure className="exhibit-poster-figure">
-          <img src={block.src} alt={block.alt} />
+          <img src={publicAssetUrl(block.src)} alt={block.alt} />
         </figure>
       );
   }

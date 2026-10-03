@@ -1,3 +1,4 @@
+import { publicAssetUrl } from '../data/publicAssetUrl';
 import { useCallback, useState, type KeyboardEvent } from 'react';
 import type { PosterAdLink, PosterGalleryImage } from '../types';
 import './PosterGalleryCarousel.css';
@@ -53,7 +54,7 @@ export default function PosterGalleryCarousel({ images, adLinks, idPrefix }: Pos
       <figure className="exhibit-poster-gallery-figure">
         <img
           key={image.src}
-          src={image.src}
+          src={publicAssetUrl(image.src)}
           alt={image.alt}
           width={image.width}
           height={image.height}
