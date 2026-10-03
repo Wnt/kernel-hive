@@ -10,7 +10,7 @@ mechanically against the Commons API by `scripts/tools/fetch-poster-gallery.py`,
 which refuses any license outside a fixed free-license allowlist. Re-check the
 shipped set at any time with `make poster-gallery-verify`.
 
-**240 images across 53 exhibits.** 120 of them are share-alike
+**252 images across 59 exhibits.** 127 of them are share-alike
 (CC BY-SA): if you redistribute a modified version of one of those images, you
 must license the modification under the same terms. The images are not combined
 with the source code and do not affect the MIT license of the code itself.
@@ -19,7 +19,7 @@ Period advertisements and sales posters are essentially never freely licensed.
 None are redistributed here; where one is relevant it is referenced as an
 outbound link only (2 such link(s) below).
 
-License breakdown: CC BY-SA 3.0 (45), CC BY-SA 4.0 (41), CC BY 2.0 (32), Public domain (32), CC BY-SA 2.0 (27), CC0 (23), CC BY 3.0 (21), CC BY 4.0 (12), CC BY-SA 2.5 (7).
+License breakdown: CC BY-SA 3.0 (45), CC BY-SA 4.0 (41), Public domain (37), CC BY 2.0 (32), CC BY-SA 2.0 (28), CC0 (23), CC BY 3.0 (21), CC BY-SA 2.5 (13), CC BY 4.0 (12).
 
 ## aix432
 
@@ -535,3 +535,46 @@ Period advertising, referenced by outbound link only (not redistributed here):
 | `05-sinclair-zx-spectrum-7091646959.webp` | ccwoodcock | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Sinclair_ZX_Spectrum_(7091646959).jpg) |
 
 ⚖️ = share-alike license.
+
+
+## svi328
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-spectravideo-sv-328-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SV-328_Tietokonemuseo.JPG) |
+| `02-spectravideo-svi-328-superexpander-dsc00035.webp` | Museo8bits | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SVI_328_SuperExpander_DSC00035.JPG) |
+
+## svi328cpm
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-spectravideo-sv-328-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SV-328_Tietokonemuseo.JPG) |
+| `02-spectravideo-svi-328-superexpander-dsc00035.webp` | Museo8bits | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SVI_328_SuperExpander_DSC00035.JPG) |
+
+## svi728
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-spectravideo-svi-728-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SVI-728_Tietokonemuseo.JPG) |
+| `02-svi728.webp` | Tiziano Garuti (1000Bit) | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Svi728.jpg) |
+
+## svi738
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-spectravideo-svi-738-x-press-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SVI-738_X%27Press_Tietokonemuseo.JPG) |
+| `02-svi-738-pic-0931.webp` | Museo8bits | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SVI-738_PIC_0931.JPG) |
+| `03-svi-738-pic-0930.webp` | Museo8bits | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SVI-738_PIC_0930.JPG) |
+
+## msxturbor
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-msx-turbo-r-1990.webp` | Tilemahos Efthimiadis | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:MSX_Turbo_R_(1990).jpg) |
+
+## symbos
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-philips-nms8250-msx2-front.webp` | Miguel Durán | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Philips_NMS8250_MSX2_front.JPG) |
+| `02-philips-nms8250-msx2-back.webp` | Miguel Durán | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Philips_NMS8250_MSX2_back.JPG) |

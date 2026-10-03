@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "svi328cpm",
+  "images": [
+    {
+      "commonsFile": "File:Spectravideo SV-328 Tietokonemuseo.JPG",
+      "alt": "A Spectravideo SV-328 computer with a cassette tape drive.",
+      "caption": "The SV-328, Spectravideo’s Z80 computer from the years before MSX.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Spectravideo SVI 328 SuperExpander DSC00035.JPG",
+      "alt": "A Spectravideo SVI-328 fitted with its Super Expander attachment.",
+      "caption": "The Super Expander extended the SVI-328 with additional hardware.",
+      "role": "photo"
+    }
+  ]
+}

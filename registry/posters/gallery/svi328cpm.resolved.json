@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "svi328cpm",
+  "images": [
+    {
+      "src": "/posters/svi328cpm/gallery/01-spectravideo-sv-328-tietokonemuseo.webp",
+      "alt": "A Spectravideo SV-328 computer with a cassette tape drive.",
+      "caption": "The SV-328, Spectravideo’s Z80 computer from the years before MSX.",
+      "author": "MKFI",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spectravideo_SV-328_Tietokonemuseo.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "74990368c488e3c97c779c3ffeebad6f0776d0bffb4afbfaa10734a61e46dbbd",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/svi328cpm/gallery/02-spectravideo-svi-328-superexpander-dsc00035.webp",
+      "alt": "A Spectravideo SVI-328 fitted with its Super Expander attachment.",
+      "caption": "The Super Expander extended the SVI-328 with additional hardware.",
+      "author": "Museo8bits",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spectravideo_SVI_328_SuperExpander_DSC00035.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "ac5399f1207d2263c47a5ab4218d75456abd68e977a708ce0e421973cb677cea",
+      "width": 1600,
+      "height": 1200
+    }
+  ]
+}

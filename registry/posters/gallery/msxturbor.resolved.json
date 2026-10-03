@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "msxturbor",
+  "images": [
+    {
+      "src": "/posters/msxturbor/gallery/01-msx-turbo-r-1990.webp",
+      "alt": "A Panasonic FS-A1ST MSX Turbo R computer surrounded by period software.",
+      "caption": "The FS-A1ST pictured here is a Turbo R sibling of the exhibit’s FS-A1GT.",
+      "author": "Tilemahos Efthimiadis",
+      "license": "CC BY-SA 2.0",
+      "licenseId": "cc-by-sa-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:MSX_Turbo_R_(1990).jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "11a2036946199c9540cc436a3312a5ec1058a04b95318bb5debfc00db8f3f393",
+      "width": 1500,
+      "height": 900
+    }
+  ]
+}

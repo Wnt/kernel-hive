@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "symbos",
+  "images": [
+    {
+      "src": "/posters/symbos/gallery/01-philips-nms8250-msx2-front.webp",
+      "alt": "A Philips NMS 8250 MSX2 computer with its monitor and keyboard.",
+      "caption": "The Philips NMS 8250 is the MSX2 system at the center of this SymbOS exhibit.",
+      "author": "Miguel Durán",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Philips_NMS8250_MSX2_front.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "61f4a19520b68d70a827f44a15040f2a4be43a68254d68257b3e8b9c23080a18",
+      "width": 1503,
+      "height": 1560
+    },
+    {
+      "src": "/posters/symbos/gallery/02-philips-nms8250-msx2-back.webp",
+      "alt": "The rear ports of a Philips NMS 8250 MSX2 computer.",
+      "caption": "The rear of the Philips NMS 8250 exposes its connections.",
+      "author": "Miguel Durán",
+      "license": "CC BY-SA 2.5",
+      "licenseId": "cc-by-sa-2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Philips_NMS8250_MSX2_back.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "7c2b3e28f7dd445bb2fd8582e51f2b5013f0473093dce7cb570dd20137eddf61",
+      "width": 1266,
+      "height": 1458
+    }
+  ]
+}

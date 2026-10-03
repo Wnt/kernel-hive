@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "svi728",
+  "images": [
+    {
+      "commonsFile": "File:Spectravideo SVI-728 Tietokonemuseo.JPG",
+      "alt": "A Spectravideo SVI-728 computer with a cassette tape drive.",
+      "caption": "The SVI-728 joined Spectravideo to the MSX standard in 1984.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Svi728.jpg",
+      "alt": "A Spectravideo SVI-728 home computer viewed from the front.",
+      "caption": "The SVI-728 combined a keyboard, BASIC in ROM and MSX-compatible hardware.",
+      "author": "Tiziano Garuti (1000Bit)",
+      "role": "photo"
+    }
+  ]
+}

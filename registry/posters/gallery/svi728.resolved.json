@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "svi728",
+  "images": [
+    {
+      "src": "/posters/svi728/gallery/01-spectravideo-svi-728-tietokonemuseo.webp",
+      "alt": "A Spectravideo SVI-728 computer with a cassette tape drive.",
+      "caption": "The SVI-728 joined Spectravideo to the MSX standard in 1984.",
+      "author": "MKFI",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spectravideo_SVI-728_Tietokonemuseo.JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "4316be65ace223706ec6a0768ac730b7691dac96a0f148c84b674290860da690",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/svi728/gallery/02-svi728.webp",
+      "alt": "A Spectravideo SVI-728 home computer viewed from the front.",
+      "caption": "The SVI-728 combined a keyboard, BASIC in ROM and MSX-compatible hardware.",
+      "author": "Tiziano Garuti (1000Bit)",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Svi728.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "77eab09597a9b06d998a8ab16ff72fe275568de81ce95ddea0c41766d9901650",
+      "width": 1146,
+      "height": 604
+    }
+  ]
+}
