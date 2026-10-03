@@ -315,6 +315,9 @@ const POSTER_INDEX = {
   "svi738": {
     "hero": "/posters/svi738/desktop.webp"
   },
+  "symbos": {
+    "hero": "/posters/symbos/desktop.webp"
+  },
   "templeos": {
     "hero": "/posters/templeos/desktop.webp"
   },

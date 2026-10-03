@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "id": "symbos",
+  "era_year": 2025,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 93,
+        "prelude": "",
+        "value": {
+          "key": "symbos",
+          "script": "tiles/symbos.sh",
+          "outputDir": "native/symbos",
+          "class": "retro",
+          "estimated": "~3m media + guided install",
+          "automation": "guided",
+          "produces": "Hash-verified SymbOS 4.0 MSX/DOS1 installer and official apps; private curated 720K boot master",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/symbos",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54225,
+      "notes": "Host-native MAME nms8250 with 512 KiB mapper, MSX mouse and DOS1/SymbOS 4.0 floppy. drawshm capture, mamesock keyboard/pointer, cold reset from immutable disk template."
+    }
+  },
+  "render": {
+    "signalOrder": 119,
+    "stationsManifestOrder": 98,
+    "stationsManifestPrelude": "\n# symbos (VMID 225) \u2014 SymbOS 4.0 on Philips MSX2, a later enthusiast desktop.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 126,
+    "bindingPrelude": "",
+    "goldenOrder": 98
+  },
+  "stationDir": "symbos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54225,
+    "fps": 60,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "method": "mame-ioport",
+      "absolute": true,
+      "present": true,
+      "device": "msx-mouse-hle",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 225
+  },
+  "guestDoc": "docs/guests/symbos.md",
+  "credentialsRef": "guest/symbos",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "symbos",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":75",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/symbos/symbos_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/symbos/fb.shm",
+      "SH_PORT": "54225",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/symbos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/symbos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": ""
+    },
+    "vmidLabel": 225,
+    "bringUpOrder": 126,
+    "x11": {
+      "display": ":75",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "symbos",
+        "--udp",
+        "54225",
+        "--x11",
+        "--x11-display",
+        ":75",
+        "--capture",
+        "shm",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "off",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/symbos/symbos.keymap",
+        "--env-append-file",
+        "$T/symbos/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/symbos/symbos.keymap",
+        "streamhost/stations/symbos/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#376ca8",
+    "eraLabel": "2025 \u00b7 SymbOS 4.0 \u2014 a modern desktop on an MSX2",
+    "pointerRel": false
+  },
+  "museum": {
+    "id": "symbos",
+    "displayName": "SymbOS on MSX2",
+    "year": 2025,
+    "lineage": "Prodatron / SymbiosiS \u2014 MSX port since 2006",
+    "arch": "Zilog Z80A, 3.58 MHz, Yamaha V9938 VDP (MSX2 video)",
+    "ramMB": 0,
+    "ramKB": 512,
+    "era": "2020s",
+    "accent": "#376ca8",
+    "eraSoftware": [
+      "SymbOS 4.0",
+      "MSX-DOS 1.03",
+      "Notepad",
+      "Pocket Calculator",
+      "Game of Life"
+    ],
+    "periodBrowser": "none \u2014 offline desktop",
+    "iconicApps": [
+      "SymCommander",
+      "Notepad",
+      "Pocket Calculator",
+      "Task Manager"
+    ],
+    "blurb": "A later enthusiast multitasking desktop for the Z80: windows, files and small applications on the MSX2 hardware family.",
+    "notes": "Philips NMS 8250 (1987) with an explicitly added 512 KiB mapper. SymbOS 4.0 is later software, released in 2025; the first MSX port arrived in 2006. One 720K floppy, no networking. Mouse in joystick port 1; reset discards visitor writes and cold boots a fresh private master copy."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/symbos.sh",
+    "driver": "nms8250"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "symbos",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "Framebuffer pointer/click/drag proof recorded in docs/guests/symbos.md; browser integration verified separately.",
+    "keyboard": "CPU-scanned MSX matrix through mamesock keymap, 120/80 ms guest dwell. Backslash/grave legend overrides for SymbOS US layout.",
+    "fixture": "SymbOS 4.0 desktop, installed core plus Notepad, Pocket Calculator and Game of Life on a fresh writable disk. Cold boot; no unsupported savestate."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "Later enthusiast software, not an MSX desktop sold in the 1980s.",
+    "Isolated station; no RetroNet."
+  ],
+  "keyboard": {
+    "charMap": {}
+  }
+}

@@ -191,6 +191,7 @@ MANIFEST=(
   "svi328cpm      |tiles/svi328cpm.sh                                    |native/svi328cpm  |retro       |~1m media + cached native build        |full                         |Pristine CP/M 2.24 disk with MBASIC and WELCOME.TXT"
   "svi728         |tiles/svi728.sh                                       |native/svi728     |retro       |~1m (media only)                       |full                         |SVI-728 BIOS staged"
   "svi738         |tiles/svi738.sh                                       |native/svi738     |retro       |~1m (media only)                       |full                         |SVI-738 CP/M disk and BIOS staged"
+  "symbos         |tiles/symbos.sh                                       |native/symbos     |retro       |~3m media + guided install             |guided                       |Hash-verified SymbOS 4.0 MSX/DOS1 installer and official apps; private curated 720K boot master"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

@@ -1,4 +1,4 @@
-// GENERATED shard 2/3 of EXHIBIT_IDENTITIES — rows in registry lineup order, written by
+// GENERATED shard 2/4 of EXHIBIT_IDENTITIES — rows in registry lineup order, written by
 // scripts/dev/spa-scene-rows.py (the index is ./machineIdentity.ts). Edit a ROW here if you must;
 // never the layout, and never add a row by hand — the rebuild places it.
 import type { ExhibitIdentity } from './machineIdentity';

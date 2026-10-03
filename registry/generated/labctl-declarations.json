@@ -1838,6 +1838,24 @@
       "udp_port": 54224,
       "notes": "Host-native MAME 0.289; drawshm video, mamesock keys, FIFO audio, relaunch reset; offline keyboard-only station."
     },
+    "symbos": {
+      "dir": "/data/vms/streamhost/stations/symbos",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54225,
+      "notes": "Host-native MAME nms8250 with 512 KiB mapper, MSX mouse and DOS1/SymbOS 4.0 floppy. drawshm capture, mamesock keyboard/pointer, cold reset from immutable disk template."
+    },
     "templeos": {
       "dir": "/data/vms/streamhost/stations/templeos",
       "qmp": "/data/vms/streamhost/stations/templeos/qmp.sock",

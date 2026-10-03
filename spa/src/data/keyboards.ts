@@ -222,6 +222,9 @@ const KEYBOARDS = {
   "svi738": {
     "charMap": {}
   },
+  "symbos": {
+    "charMap": {}
+  },
   "vic20": {
     "letterCase": "upper-only"
   },

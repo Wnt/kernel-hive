@@ -80,7 +80,7 @@ describe('the query has to survive being typed five different ways', () => {
     // (Towns OS's kernel) — a real hit, not noise. msx2 matches on its own
     // eraSoftware entry "MSX-DOS 2.2" — also a real hit.
     expect(hits('dos')).toEqual([
-      'freedos', 'win311', 'msdoswin1', 'pcgeos', 'atari800xl', 'fmtowns', 'vision', 'msx2',
+      'freedos', 'win311', 'msdoswin1', 'pcgeos', 'atari800xl', 'fmtowns', 'vision', 'msx2', 'symbos',
     ]);
   });
 });

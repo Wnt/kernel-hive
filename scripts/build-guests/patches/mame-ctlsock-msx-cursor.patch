@@ -1,0 +1,88 @@
+ctlsock: opt-in V9938 sprite-0 sensor for the SymbOS hardware cursor
+
+Read the actual sprite attributes, scroll and bank layout; never write VRAM.
+Unconfigured stations retain their existing cursor path.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -1176,7 +1176,19 @@
+ 						m_quad_active ? "ON" : "FAILED to resolve", qi.c_str());
+ 			}
+ 		}
+-		m_movea_ok = m_cur_x.ok() && m_cur_y.ok();
++		// Opt-in SymbOS observer: sprite 0 is the V9938 hardware cursor.
++		std::string const msx_tag = env_str("MAME_CTL_MSX_CURSOR");
++		if (!msx_tag.empty())
++		{
++			device_t *const vdp = m_machine.root_device().subdevice(msx_tag.c_str());
++			device_memory_interface *memory = nullptr;
++			if (vdp && vdp->interface(memory))
++				m_msx_vram = &memory->space(AS_DATA);
++			m_msx_regs = find_item(msx_tag + "/0/m_cont_reg");
++			m_msx_mode = find_item(msx_tag + "/0/m_mode");
++		}
++		m_movea_ok = (m_cur_x.ok() && m_cur_y.ok()) ||
++				msx_cursor_available();
+ 		swap_rebase();
+ 		if (m_movea_ok)
+ 		{
+@@ -2041,8 +2053,32 @@
+ 
+ 	// pixel-space reading; trusted only while the cursor is displayed (a
+ 	// hidden cursor's registers do not track the pointer)
++	bool msx_cursor_available() const
++	{ return m_msx_vram && m_msx_regs.ok() && m_msx_mode.ok(); }
++
+ 	bool reading_now(long &rpx, long &rpy, bool &trusted) const
+ 	{
++		if (msx_cursor_available())
++		{
++			// Match v99x8_device::sprite_mode2/vram_read, including the
++			// interleaved VRAM banks in GRAPHIC6/7 (MAME mode values 7/8).
++			long const mode = long(m_msx_mode.read());
++			auto const reg = [this](u32 n) { return u32(m_msx_regs.read_at(n)); };
++			auto const vr = [this, mode](u32 address) {
++				if (mode == 7 || mode == 8)
++					address = ((address & 1) << 16) | (address >> 1);
++				return m_msx_vram->read_byte(address);
++			};
++			u32 const attr = ((reg(5) & 0xfc) << 7) + (reg(11) << 15);
++			u32 const colour = ((reg(5) & 0xf8) << 7) + (reg(11) << 15);
++			int x = vr(attr + 1);
++			if (vr(colour) & 0x80) x -= 32;
++			int const y = (int(vr(attr)) + 1 - int(reg(23))) & 255;
++			rpx = m_surf_x + long(std::llround(double(x) * m_surf_w / 256.0)) + m_cal_x;
++			rpy = m_surf_y + long(std::llround(double(y) * m_surf_h / 212.0)) + m_cal_y;
++			trusted = mode >= 5 && mode <= 8 && !(reg(8) & 2) && vr(attr) != 216;
++			return true;
++		}
+ 		if (!m_cur_x.ok() || !m_cur_y.ok())
+ 			return false;
+ 		rpx = long(m_cur_x.read()) + m_cal_x;
+@@ -2371,7 +2407,7 @@
+ 			movea_done(0, 0, true);
+ 			return;
+ 		}
+-		if (!m_cur_x.ok() || !m_cur_y.ok())
++		if (!msx_cursor_available() && (!m_cur_x.ok() || !m_cur_y.ok()))
+ 		{
+ 			// the cached handle went bad mid-session — drop to open loop for
+ 			// good, seeded from the last target (the best estimate left)
+@@ -2625,7 +2661,7 @@
+ 	// the loop puts the pointer back under the user's cursor immediately.
+ 	void movea_rest()
+ 	{
+-		if (m_ta_active || !m_movea_ok || !m_cur_x.ok() || !m_cur_y.ok())
++		if (m_ta_active || !m_movea_ok || (!msx_cursor_available() && (!m_cur_x.ok() || !m_cur_y.ok())))
+ 			return;
+ 		if (!m_clickq.empty() || m_click_cur_active || !m_mq.empty())
+ 			return;
+@@ -3394,6 +3430,8 @@
+ 	bool m_click_cur_active = false;
+ 
+ 	bool m_movea_ok = false;
++	address_space *m_msx_vram = nullptr; // read-only, opt-in V9938 sprite-0 sensor
++	save_item_handle m_msx_regs, m_msx_mode;
+ 	save_item_handle m_cur_x, m_cur_y, m_cur_en;
+ 	save_item_handle m_dev_mx, m_dev_my;
+ 	target_state m_ta{};
