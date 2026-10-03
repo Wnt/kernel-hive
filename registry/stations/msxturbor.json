@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "msxturbor",
   "era_year": 1991,
-  "enabled": true,
+  "enabled": false,
   "build": {
     "rows": [
       {
