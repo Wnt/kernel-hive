@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compose the hash-pinned SVI CP/M 2.24 double-sided system image.
+"""Compose the hash-pinned SVI CP/M 2.24 native ImageDisk system image.
 
 MAME's SVI layout preserves track 0/head 0 as 18x128 FM bytes, then
 79 heads of 17x256 MFM bytes. This disk's CP/M directory begins at
@@ -7,7 +7,7 @@ cylinder 3/head 0, contains 64 entries, and allocates 2048-byte blocks
 with EXM=1. CP/M traverses head 0 cylinders 3..39, then head 1 cylinders
 0..39; MAME raw SVI images interleave heads per cylinder. The ImageDisk
 sector IDs establish the physical order before this logical overlay.
-Sector IDs restore ascending physical order; densities are preserved.
+The output retains ImageDisk track headers and the physical sector interleave.
 """
 
 import argparse
@@ -49,6 +49,29 @@ def decode_imd(image: bytes) -> dict[tuple[int, int], bytes]:
     if set(tracks) != {(track, head) for track in range(40) for head in range(2)}:
         raise ValueError("incomplete double-sided image")
     return tracks
+
+
+def encode_imd(system: bytes, tracks: dict[tuple[int, int], bytes]) -> bytes:
+    """Retain the native physical sector interleave and density headers."""
+    cursor = system.index(0x1A) + 1
+    output = bytearray(system[:cursor])
+    while cursor < len(system):
+        _, cylinder, head, count, size_code = system[cursor : cursor + 5]
+        output.extend(system[cursor : cursor + 5 + count])
+        cursor += 5
+        identifiers = system[cursor : cursor + count]
+        cursor += count
+        size = 128 << size_code
+        for identifier in identifiers:
+            kind = system[cursor]
+            cursor += 1 + (size if kind == 1 else 1)
+            start = (identifier - 1) * size
+            data = tracks[cylinder, head][start : start + size]
+            if data == data[:1] * size:
+                output.extend(b"\x02" + data[:1])
+            else:
+                output.extend(b"\x01" + data)
+    return bytes(output)
 
 
 def compose(system: bytes, basic: bytes) -> bytes:
@@ -100,7 +123,7 @@ def compose(system: bytes, basic: bytes) -> bytes:
         used.update(blocks)
     for index, key in enumerate(order):
         tracks[key] = bytes(disk[index * 4352 : (index + 1) * 4352])
-    return b"".join(tracks[track, head] for track in range(40) for head in range(2))
+    return encode_imd(system, tracks)
 
 
 def main() -> None:

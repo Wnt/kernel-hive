@@ -22,6 +22,6 @@ unzip -oq "$STAGING/sv806.zip" -d "$STAGING/roms"
 fetch "$STAGING/cpm224dd.zip" 'https://archive.org/download/MAME_0.228_Software_List_ROMs_merged/MAME_0.228_Software_List_ROMs_merged.zip/svi318_flop%2Fcpm224dd.zip' 7a6cc43d8e204d3ac3163db3d083650a5e55b8a2a7aba81b591776d6f90f2d29
 fetch "$STAGING/MBASIC.COM" 'http://www.retroarchive.org/cpm/lang/Mbasic.com' 29d957fc6899c24f6296a1662a27eca545d85ee3f7d70d2794c9d045d92ff157
 unzip -oq "$STAGING/cpm224dd.zip" -d "$STAGING"
-python3 "$HERE/../lib/svi_cpm_media.py" "$STAGING/cpm224dd.imd" "$STAGING/MBASIC.COM" "$ASSETS/media/hive-cpm.dsk"
-chmod 444 "$ASSETS/media/hive-cpm.dsk"
+python3 "$HERE/../lib/svi_cpm_media.py" "$STAGING/cpm224dd.imd" "$STAGING/MBASIC.COM" "$ASSETS/media/hive-cpm.imd"
+chmod 444 "$ASSETS/media/hive-cpm.imd"
 echo "svi328cpm: media verified; build-mame-native.sh svi328cpm builds the cached native emulator."

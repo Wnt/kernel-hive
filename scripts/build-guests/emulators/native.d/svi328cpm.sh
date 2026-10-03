@@ -17,9 +17,9 @@ native_stage_roms() {
 }
 
 native_boot_gate() {
-  local media="${SVI_MEDIA_SOURCE:-/data/vms/streamhost/assets/svi328cpm/media/hive-cpm.dsk}"
-  cp "$media" "$3.disk.dsk"
-  chmod u+w "$3.disk.dsk"
-  NATIVE_MAME_ARGS+=(-flop1 "$3.disk.dsk")
+  local media="${SVI_MEDIA_SOURCE:-/data/vms/streamhost/assets/svi328cpm/media/hive-cpm.imd}"
+  cp "$media" "$3.disk.imd"
+  chmod u+w "$3.disk.imd"
+  NATIVE_MAME_ARGS+=(-flop1 "$3.disk.imd")
   native_gate_nonblack "$1" "$2" "$3" 5000 15
 }
