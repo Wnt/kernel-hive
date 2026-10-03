@@ -162,7 +162,15 @@ class Lease(unittest.TestCase):
         self.assertEqual(Path(lease_path("st")).stat().st_mtime, settled)
 
     def test_hold_lease_is_idempotent_per_station(self):
-        self.assertIs(hold_lease("st"), hold_lease("st"))
+        lease = hold_lease("st")
+        try:
+            self.assertIs(lease, hold_lease("st"))
+        finally:
+            # This process continues into other tests. Stop its lifetime lease
+            # before tearDown restores the real lease directory, or the next
+            # refresh writes to /run during the reconciler's read-only audit.
+            lease.__exit__()
+            self.mod._HELD.pop("st", None)
 
     def test_an_unwritable_lease_dir_does_not_break_the_caller(self):
         """A lease is a nicety; verification is the guarantee. A driver that
