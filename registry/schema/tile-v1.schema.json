@@ -491,10 +491,14 @@
           "minLength": 1
         },
         "enterDelayMs": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 30000,
-          "description": "Wait after each line's ENTER before typing again. Disk-based interpreters need time to load; omit for the usual BASIC editor delay."
+          "oneOf": [
+            { "type": "integer", "minimum": 0, "maximum": 60000 },
+            {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 0, "maximum": 60000 }
+            }
+          ],
+          "description": "Wait after ENTER: a delay for every line, or an array indexed by line with the default for unspecified entries. Use a first-line delay when loading a disk interpreter."
         },
         "perCharMs": {
           "type": "integer",

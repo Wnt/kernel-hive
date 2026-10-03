@@ -105,8 +105,7 @@ export async function typeDemoProgram({
   // The station's own drain rate wins over the fleet default; an explicit caller
   // argument (tests) still wins over both.
   const charMs = perCharMs === DEMO_PER_CHAR_MS ? (program.perCharMs ?? perCharMs) : perCharMs;
-  const enterMs = enterDelayMs ?? program.enterDelayMs ?? DEMO_ENTER_DELAY_MS;
-  for (const line of program.lines) {
+  for (const [index, line] of program.lines.entries()) {
     if (cancelled()) return false;
     // An EMPTY line is a bare ENTER: nothing to type, so no per-line pace
     // either -- the ENTER below is the whole line. bootOS's `enter` command
@@ -123,7 +122,9 @@ export async function typeDemoProgram({
     // ENTER commits the line; give the guest time to tokenise it before the
     // next character arrives.
     handle.typeText('\n');
-    await sleep(enterMs);
+    const configured = program.enterDelayMs;
+    const lineMs = typeof configured === 'number' ? configured : configured?.[index];
+    await sleep(enterDelayMs ?? lineMs ?? DEMO_ENTER_DELAY_MS);
   }
   if (cancelled()) return false;
   // No newline: the visitor supplies it.
