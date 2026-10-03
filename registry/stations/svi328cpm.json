@@ -201,5 +201,10 @@
       ":": ";",
       ";": ":"
     }
+  },
+  "listing": {
+    "state": "hidden",
+    "reason": "Temporarily withdrawn while validating CP/M disk reads after idle suspend and resume.",
+    "since": "2026-10-03"
   }
 }
