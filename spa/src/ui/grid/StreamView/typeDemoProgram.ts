@@ -89,7 +89,7 @@ export async function typeDemoProgram({
   keyboard,
   delayMs = DEMO_LINE_DELAY_MS,
   perCharMs = DEMO_PER_CHAR_MS,
-  enterDelayMs = DEMO_ENTER_DELAY_MS,
+  enterDelayMs,
   sleep = wait,
   cancelled = () => false,
 }: {
@@ -105,6 +105,7 @@ export async function typeDemoProgram({
   // The station's own drain rate wins over the fleet default; an explicit caller
   // argument (tests) still wins over both.
   const charMs = perCharMs === DEMO_PER_CHAR_MS ? (program.perCharMs ?? perCharMs) : perCharMs;
+  const enterMs = enterDelayMs ?? program.enterDelayMs ?? DEMO_ENTER_DELAY_MS;
   for (const line of program.lines) {
     if (cancelled()) return false;
     // An EMPTY line is a bare ENTER: nothing to type, so no per-line pace
@@ -122,7 +123,7 @@ export async function typeDemoProgram({
     // ENTER commits the line; give the guest time to tokenise it before the
     // next character arrives.
     handle.typeText('\n');
-    await sleep(enterDelayMs);
+    await sleep(enterMs);
   }
   if (cancelled()) return false;
   // No newline: the visitor supplies it.

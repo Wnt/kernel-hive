@@ -171,6 +171,8 @@ export interface DemoProgram {
    *  DEMO_PER_CHAR_MS already covers the station; the registry validates that
    *  whichever applies is not below the daemon's drain rate. */
   readonly perCharMs?: number;
+  /** Wait after committing each line, including loading an interpreter from disk. */
+  readonly enterDelayMs?: number;
 }
 
 /** How a machine's keyboard differs from a PC's (registry `keyboard` block). */

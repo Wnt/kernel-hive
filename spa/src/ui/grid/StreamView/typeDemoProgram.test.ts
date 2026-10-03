@@ -89,6 +89,18 @@ describe('typeDemoProgram', () => {
     expect(r.waits.slice(-runChunks).reduce((a, b) => a + b, 0)).toBe(PROGRAM.runCommand.length * 170);
   });
 
+  it('waits for a disk interpreter before sending the next line', async () => {
+    const events: (string | number)[] = [];
+    await typeDemoProgram({
+      program: { label: 'CP/M demo', lines: ['MBASIC', '10 PRINT 1'], runCommand: 'RUN', enterDelayMs: 4000 },
+      handle: { typeText: (text) => { events.push(text); } },
+      sleep: async (ms) => { events.push(ms); },
+    });
+    const enter = events.indexOf('\n');
+    expect(events.slice(enter, enter + 3)).toEqual(['\n', 4000, '1']);
+    expect(events.filter((event) => event === 4000)).toHaveLength(2);
+  });
+
   it('lets an explicit perCharMs argument override even a tile-declared one', async () => {
     const r = recorder();
     await typeDemoProgram({
