@@ -147,4 +147,5 @@ drive A, wait for its directory listing, enter a name in the bottom field,
 then click 保存. Drive C is the read-only ROM disk.
 
 The Japanese application input mode may produce kana from Latin-position keys;
-this is original guest behavior, not UTF-8 host text injection.
+this is original guest behavior, not UTF-8 host text injection. Press Enter
+to commit that composition before leaving the text box; Escape cancels it.

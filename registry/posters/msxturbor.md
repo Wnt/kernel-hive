@@ -32,6 +32,9 @@ are written in Latin letters. Double-click a disk or folder icon to browse.
 The 内蔵ソフト icon opens Panasonic’s separate built-in software menu.
 In DRAW, click a tool, click the first corner, move, then click again to
 finish the object. The text tool (文) creates a box the same way; then type.
+The original Japanese input mode may show kana; press Enter to commit the text.
+To save, open DRAW’s top-left menu and choose 保存, select drive A, wait for
+the directory listing, enter a filename in the bottom field, then click 保存.
 
 Reset returns the station to fresh disks and machine settings. This exhibit
 is offline.
