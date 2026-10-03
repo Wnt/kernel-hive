@@ -311,6 +311,19 @@ const DEMO_PROGRAMS = {
     "runCommand": "df -h /",
     "perCharMs": 80
   },
+  "svi328": {
+    "label": "Type in a demo program (SV BASIC)",
+    "lines": [
+      "NEW",
+      "10 CLS",
+      "20 PRINT \"SPECTRAVIDEO SV-328\"",
+      "30 FOR I=1 TO 5",
+      "40 PRINT I,I*I",
+      "50 NEXT I"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 500
+  },
   "svi728": {
     "label": "Type a Spectravideo BASIC demo",
     "lines": [

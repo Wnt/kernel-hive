@@ -184,6 +184,12 @@ const KEYBOARDS = {
       "~": ")"
     }
   },
+  "svi328": {
+    "charMap": {
+      ":": ";",
+      ";": ":"
+    }
+  },
   "svi728": {
     "charMap": {}
   },

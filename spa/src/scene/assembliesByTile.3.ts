@@ -163,6 +163,9 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'pizzaBox', body: 'modernMini', monitor: 'lcdA',
     keyboard: 'keyboardH',
   },
+  svi328: {
+    kind: 'homeMicro', body: 'paramTower', monitor: 'homeCrtD',
+    },
   svi728: {
     kind: 'homeMicro', body: 'pizzaBoxC', monitor: 'homeCrtB',
   },

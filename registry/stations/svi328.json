@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 1,
+  "id": "svi328",
+  "era_year": 1983,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 89,
+        "prelude": "",
+        "value": {
+          "key": "svi328",
+          "script": "tiles/svi328.sh",
+          "outputDir": "native/svi328",
+          "class": "retro",
+          "estimated": "~1m media + cached native build",
+          "automation": "full",
+          "produces": "Hash-verified SV-328 BASIC BIOS",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/svi328",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54221,
+      "notes": "Offline native MAME: drawshm framebuffer, mamesock keyboard, FIFO audio; no QEMU or network."
+    }
+  },
+  "render": {
+    "signalOrder": 115,
+    "stationsManifestOrder": 94,
+    "stationsManifestPrelude": "\n# svi328 \u2014 Spectravideo SV-328, native PAL MAME, offline.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 122,
+    "bindingPrelude": "",
+    "goldenOrder": 94
+  },
+  "stationDir": "svi328",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54221,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 221
+  },
+  "guestDoc": "docs/guests/svi328.md",
+  "credentialsRef": "guest/svi328",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "svi328",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":221",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/svi328/svi328_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/svi328/fb.shm",
+      "SH_PORT": "54221",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/svi328/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/svi328/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": "%3A:;,;:%3A"
+    },
+    "vmidLabel": 221,
+    "bringUpOrder": 122,
+    "x11": {
+      "display": ":221",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "svi328",
+        "--udp",
+        "54221",
+        "--x11",
+        "--x11-display",
+        ":221",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/svi328/svi328.keymap",
+        "--env-append-file",
+        "$T/svi328/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/svi328/svi328.keymap",
+        "streamhost/stations/svi328/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#5655dd",
+    "eraLabel": "1983 \u00b7 Spectravideo SV-328 \u00b7 SV BASIC 1.1"
+  },
+  "museum": {
+    "id": "svi328",
+    "displayName": "Spectravideo SV-328",
+    "year": 1983,
+    "lineage": "Spectravideo SV-328: before the MSX standard",
+    "arch": "Zilog Z80A, 3.58 MHz; TMS9929A PAL video",
+    "ramMB": 0,
+    "ramKB": 64,
+    "era": "1980s",
+    "accent": "#376ca8",
+    "eraSoftware": [
+      "SV Extended BASIC 1.1"
+    ],
+    "periodBrowser": "none \u2014 offline, before the web",
+    "iconicApps": [
+      "SV BASIC"
+    ],
+    "blurb": "BASIC starts as soon as the power comes on. Write a few lines, run them, and change the machine yourself.",
+    "notes": "Host-native MAME svi328 (PAL), v111 BIOS. SV extended BASIC version 1.1, Copyright 1983 Microsoft, Ok. Reset cold-boots to cleared BASIC memory."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/svi328.sh",
+    "driver": "svi328"
+  },
+  "ui": "home-computer",
+  "reset": {
+    "stationDir": "svi328",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "N/A \u2014 keyboard-only exhibit",
+    "keyboard": "Generated from the running driver KEYDUMP; pacing tested on the matrix. Production browser acceptance is recorded in guest documentation.",
+    "fixture": "SV extended BASIC version 1.1, Copyright 1983 Microsoft, Ok."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "Offline, independently implemented from upstream driver and archived media. No RetroNet. Separate BASIC and expanded CP/M stations; cold relaunch reset."
+  ],
+  "demoProgram": {
+    "label": "Type in a demo program (SV BASIC)",
+    "lines": [
+      "NEW",
+      "10 CLS",
+      "20 PRINT \"SPECTRAVIDEO SV-328\"",
+      "30 FOR I=1 TO 5",
+      "40 PRINT I,I*I",
+      "50 NEXT I"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 500
+  },
+  "keyboard": {
+    "charMap": {
+      ":": ";",
+      ";": ":"
+    }
+  }
+}

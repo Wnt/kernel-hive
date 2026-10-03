@@ -300,6 +300,9 @@ const POSTER_INDEX = {
   "suse64": {
     "hero": "/posters/suse64/desktop.webp"
   },
+  "svi328": {
+    "hero": "/posters/svi328/desktop.webp"
+  },
   "svi728": {
     "hero": "/posters/svi728/desktop.webp"
   },
