@@ -6,13 +6,17 @@
       "commonsFile": "File:Philips NMS8250 MSX2 front.JPG",
       "alt": "A Philips NMS 8250 MSX2 computer with its monitor and keyboard.",
       "caption": "The Philips NMS 8250 is the MSX2 system at the center of this SymbOS exhibit.",
-      "role": "photo"
+      "role": "photo",
+      "author": "Miguel Durán (Museo8bits / El Museo de los 8 Bits)",
+      "authorUrl": "http://www.museo8bits.com"
     },
     {
       "commonsFile": "File:Philips NMS8250 MSX2 back.JPG",
       "alt": "The rear ports of a Philips NMS 8250 MSX2 computer.",
       "caption": "The rear of the Philips NMS 8250 exposes its connections.",
-      "role": "photo"
+      "role": "photo",
+      "author": "Miguel Durán (Museo8bits / El Museo de los 8 Bits)",
+      "authorUrl": "http://www.museo8bits.com"
     }
   ]
 }

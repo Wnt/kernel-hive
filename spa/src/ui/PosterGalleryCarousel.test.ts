@@ -78,6 +78,18 @@ describe('PosterGalleryCarousel', () => {
     renderer.unmount();
   });
 
+  it('links the author homepage while retaining separate source and license links', () => {
+    const image = { ...IMAGES[0], authorUrl: 'http://www.museo8bits.com' };
+    const renderer = renderCarousel([image]);
+    const authorLink = renderer.root.findByProps({ href: image.authorUrl });
+    expect(authorLink.children).toEqual([image.author]);
+    expect(authorLink.props.target).toBe('_blank');
+    expect(authorLink.props.rel).toBe('noreferrer');
+    expect(renderer.root.findByProps({ href: image.sourceUrl }).children).toEqual(['Source']);
+    expect(renderer.root.findByProps({ href: image.licenseUrl }).children).toEqual([image.license]);
+    renderer.unmount();
+  });
+
   it('advances on next-button click and wraps around', () => {
     const renderer = renderCarousel(IMAGES);
     const next = renderer.root.findByProps({ 'aria-label': 'Next image' });

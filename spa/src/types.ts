@@ -125,6 +125,7 @@ export interface PosterGalleryImage {
   alt: string;
   caption: string;
   author: string;
+  authorUrl?: string;
   license: string;
   licenseId: string;
   licenseUrl: string;

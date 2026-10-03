@@ -23,6 +23,7 @@ GALLERY_IMAGE_KEYS = frozenset(
         "alt",
         "caption",
         "author",
+        "authorUrl",
         "license",
         "licenseId",
         "licenseUrl",
@@ -48,6 +49,7 @@ GALLERY_IMAGE_TS_KEYS = (
     "alt",
     "caption",
     "author",
+    "authorUrl",
     "license",
     "licenseId",
     "licenseUrl",
@@ -206,7 +208,7 @@ def _gallery_image(raw: Any, number: int, tile_id: str, path: Path) -> OrderedDi
     where = f"{path}: image {number}"
     if not isinstance(raw, dict):
         raise PosterError(f"{where}: must be an object")
-    missing = GALLERY_IMAGE_KEYS - set(raw)
+    missing = (GALLERY_IMAGE_KEYS - {"authorUrl"}) - set(raw)
     if missing:
         raise PosterError(f"{where}: missing fields: {sorted(missing)}")
     unknown = set(raw) - GALLERY_IMAGE_KEYS
@@ -226,9 +228,13 @@ def _gallery_image(raw: Any, number: int, tile_id: str, path: Path) -> OrderedDi
     _validate_gallery_src(raw["src"], tile_id, where)
     _validate_http_url(raw["licenseUrl"], where, "licenseUrl")
     _validate_http_url(raw["sourceUrl"], where, "sourceUrl")
+    if "authorUrl" in raw:
+        if not isinstance(raw["authorUrl"], str):
+            raise PosterError(f"{where}: authorUrl must be an http(s) URL")
+        _validate_http_url(raw["authorUrl"], where, "authorUrl")
     if not re.fullmatch(r"[0-9a-f]{64}", raw["sha256"]):
         raise PosterError(f"{where}: sha256 must be a 64-character lowercase hex digest")
-    return OrderedDict((key, raw[key]) for key in GALLERY_IMAGE_TS_KEYS)
+    return OrderedDict((key, raw[key]) for key in GALLERY_IMAGE_TS_KEYS if key in raw)
 
 
 def _gallery_ad_link(raw: Any, number: int, path: Path) -> OrderedDict[str, Any]:

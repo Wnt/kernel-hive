@@ -231,6 +231,11 @@ def load_candidates(path: Path) -> dict[str, Any]:
         raise FetchError(f"{path}: id '{data.get('id')}' does not match filename ({expected_id})")
     if "images" not in data or not isinstance(data["images"], list):
         raise FetchError(f"{path}: 'images' must be a list")
+    for entry in data["images"]:
+        if "authorUrl" in entry and (
+            not isinstance(entry["authorUrl"], str) or not re.fullmatch(r"https?://\S+", entry["authorUrl"])
+        ):
+            raise FetchError(f"{path}: authorUrl must be an http(s) URL")
     return data
 
 
@@ -277,6 +282,7 @@ def fetch_tile(tile_id: str, candidates: dict[str, Any]) -> dict[str, Any]:
                 # photographer named in the page's prose. The override is a
                 # courtesy credit only — it never affects the license gate.
                 "author": entry.get("author") or license_info["author"],
+                **({"authorUrl": entry["authorUrl"]} if "authorUrl" in entry else {}),
                 "license": license_info["license"],
                 "licenseId": license_info["licenseId"],
                 "licenseUrl": license_info["licenseUrl"],

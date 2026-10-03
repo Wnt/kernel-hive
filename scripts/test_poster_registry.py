@@ -187,6 +187,20 @@ class ValidGalleryRoundTripTest(unittest.TestCase):
             self.assertEqual(reparsed["widget"]["gallery"]["images"][0]["licenseId"], "pd")
             self.assertNotIn("sha256", reparsed["widget"]["gallery"]["images"][0])
 
+    def test_author_homepage_survives_generator_without_replacing_source(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_poster(root, "widget")
+            payload = _valid_gallery_json("widget")
+            payload["images"][0]["authorUrl"] = "https://photographer.example/"
+            _write_gallery(root, "widget", payload)
+            posters, _warnings = load_posters(root, {"widget"})
+            document = json.loads(render_poster_docs(posters).decode())
+            images = document["posters"]["widget"]["gallery"]["images"]
+            self.assertEqual(images[0]["authorUrl"], "https://photographer.example/")
+            self.assertEqual(images[0]["sourceUrl"], payload["images"][0]["sourceUrl"])
+            self.assertNotIn("authorUrl", images[1])
+
     def test_gallery_without_ad_links_omits_the_key(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -208,6 +222,17 @@ class MalformedGalleryIsAHardErrorTest(unittest.TestCase):
             _write_gallery(root, "widget", payload)
             with self.assertRaises(PosterError):
                 load_posters(root, {"widget"})
+
+    def test_author_homepage_rejects_unsafe_urls_and_non_strings(self):
+        for value in ("javascript:alert(1)", "", "https://invalid url", None, 42):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                _write_poster(root, "widget")
+                payload = _valid_gallery_json("widget")
+                payload["images"][0]["authorUrl"] = value
+                _write_gallery(root, "widget", payload)
+                with self.assertRaises(PosterError):
+                    load_posters(root, {"widget"})
 
     def test_missing_field_is_a_load_error(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -546,14 +546,14 @@ photograph shows the FS-A1ST sibling, as its exhibit caption explicitly states.
 | Image | Author | License | Source |
 |---|---|---|---|
 | `01-spectravideo-sv-328-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SV-328_Tietokonemuseo.JPG) |
-| `02-spectravideo-svi-328-superexpander-dsc00035.webp` | Museo8bits | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SVI_328_SuperExpander_DSC00035.JPG) |
+| `02-spectravideo-svi-328-superexpander-dsc00035.webp` | [Miguel Durán (Museo8bits / El Museo de los 8 Bits)](http://www.museo8bits.com) | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SVI_328_SuperExpander_DSC00035.JPG) |
 
 ## svi328cpm
 
 | Image | Author | License | Source |
 |---|---|---|---|
 | `01-spectravideo-sv-328-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SV-328_Tietokonemuseo.JPG) |
-| `02-spectravideo-svi-328-superexpander-dsc00035.webp` | Museo8bits | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SVI_328_SuperExpander_DSC00035.JPG) |
+| `02-spectravideo-svi-328-superexpander-dsc00035.webp` | [Miguel Durán (Museo8bits / El Museo de los 8 Bits)](http://www.museo8bits.com) | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SVI_328_SuperExpander_DSC00035.JPG) |
 
 ## svi728
 
@@ -567,8 +567,8 @@ photograph shows the FS-A1ST sibling, as its exhibit caption explicitly states.
 | Image | Author | License | Source |
 |---|---|---|---|
 | `01-spectravideo-svi-738-x-press-tietokonemuseo.webp` | MKFI | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Spectravideo_SVI-738_X%27Press_Tietokonemuseo.JPG) |
-| `02-svi-738-pic-0931.webp` | Museo8bits | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SVI-738_PIC_0931.JPG) |
-| `03-svi-738-pic-0930.webp` | Museo8bits | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SVI-738_PIC_0930.JPG) |
+| `02-svi-738-pic-0931.webp` | [Miguel Durán (Museo8bits / El Museo de los 8 Bits)](http://www.museo8bits.com) | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SVI-738_PIC_0931.JPG) |
+| `03-svi-738-pic-0930.webp` | [Miguel Durán (Museo8bits / El Museo de los 8 Bits)](http://www.museo8bits.com) | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:SVI-738_PIC_0930.JPG) |
 
 ## msxturbor
 
@@ -580,5 +580,5 @@ photograph shows the FS-A1ST sibling, as its exhibit caption explicitly states.
 
 | Image | Author | License | Source |
 |---|---|---|---|
-| `01-philips-nms8250-msx2-front.webp` | Miguel Durán | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Philips_NMS8250_MSX2_front.JPG) |
-| `02-philips-nms8250-msx2-back.webp` | Miguel Durán | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Philips_NMS8250_MSX2_back.JPG) |
+| `01-philips-nms8250-msx2-front.webp` | [Miguel Durán (Museo8bits / El Museo de los 8 Bits)](http://www.museo8bits.com) | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Philips_NMS8250_MSX2_front.JPG) |
+| `02-philips-nms8250-msx2-back.webp` | [Miguel Durán (Museo8bits / El Museo de los 8 Bits)](http://www.museo8bits.com) | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Philips_NMS8250_MSX2_back.JPG) |

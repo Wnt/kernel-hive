@@ -95,6 +95,11 @@ markdown, TypeScript, or the generator. Nothing else authors the resolved file.
 - `caption`: one sentence, museum-label voice, matching the existing poster
   prose register (see any `registry/posters/*.md`). No credit text — credit is
   generated from the API.
+- `author`: optional credit override when the page names a photographer that
+  differs from the API Artist field. It does not change the license gate.
+- `authorUrl`: optional http(s) author homepage, copied to the resolved image.
+  The carousel links the author name here and retains a separate Source link
+  to the Commons provenance page. Omitted values retain the existing credits.
 - `adLinks`: optional, 0–2 entries. Outbound links to copyrighted ads/posters
   that are NOT copied into the repo. Omit the key entirely if none.
 

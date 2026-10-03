@@ -66,13 +66,21 @@ export default function PosterGalleryCarousel({ images, adLinks, idPrefix }: Pos
           <span className="exhibit-poster-credit">
             {' '}
             Photo:{' '}
-            <a href={image.sourceUrl} target="_blank" rel="noreferrer">
+            <a href={image.authorUrl ?? image.sourceUrl} target="_blank" rel="noreferrer">
               {image.author}
             </a>{' '}
             ·{' '}
             <a href={image.licenseUrl} target="_blank" rel="noreferrer">
               {image.license}
             </a>
+            {image.authorUrl && (
+              <>
+                {' '}·{' '}
+                <a href={image.sourceUrl} target="_blank" rel="noreferrer">
+                  Source
+                </a>
+              </>
+            )}
             {image.shareAlike && <span className="exhibit-poster-gallery-sa"> · share-alike</span>}
           </span>
         </figcaption>
