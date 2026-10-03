@@ -248,8 +248,8 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   palmos:      { osId: 'palmos', archetypeId: 'touch-phone', transport: 'streamhost', accentColor: '#65755b', eraLabel: '1997 · PalmPilot Professional — Palm OS 2.0', pointerRel: false },
   macosx:      { osId: 'macosx', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#5d8fc7', eraLabel: '2003 · Mac OS X 10.3 Panther — Power Mac G4', pointerRel: false },
   nokia9300:   { osId: 'nokia9300', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#5B7FA6', eraLabel: '2005 · Series 80 v2 (Symbian OS 7.0s)' }, // ideal: a Nokia 9300 Communicator lying open — the 640x200 screen above the QWERTY keyboard, the four command buttons to the right of the screen
-  svi728:      { osId: 'svi728', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#56799b', eraLabel: '1984 · MSX BASIC 1.0 on the International SVI-728.' },
-  svi738:      { osId: 'svi738', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#56799b', eraLabel: '1985 · CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21.' },
+  svi728:      { osId: 'svi728', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#56799b', eraLabel: '1984 · MSX BASIC 1.0' },
+  svi738:      { osId: 'svi738', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#56799b', eraLabel: '1985 · CP/M-80 2.28' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

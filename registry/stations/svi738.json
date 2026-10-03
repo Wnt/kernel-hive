@@ -135,7 +135,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#56799b",
-    "eraLabel": "1985 \u00b7 CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21."
+    "eraLabel": "1985 \u00b7 CP/M-80 2.28"
   },
   "museum": {
     "id": "svi738",
@@ -158,8 +158,8 @@
       "ED",
       "ASM"
     ],
-    "blurb": "CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21.",
-    "notes": "Cold boot and writable session reset. No network or pointer hardware; see guest documentation for input and media provenance."
+    "blurb": "The compact X\u2019Press adds a built-in floppy drive and 80-column CP/M to the Spectravideo family. Write BASIC programs or explore the bundled development tools.",
+    "notes": "Boots to the CP/M A> prompt. The Controls menu starts BASIC and types a demo; press Enter to run it. Reset discards disk changes."
   },
   "emulator": {
     "family": "MAME",
@@ -175,7 +175,7 @@
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "Keyboard-only",
-    "keyboard": "Generated from this exact MAME driver; browser verification is the release gate.",
+    "keyboard": "International keyboard; web demo and physical typing verified.",
     "fixture": "CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21. Cold boot; no savestate."
   },
   "migrationExceptions": [],

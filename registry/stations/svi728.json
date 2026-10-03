@@ -135,7 +135,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#56799b",
-    "eraLabel": "1984 \u00b7 MSX BASIC 1.0 on the International SVI-728."
+    "eraLabel": "1984 \u00b7 MSX BASIC 1.0"
   },
   "museum": {
     "id": "svi728",
@@ -154,8 +154,8 @@
     "iconicApps": [
       "MSX BASIC"
     ],
-    "blurb": "MSX BASIC 1.0 on the International SVI-728.",
-    "notes": "Cold boot and writable session reset. No network or pointer hardware; see guest documentation for input and media provenance."
+    "blurb": "Spectravideo joins the MSX standard: a 64 KiB home computer that starts straight in BASIC. Type a program, change its colours and play a tune.",
+    "notes": "Use the Controls menu to type the demo, then press Enter to run it. Reset clears your program."
   },
   "emulator": {
     "family": "MAME",
@@ -171,7 +171,7 @@
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "Keyboard-only",
-    "keyboard": "Generated from this exact MAME driver; browser verification is the release gate.",
+    "keyboard": "International keyboard; web demo and physical typing verified.",
     "fixture": "MSX BASIC 1.0 on the International SVI-728. Cold boot; no savestate."
   },
   "migrationExceptions": [],
