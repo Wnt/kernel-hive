@@ -66,7 +66,10 @@ text is never evaluated as Tcl. The emulator adds `hive_mouse`, which
 routes motion and buttons through the same MSX event/state-change path as
 physical input. Keys have 40 ms hold/gap pacing; all held keys and buttons
 are released on disconnect. Mouse packets wait for two actual joystick-port sampling cycles,
-so a busy redraw cannot merge homing and target movement. Keyboard edges
+so a busy redraw cannot merge homing and target movement. Button edges
+also wait three completed guest frames after motion or the previous edge,
+allowing MSX View to process its software cursor. Repeated absolute targets
+are no-ops, while preserving that pending edge barrier. Keyboard edges
 also wait for two guest matrix-row reads, retaining the 40 ms minimum hold/gap. GUI readiness waits
 for the real VSHELL content pane: the preceding blue BIOS screen can appear
 stable for several seconds and is not a valid readiness signal. The keymap is derived from the pinned

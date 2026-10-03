@@ -19,6 +19,8 @@ class Adapter:
         self.position = None
         self.keys = {}
         self.last_release = 0.0
+        self.motion_frame = None
+        self.button_frame = None
 
     async def read_xml(self):
         parser = ET.XMLPullParser(["start", "end"])
@@ -44,6 +46,22 @@ class Adapter:
         if result != "ok":
             raise ValueError(message)
         return message
+
+    async def frame(self):
+        return int(await self.command("machine_info VDP_frame_count"))
+
+    async def settle_before_edge(self):
+        # Port sampling precedes VSHELL's application cursor/menu processing.
+        # Let three completed guest frames pass after motion or a button edge.
+        recent = [f for f in (self.motion_frame, self.button_frame) if f is not None]
+        if not recent:
+            return
+        target = max(recent) + 3
+        deadline = asyncio.get_running_loop().time() + 2
+        while await self.frame() < target:
+            if asyncio.get_running_loop().time() >= deadline:
+                raise ValueError("guest video clock stalled")
+            await asyncio.sleep(0.002)
 
     async def mouse_packet(self, dx, dy):
         first = int(await self.command(f"hive_mouse {dx} {dy} {self.buttons}"))
@@ -72,6 +90,7 @@ class Adapter:
             await self.command(f"keymatrixup {row} {mask}")
         self.keys.clear()
         self.position = None
+        self.motion_frame = self.button_frame = None
 
     async def inject(self, parts):
         if not parts:
@@ -105,21 +124,28 @@ class Adapter:
             # VSHELL's 256x212 pointer space is doubled in IFB1, with
             # its active picture starting at (64,28). openMSX divides by two.
             x, y = max(0, min(255, (x - 64) // 2)), max(0, min(211, (y - 28) // 2))
+            if self.position == (x, y):
+                return
             if self.position is None:
                 await self.mouse(-640, -480)
                 self.position = (0, 0)
             px, py = self.position
             await self.mouse(2 * (x - px), 2 * (y - py))
             self.position = (x, y)
+            self.motion_frame = await self.frame()
         elif verb == "MOVEP" and len(parts) == 3:
             dx, dy = map(int, parts[1:])
             if abs(dx) > 1024 or abs(dy) > 1024:
                 raise ValueError("relative motion out of bounds")
             await self.mouse(dx, dy)
+            self.position = None
+            self.motion_frame = await self.frame()
         elif verb in ("DOWN1", "UP1", "DOWN2", "UP2", "DOWN3", "UP3") and len(parts) == 1:
+            await self.settle_before_edge()
             bit = {"1": 1, "2": 2, "3": 0}[verb[-1]]
             self.buttons = self.buttons | bit if verb.startswith("DOWN") else self.buttons & ~bit
             await self.mouse()
+            self.button_frame = await self.frame()
         else:
             raise ValueError("unsupported verb")
 
