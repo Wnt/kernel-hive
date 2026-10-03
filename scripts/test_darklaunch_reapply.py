@@ -98,6 +98,18 @@ class ReapplyTest(unittest.TestCase):
             tool("reapply", "--serve-root", str(self.serve))
         self.assertEqual([e["id"] for e in self.entries()].count("zzrig"), 1)
 
+    def test_multiple_rigs_have_distinct_orders_after_publish_and_reapply(self) -> None:
+        second = self.tmp / "second"
+        second.mkdir()
+        rig = fake_rig(second, "zzsecond", 54998)
+        result = tool("publish", "zzsecond", "--rig", str(rig), "--like", "freedos", "--serve-root", str(self.serve))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.republish_from_the_registry()
+        tool("reapply", "--serve-root", str(self.serve))
+        orders = [entry["order"] for entry in self.entries()]
+        self.assertEqual(len(orders), len(set(orders)))
+        self.assertEqual({entry["id"] for entry in self.entries()}, {"freedos", "zzrig", "zzsecond"})
+
     def test_withdraw_then_reapply_does_not_resurrect_the_station(self) -> None:
         tool("withdraw", "zzrig", "--serve-root", str(self.serve))
         tool("reapply", "--serve-root", str(self.serve))

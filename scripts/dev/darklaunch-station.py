@@ -32,7 +32,7 @@ the authority for id and UDP port). Run ON THE BOX; defaults are box paths.
 `--like STATION` builds the manifest entry for you instead of requiring a
 hand-written `--entry FILE`: it copies STATION's own row out of
 `<serve>/webroot/gallery-manifest.json`, then sets id=<id>,
-displayName="<id> (smoke rig)" (or --display-name), order=900, listed=false,
+displayName="<id> (smoke rig)" (or --display-name), a unique order, listed=false,
 signalEndpoint=/signal/<id>.json. This is the guessing step the pcgeos
 speedrun (2026-09-02) got wrong by hand — the sibling's row, not some other
 manifest file, is the only correct template. `--entry` still works, for a
@@ -227,10 +227,14 @@ def cmd_publish(
     golden: dict | None = None,
 ) -> int:
     manifest_path = serve / "webroot" / "gallery-manifest.json"
+    signal_row = read_signaling(rig, station_id)
     if entry_file is not None:
         entry = json.loads(entry_file.read_text())
     else:
         entry = build_entry_from_sibling(manifest_path, station_id, like, display_name)
+        # UDP ports are already uniquely claimed. A fixed order=900 made the
+        # SPA reject the entire manifest as soon as two rigs were published.
+        entry["order"] = 100000 + signal_row["udpPort"]
     if entry.get("id") != station_id:
         sys.exit(f"entry id is {entry.get('id')!r}, expected {station_id!r}")
     entry["listed"] = False
@@ -241,7 +245,9 @@ def cmd_publish(
     tiles_path = serve / "tiles.json"
     tiles = load(tiles_path)
     manifest = load(manifest_path)
-    tiles[station_id] = read_signaling(rig, station_id)
+    if any(e.get("id") != station_id and e.get("order") == entry["order"] for e in manifest["entries"]):
+        sys.exit(f"manifest order {entry['order']} is already used by another station")
+    tiles[station_id] = signal_row
     manifest["entries"] = [e for e in manifest["entries"] if e.get("id") != station_id] + [entry]
     manifest["entries"].sort(key=lambda e: e.get("order", 0))
     write_json(tiles_path, tiles)
