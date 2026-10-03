@@ -67,6 +67,20 @@ class ProtocolTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.adapter.keys, {})
         self.assertIsNone(self.adapter.position)
 
+    async def test_failed_guest_scan_still_releases_applied_key(self):
+        async def command(value):
+            self.commands.append(value)
+            if value == "keymatrixup 0 0":
+                raise ValueError("guest stopped scanning")
+            return "0"
+
+        self.adapter.command = command
+        with self.assertRaises(ValueError):
+            await self.adapter.inject("KEY 1 0 1".split())
+        await self.adapter.release()
+        self.assertEqual(self.commands[-1], "keymatrixup 0 1")
+        self.assertEqual(self.adapter.keys, {})
+
     async def test_absolute_targets_are_bounded_and_coherent(self):
         await self.adapter.inject("MOVEA 99999 -8".split())
         self.assertEqual(self.adapter.position, (255, 0))

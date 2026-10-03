@@ -88,14 +88,15 @@ class Adapter:
             if not down and (row, mask) in self.keys:
                 await asyncio.sleep(max(0, self.keys[(row, mask)] + 0.04 - loop.time()))
             first = int(await self.command(f"keymatrix{'down' if down else 'up'} {row} {mask}"))
+            # The edge already applied even if the guest stops scanning.
+            if down:
+                self.keys[(row, mask)] = loop.time()
             deadline = loop.time() + 5
             while (int(await self.command(f"keymatrixup {row} 0")) - first) & 0x7FFFFFFF < 2:
                 if loop.time() >= deadline:
                     raise ValueError("guest is not scanning its keyboard")
                 await asyncio.sleep(0.002)
-            if down:
-                self.keys[(row, mask)] = loop.time()
-            else:
+            if not down:
                 self.keys.pop((row, mask), None)
                 if not modifier:
                     self.last_release = loop.time()
