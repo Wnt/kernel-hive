@@ -10,12 +10,12 @@
         "prelude": "",
         "value": {
           "key": "svi728",
-          "script": "tiles/msx2.sh",
-          "outputDir": "native/msx2",
+          "script": "tiles/svi728.sh",
+          "outputDir": "native/svi728",
           "class": "retro",
-          "estimated": "measured in guest documentation",
+          "estimated": "~1m (media only)",
           "automation": "full",
-          "produces": "MSX BASIC 1.0 on the International SVI-728.",
+          "produces": "SVI-728 BIOS staged",
           "flags": []
         }
       }

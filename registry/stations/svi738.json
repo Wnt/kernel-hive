@@ -10,12 +10,12 @@
         "prelude": "",
         "value": {
           "key": "svi738",
-          "script": "tiles/msx2.sh",
-          "outputDir": "native/msx2",
+          "script": "tiles/svi738.sh",
+          "outputDir": "native/svi738",
           "class": "retro",
-          "estimated": "measured in guest documentation",
+          "estimated": "~1m (media only)",
           "automation": "full",
-          "produces": "CP/M-80 2.28 on SVI-738 Finland/Sweden hardware, with the International CP/M keyboard and Microsoft BASIC-80 5.21.",
+          "produces": "SVI-738 CP/M disk and BIOS staged",
           "flags": []
         }
       }
@@ -167,7 +167,7 @@
     "source": "scripts/build-guests/emulators/native.d/svi738.sh",
     "driver": "svi738sw"
   },
-  "ui": "home-computer",
+  "ui": "text-console",
   "reset": {
     "stationDir": "svi738",
     "pointer": "none",
