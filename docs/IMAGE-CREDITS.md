@@ -537,6 +537,10 @@ Period advertising, referenced by outbound link only (not redistributed here):
 ⚖️ = share-alike license.
 
 
+The six Spectravideo/MSX galleries below use resized WebP conversions of the
+linked originals. Each converted image retains its listed licence. The turbo R
+photograph shows the FS-A1ST sibling, as its exhibit caption explicitly states.
+
 ## svi328
 
 | Image | Author | License | Source |
