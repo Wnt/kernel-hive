@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "id": "msxturbor",
+  "era_year": 1991,
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 88,
+        "prelude": "",
+        "value": {
+          "key": "msxturbor",
+          "script": "tiles/msxturbor.sh",
+          "outputDir": "native/msxturbor",
+          "class": "retro",
+          "estimated": "~2m media; cached native build",
+          "automation": "full",
+          "produces": "Original Panasonic FS-A1GT ROMs and three system disks, hash verified",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/msxturbor",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54220,
+      "notes": "Host-native openMSX 21.0: native FrameSource to IFB1, mamectl-compatible allowlisted matrix/mouse adapter, 48 kHz stereo PCM FIFO. No guest networking. Relaunch discards disk, SRAM and CMOS changes."
+    }
+  },
+  "render": {
+    "signalOrder": 114,
+    "stationsManifestOrder": 93,
+    "stationsManifestPrelude": "\n# msxturbor \u2014 Panasonic FS-A1GT / MSX View, host-native openMSX.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 121,
+    "bindingPrelude": "",
+    "goldenOrder": 93
+  },
+  "stationDir": "msxturbor",
+  "lifecycle": "candidate",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54220,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "method": "mame-ioport",
+      "absolute": true,
+      "present": true,
+      "device": "MSX mouse (joystick port A)",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 220
+  },
+  "guestDoc": "docs/guests/msxturbor.md",
+  "credentialsRef": "guest/msxturbor",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "msxturbor",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_AUDIO": "on",
+      "SH_X11_DISPLAY": ":220",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/msxturbor/msxturbor_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/msxturbor/fb.shm",
+      "SH_PORT": "54220",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/msxturbor/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/msxturbor/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": "\":@,&:^,':&,(:*,):(,%3A:',*:\",+:%3A,=:_,@:[,[:],]:\\,^:=,`:{,\\:`,|:~"
+    },
+    "vmidLabel": 220,
+    "bringUpOrder": 121,
+    "x11": {
+      "display": ":220",
+      "geometry": "640x480x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/msxturbor/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "msxturbor",
+        "--udp",
+        "54220",
+        "--x11",
+        "--x11-display",
+        ":220",
+        "--capture",
+        "shm",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/msxturbor/x11-runtime.sh",
+        "--aux-file",
+        "$T/msxturbor/msxturbor.keymap",
+        "--aux-file",
+        "$T/msxturbor/adapter.py",
+        "--aux-file",
+        "$T/msxturbor/boot.tcl",
+        "--env-append-file",
+        "$T/msxturbor/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/msxturbor/msxturbor.keymap",
+        "streamhost/stations/msxturbor/station.env.fixture",
+        "streamhost/stations/msxturbor/adapter.py",
+        "streamhost/stations/msxturbor/boot.tcl"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#376ca8",
+    "eraLabel": "Early 1990s \u00b7 Panasonic FS-A1GT \u00b7 MSX View"
+  },
+  "museum": {
+    "id": "msxturbor",
+    "displayName": "MSX turbo R",
+    "year": 1991,
+    "lineage": "MSX \u2192 MSX2 \u2192 MSX2+ \u2192 MSX turbo R",
+    "arch": "R800 and Z80; Yamaha V9958 VDP",
+    "ramMB": 0,
+    "ramKB": 512,
+    "era": "1990s",
+    "accent": "#376ca8",
+    "eraSoftware": [
+      "MSX View",
+      "MSX-DOS 2",
+      "MSX-BASIC 4.1"
+    ],
+    "periodBrowser": "None \u2014 offline period workstation",
+    "iconicApps": [
+      "MSX View",
+      "View Draw",
+      "View Paint",
+      "View text editor"
+    ],
+    "blurb": "Where MSX went next: Panasonic\u2019s Japanese FS-A1GT combines a faster R800 processor with a mouse-driven MSX View desktop and MSX-DOS 2.",
+    "notes": "Early-1990s Japanese FS-A1GT. Original Japanese interface. Year metadata is provisional: emulator sources differ between 1991 and 1992. ROM/media binaries are sourced separately and never committed."
+  },
+  "emulator": {
+    "family": "openMSX",
+    "version": "21.0",
+    "source": "scripts/build-guests/emulators/build-openmsx-native.sh",
+    "driver": "Panasonic_FS-A1GT"
+  },
+  "ui": "home-computer",
+  "reset": {
+    "stationDir": "msxturbor",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "Native MSX mouse on joystick port A; browser verification pending.",
+    "keyboard": "Japanese JIS matrix derived from the pinned openMSX unicode map; browser verification pending.",
+    "fixture": "Fresh cold boot with firmware enabled and original system disk 3. DOS profile uses original system disk 2 with firmware disabled. Runtime proof pending."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "Offline host-native integration; no retronet. Candidate until framebuffer, input, reset and browser acceptance gates pass."
+  ],
+  "keyboard": {
+    "charMap": {
+      "\"": "@",
+      "&": "^",
+      "'": "&",
+      "(": "*",
+      ")": "(",
+      ":": "'",
+      "*": "\"",
+      "+": ":",
+      "=": "_",
+      "@": "[",
+      "[": "]",
+      "]": "\\",
+      "^": "=",
+      "`": "{",
+      "\\": "`",
+      "|": "~"
+    }
+  }
+}

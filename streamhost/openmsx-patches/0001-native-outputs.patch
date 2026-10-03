@@ -1,0 +1,196 @@
+diff --git a/src/MSXPPI.cc b/src/MSXPPI.cc
+index 8a9e256..0738244 100644
+--- a/src/MSXPPI.cc
++++ b/src/MSXPPI.cc
+@@ -83,6 +83,7 @@ void MSXPPI::writeA(uint8_t value, EmuTime /*time*/)
+ 
+ uint8_t MSXPPI::readB(EmuTime time)
+ {
++    ++keyboard.hiveReads[selectedRow];
+ 	return peekB(time);
+ }
+ uint8_t MSXPPI::peekB(EmuTime time) const
+diff --git a/src/events/InputEventGenerator.cc b/src/events/InputEventGenerator.cc
+index 0fcd5aa..82b3905 100644
+--- a/src/events/InputEventGenerator.cc
++++ b/src/events/InputEventGenerator.cc
+@@ -1,4 +1,6 @@
+ #include "InputEventGenerator.hh"
++#include "Mouse.hh"
++#include "TclObject.hh"
+ 
+ #include "Event.hh"
+ #include "EventDistributor.hh"
+@@ -25,6 +27,7 @@ InputEventGenerator::InputEventGenerator(CommandController& commandController,
+ 		"This setting controls if openMSX takes over mouse and keyboard input",
+ 		false, Setting::Save::NO)
+ 	, escapeGrabCmd(commandController)
++	, hiveMouseCmd(commandController)
+ {
+ 	setGrabInput(grabInput.getBoolean());
+ 	eventDistributor.registerEventListener(EventType::WINDOW, *this);
+@@ -505,4 +508,40 @@ std::string InputEventGenerator::EscapeGrabCmd::help(
+ 	return "Temporarily release input grab.";
+ }
+ 
++InputEventGenerator::HiveMouseCmd::HiveMouseCmd(CommandController& controller)
++    : Command(controller, "hive_mouse") {}
++std::string InputEventGenerator::HiveMouseCmd::help(std::span<const TclObject>) const
++{ return "hive_mouse dx dy buttons (bounded relative pointer; buttons 0..3)"; }
++void InputEventGenerator::HiveMouseCmd::execute(std::span<const TclObject> tokens, TclObject& result)
++{
++    result = int(Mouse::hiveSamples & 0x7fffffff);
++    if (tokens.size() == 1) return;
++    if (tokens.size() != 4) throw CommandException("Expected dx dy buttons");
++    int dx = tokens[1].getInt(getInterpreter());
++    int dy = tokens[2].getInt(getInterpreter());
++    int next = tokens[3].getInt(getInterpreter());
++    if (dx < -1024 || dx > 1024 || dy < -1024 || dy > 1024 || next < 0 || next > 3)
++        throw CommandException("Pointer range exceeded");
++    auto& input = OUTER(InputEventGenerator, hiveMouseCmd);
++    SDL_Event evt{};
++    evt.motion.type = SDL_MOUSEMOTION;
++    evt.motion.timestamp = SDL_GetTicks();
++    evt.motion.xrel = dx; evt.motion.yrel = dy;
++    input.eventDistributor.distributeEvent(MouseMotionEvent(evt));
++    for (unsigned bit = 0; bit < 2; ++bit) {
++        unsigned mask = 1u << bit;
++        if ((buttons ^ unsigned(next)) & mask) {
++            SDL_Event edge{};
++            bool down = (unsigned(next) & mask) != 0;
++            edge.button.type = down ? SDL_MOUSEBUTTONDOWN : SDL_MOUSEBUTTONUP;
++            edge.button.timestamp = SDL_GetTicks();
++            edge.button.button = bit == 0 ? SDL_BUTTON_LEFT : SDL_BUTTON_RIGHT;
++            edge.button.state = down ? SDL_PRESSED : SDL_RELEASED;
++            if (down) input.eventDistributor.distributeEvent(MouseButtonDownEvent(edge));
++            else input.eventDistributor.distributeEvent(MouseButtonUpEvent(edge));
++        }
++    }
++    buttons = unsigned(next);
++}
++
+ } // namespace openmsx
+diff --git a/src/events/InputEventGenerator.hh b/src/events/InputEventGenerator.hh
+index 5b9a90a..be2b6f6 100644
+--- a/src/events/InputEventGenerator.hh
++++ b/src/events/InputEventGenerator.hh
+@@ -60,6 +60,13 @@ private:
+ 		[[nodiscard]] std::string help(std::span<const TclObject> tokens) const override;
+ 	} escapeGrabCmd;
+ 
++	struct HiveMouseCmd final : Command {
++        explicit HiveMouseCmd(CommandController& controller);
++        void execute(std::span<const TclObject> tokens, TclObject& result) override;
++        [[nodiscard]] std::string help(std::span<const TclObject>) const override;
++        unsigned buttons = 0;
++    } hiveMouseCmd;
++
+ 	enum EscapeGrabState : uint8_t {
+ 		ESCAPE_GRAB_WAIT_CMD,
+ 		ESCAPE_GRAB_WAIT_LOST,
+diff --git a/src/input/Keyboard.cc b/src/input/Keyboard.cc
+index 1663977..1e5a285 100644
+--- a/src/input/Keyboard.cc
++++ b/src/input/Keyboard.cc
+@@ -1574,11 +1574,12 @@ Keyboard::KeyMatrixUpCmd::KeyMatrixUpCmd(
+ }
+ 
+ void Keyboard::KeyMatrixUpCmd::execute(
+-	std::span<const TclObject> tokens, TclObject& /*result*/, EmuTime /*time*/)
++	std::span<const TclObject> tokens, TclObject& result, EmuTime /*time*/)
+ {
+ 	checkNumArgs(tokens, 3, Prefix{1}, "row mask");
+ 	auto& keyboard = OUTER(Keyboard, keyMatrixUpCmd);
+ 	keyboard.processCmd(getInterpreter(), tokens, true);
++    result = int(keyboard.hiveReads[tokens[1].getInt(getInterpreter())] & 0x7fffffff);
+ }
+ 
+ std::string Keyboard::KeyMatrixUpCmd::help(std::span<const TclObject> /*tokens*/) const
+@@ -1598,11 +1599,12 @@ Keyboard::KeyMatrixDownCmd::KeyMatrixDownCmd(CommandController& commandControlle
+ }
+ 
+ void Keyboard::KeyMatrixDownCmd::execute(std::span<const TclObject> tokens,
+-                                         TclObject& /*result*/, EmuTime /*time*/)
++                                         TclObject& result, EmuTime /*time*/)
+ {
+ 	checkNumArgs(tokens, 3, Prefix{1}, "row mask");
+ 	auto& keyboard = OUTER(Keyboard, keyMatrixDownCmd);
+ 	keyboard.processCmd(getInterpreter(), tokens, false);
++    result = int(keyboard.hiveReads[tokens[1].getInt(getInterpreter())] & 0x7fffffff);
+ }
+ 
+ std::string Keyboard::KeyMatrixDownCmd::help(std::span<const TclObject> /*tokens*/) const
+diff --git a/src/input/Keyboard.hh b/src/input/Keyboard.hh
+index b9f4a87..f2efb95 100644
+--- a/src/input/Keyboard.hh
++++ b/src/input/Keyboard.hh
+@@ -67,6 +67,7 @@ public:
+ 	         Matrix matrix, const DeviceConfig& config);
+ 
+ 	~Keyboard();
++    std::array<uint64_t, KeyMatrixPosition::NUM_ROWS> hiveReads{};
+ 
+ 	[[nodiscard]] const MsxChar2Unicode& getMsxChar2Unicode() const;
+ 
+diff --git a/src/input/Mouse.cc b/src/input/Mouse.cc
+index 9e85108..851587f 100644
+--- a/src/input/Mouse.cc
++++ b/src/input/Mouse.cc
+@@ -257,6 +257,7 @@ void Mouse::write(uint8_t value, EmuTime time)
+ 				// Only introduce the next delta when we are about to enter the main cycle
+ 				// to avoid trackball detection in the alternate cycle
+ 				// See https://github.com/openMSX/openMSX/pull/1791#discussion_r1860252195
++				++hiveSamples;
+ 				xRel = std::clamp(curXRel, -127, 127);
+ 				yRel = std::clamp(curYRel, -127, 127);
+ 				curXRel -= xRel;
+diff --git a/src/input/Mouse.hh b/src/input/Mouse.hh
+index fad7c14..322aa60 100644
+--- a/src/input/Mouse.hh
++++ b/src/input/Mouse.hh
+@@ -16,6 +16,8 @@ class Mouse final : public JoystickDevice, private MSXEventListener
+                   , private StateChangeListener
+ {
+ public:
++    // Single configured mouse in the host-native FS-A1GT station.
++    inline static uint64_t hiveSamples = 0;
+ 	Mouse(MSXEventDistributor& eventDistributor,
+ 	      StateChangeDistributor& stateChangeDistributor);
+ 	~Mouse() override;
+diff --git a/src/sound/SDLSoundDriver.cc b/src/sound/SDLSoundDriver.cc
+index 43677a4..a5f8d47 100644
+--- a/src/sound/SDLSoundDriver.cc
++++ b/src/sound/SDLSoundDriver.cc
+@@ -1,4 +1,5 @@
+ #include "SDLSoundDriver.hh"
++#include "HiveOutput.hh"
+ 
+ #include "Mixer.hh"
+ #include "Reactor.hh"
+@@ -132,6 +133,7 @@ void SDLSoundDriver::audioCallback(std::span<StereoFloat> stream)
+ 		// buffer underrun
+ 		std::ranges::fill(subspan(stream, available, missing), StereoFloat{});
+ 	}
++	hiveAudio(reinterpret_cast<const float*>(stream.data()), stream.size() * 2);
+ }
+ 
+ void SDLSoundDriver::uploadBuffer(std::span<const StereoFloat> buffer)
+diff --git a/src/video/PostProcessor.cc b/src/video/PostProcessor.cc
+index 2cfd287..661b6cd 100644
+--- a/src/video/PostProcessor.cc
++++ b/src/video/PostProcessor.cc
+@@ -1,4 +1,5 @@
+ #include "PostProcessor.hh"
++#include "HiveOutput.hh"
+ 
+ #include "AviRecorder.hh"
+ #include "CliComm.hh"
+@@ -436,6 +437,8 @@ std::unique_ptr<RawFrame> PostProcessor::rotateFrames(
+ 		paintFrame = superImposedFrame.get();
+ 	}
+ 
++	hiveFrame(*paintFrame);
++
+ 	// Possibly record this frame
+ 	if (recorder && needRecord()) {
+ 		try {

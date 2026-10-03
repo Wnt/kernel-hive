@@ -174,6 +174,9 @@ const POSTER_INDEX = {
   "msx2": {
     "hero": "/posters/msx2/desktop.webp"
   },
+  "msxturbor": {
+    "hero": "/posters/msxturbor/desktop.webp"
+  },
   "multics": {
     "hero": "/posters/multics/desktop.webp"
   },
