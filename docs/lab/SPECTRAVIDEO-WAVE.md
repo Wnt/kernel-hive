@@ -50,5 +50,9 @@ evidence; enabling an environment flag alone is insufficient.
 
 ## Status
 
-Implementation and isolated acceptance are in progress. None of these six
-stations is certified or published by this planning record.
+SVI-728 and SVI-738 are published at main commit 01c1e1cf with native
+services, exhibition notes, framebuffer images and Type demo actions. Their
+web demos passed in staging; production boot/reset screens were inspected.
+The other four stations remain in implementation or browser acceptance.
+Licensed hardware galleries have been acquired for all six and await the
+next publication. Each guest document records its own evidence.

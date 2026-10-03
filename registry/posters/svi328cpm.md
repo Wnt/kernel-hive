@@ -8,11 +8,11 @@ images:
     caption: The expanded SV-328 starts CP/M from a fresh disk image.
 ---
 
-## The expanded machine
+## Origins
 
 The same home computer gains disk drives and a green 80-column screen. CP/M turns it into a working programming desk.
 
-Use **Type in a demo program** to enter numbered BASIC lines and run a small table of squares. Change the loop limit, then type `RUN` again. `LIST` shows your program.
+Open Controls and choose **Type in a demo program** to enter numbered BASIC lines. Press Enter after the final RUN to print a table of squares. Change the loop limit, then type `RUN` again. `LIST` shows your program.
 
 The demo first starts `MBASIC` from CP/M. Type `SYSTEM` in BASIC to return to `A>`. Try `DIR` and `TYPE WELCOME.TXT` there. Ctrl+C interrupts a command.
 
