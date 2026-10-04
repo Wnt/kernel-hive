@@ -319,7 +319,7 @@ examples were typed the same way, three times each:
 | cbm8032 | 50 Hz CRTC, 20 032 cycles | 40 ms = 2 frames | 1 in 3 (`:` -> `*`) | 0 in 3 | 9 of 9 |
 | c128 | PAL, 19 656 cycles | 40 ms = 2 frames | 10 in 3 (`:` -> `[`, `+` -> its glyph, `*` gone) | 0 in 3 | 10 of 10 |
 | plus4 | PAL TED, 35 568 cycles | 40 ms = 2 frames | 9 in 3 | 0 in 3 | 9 of 9 |
-| cbm2 | 50 Hz CRTC, 40 064 cycles | 40 ms = 2 frames | {{CBM2_OLD}} | {{CBM2_NEW}} | {{CBM2_EX}} |
+| cbm2 | 50 Hz CRTC, 40 064 cycles | 40 ms = 2 frames | 0 in 3 | 0 in 3 | 9 of 9 |
 | c64basic | PAL, 19 656 cycles | 40 ms = 2 frames | 20 in 3 | 0 in 3 | 9 of 9 |
 | c64 (GEOS) | PAL, 19 656 cycles | 40 ms = 2 frames | no BASIC; same x64sc as c64basic | GEOS rename field: 3 entries exact | no `typeIn` |
 
@@ -370,16 +370,17 @@ were all byte-exact. vic20's three examples were typed exactly as the editor
 types them, `NEW` first, ten times each through the daemon at 40 ms: 30 of 30
 byte-exact, with `dropped=0 overflow=0` throughout.
 
-**Live since 2026-10-04 on sinclairql and every VICE station.** sinclairql and
-vic20 went first as the canary; pet2001, cbm8032, c128, plus4, cbm2, c64 and
-c64basic followed the same day, one at a time. Every golden restores unchanged
-under the new binary: the frames are pixel-identical to the old binary's
-(pet2001 and plus4 cold-boot, and their power-on frames are identical too), and
-the QL's savestate signature is the same. `typein-editor-probe.mjs` then typed
-an example through the real editor on each live station; the LIST was exact
-and RUN worked. The old binaries are kept beside the new ones as
-`ql.pre-shiftlead-20261004` and `vice-native.pre-shiftlead-20261004`. Evidence
-is in `/data/vms/streamhost/stations/<id>/evidence/shift-lead-2026-10-04/`.
+**Live since 2026-10-04 on sinclairql and vic20; the rest of the VICE family
+is proven on rigs (above) and goes live one station at a time.** On sinclairql
+and vic20 both goldens restore unchanged under the new binary: the frames are
+pixel-identical to the old binary's, and the QL's savestate signature is the
+same. The same holds on rigs for every other VICE station (pet2001 and plus4
+cold-boot, and their power-on frames are identical too). `typein-editor-probe.mjs`
+typed two lines dense in shifted characters through the real editor on each
+live station, and RUN printed exactly what the listing says. The old binaries
+are kept beside the new ones as `ql.pre-shiftlead-20261004` and
+`vice-native.pre-shiftlead-20261004`. Evidence is in
+`/data/vms/streamhost/stations/<id>/evidence/shift-lead-2026-10-04/`.
 
 **Which other stations are exposed.** Every MAME keyboard station applied
 Shift and the key in one drain pass before this, by construction. How much that
