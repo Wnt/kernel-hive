@@ -242,9 +242,12 @@ against the `.vkm`'s own `!LSHIFT/!RSHIFT/!LCBM/!LCTRL` anchors), because a held
 shift is a level, not a keystroke.
 
 The resulting ceiling is ~1 key per `HOLD+GAP` — 8.3 keys/s at the 60/60 ms
-default, and that is the *guest's* ceiling, not the transport's. The daemon must
-size its ordered queue and its ack deadline for it, exactly as `mame_sock.rs`
-already does (5 s + 200 ms per outstanding paced verb). Note the existing
+default, and that is the *guest's* ceiling, not the transport's. A burst is
+therefore the module's backlog, and the daemon must not read that ceiling as
+death: the sink judges the module by its PROGRESS through the backlog, never by
+how long the oldest edge has waited in it (`streamhost/streamhost/src/sink_feed.rs`;
+an age-based deadline cost a visitor most of a pasted listing on 2026-10-04,
+`docs/guests/vic20.md` "Long input"). Note the existing
 `scripts/dev/emu-key-pacing-bisect.py` already records "the VICE tiles' 40/60/80"
 from the bridged path; those numbers should be re-bisected against this engine
 before the wave, not assumed.
@@ -313,8 +316,10 @@ reuse `scripts/dev/mame-keymap.py`'s `XT_KEYS` table for the scancode side.
   change to the parser**. The sink picks column 2 or 3 from its own tracked
   shift state and forwards `Shift_L` as itself. Keep the fail-closed rule: a
   declared-but-broken map disables the keyboard rather than falling back.
-- **Ack budget**: 5 s + 200 ms per outstanding paced verb is already right for a
-  ~120 ms/key engine; `SAVEST`/`LOADST` need the long timeout as on MAME.
+- **Ack liveness by progress** (`sink_feed.rs`, shared with the MAME sink): the
+  head write gets 5 s from the moment it became the head, however deep the
+  ~120 ms/key engine's backlog; `SAVEST`/`LOADST` need the long timeout as on
+  MAME.
 - **Single-injector rule** carries over: a station launched with
   `VICE_CTL_SOCK` must not also be driven through the monitor.
 

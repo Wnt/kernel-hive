@@ -63,3 +63,9 @@ yuv-sys = "=0.3.14"
 # runtime + misc
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
+
+[dev-dependencies]
+# Paused-clock tests (`#[tokio::test(start_paused = true)]`): the socket sinks'
+# liveness is measured in seconds of emulator-module pacing, and a virtual clock
+# runs a 25 s paste drain in milliseconds, deterministically.
+tokio = { version = "1", features = ["full", "test-util"] }

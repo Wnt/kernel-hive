@@ -31,11 +31,14 @@ export const DEMO_LINE_DELAY_MS = 260;
  * streamhost paces keys per station (SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS) so an
  * emulator sampling its input ports once per emulated frame actually observes
  * every press -- on mpf2 that is 32 + 32, i.e. ~64 ms per character. typeText()
- * returns immediately and the daemon drains the queue at that rate, so a line
+ * returns immediately and the station drains the burst at that rate, so a line
  * of 25 characters is still arriving ~1.6 s later. Waiting a FIXED time between
- * lines therefore submits faster than the guest can consume, the backlog grows,
- * and characters are lost -- seen as the first digit of a line number going
- * missing partway down a listing. Scale the wait by line length instead.
+ * lines therefore submits faster than the guest can consume. That used to LOSE
+ * characters (the daemon dropped a deep backlog -- seen as the first digit of a
+ * line number going missing partway down a listing); since 2026-10-04 the
+ * daemon delivers a burst of any length whole, so under-waiting only bunches
+ * the lines up and lands DEMO_ENTER_DELAY_MS in the middle of a line still
+ * arriving. Scale the wait by line length.
  *
  * This is only the DEFAULT. A station whose drain rate exceeds it declares its own
  * `demoProgram.perCharMs` in the registry (vic20 paces 80+80, so 170), and
@@ -83,6 +86,78 @@ export interface DemoTypist {
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+/** How fast a listing goes in. Every number is per-station data (registry
+ *  `demoProgram` / `typeIn`), validated against the daemon's drain rate by
+ *  scripts/stations_registry/validate_typein.py — never a constant buried in a
+ *  component. */
+export interface TypingPace {
+  /** Wait after each character (one character per typeText call). */
+  readonly perCharMs: number;
+  /** Pause after a line's last character, before its ENTER. */
+  readonly lineDelayMs: number;
+  /** Settle after the ENTER of line `index` while BASIC tokenises it. */
+  readonly enterDelayMs: (index: number) => number;
+}
+
+/** Where a run stands: line k of N (1-based once started), characters keyed. */
+export interface TypingProgress {
+  readonly line: number;
+  readonly lines: number;
+  readonly chars: number;
+  readonly totalChars: number;
+}
+
+/**
+ * Key `lines` into the guest, one character per call, each line committed by
+ * its own ENTER. The engine under both the demo listing and the type-in editor.
+ *
+ * `prepare` rewrites a line into the keystrokes that produce it on this machine
+ * (the case rule, then the station keyboard) — the progress counts the
+ * VISITOR's characters, so it never disagrees with what the editor shows.
+ * `cancelled` is polled before every key: once it is true no further key edge
+ * leaves this function, which is what makes a Stop button honest.
+ */
+export async function typeLines({
+  lines, handle, pace, prepare = (line) => line, sleep = wait, cancelled = () => false, onProgress,
+}: {
+  lines: readonly string[];
+  handle: DemoTypist;
+  pace: TypingPace;
+  prepare?: (line: string) => string;
+  sleep?: (ms: number) => Promise<void>;
+  cancelled?: () => boolean;
+  onProgress?: (progress: TypingProgress) => void;
+}): Promise<boolean> {
+  const totalChars = lines.reduce((n, line) => n + line.length, 0);
+  let chars = 0;
+  for (const [index, line] of lines.entries()) {
+    if (cancelled()) return false;
+    const report = () => onProgress?.({ line: index + 1, lines: lines.length, chars, totalChars });
+    report();
+    // An EMPTY line is a bare ENTER: nothing to type, so no per-line pace
+    // either -- the ENTER below is the whole line. bootOS's `enter` command
+    // reads hex lines until it gets one, and the registry validator admits
+    // exactly '' for it (never whitespace, which would type as nothing but
+    // read as content).
+    if (line.length > 0) {
+      const typed = await typePaced(prepare(line), handle, pace.perCharMs, sleep, cancelled, (n) => {
+        chars += n;
+        report();
+      });
+      if (!typed) return false;
+      // The line has reached the guest chunk by chunk; the inter-line pace is
+      // what is left.
+      await sleep(pace.lineDelayMs);
+      if (cancelled()) return false;
+    }
+    // ENTER commits the line; give the guest time to tokenise it before the
+    // next character arrives.
+    handle.typeText('\n');
+    await sleep(pace.enterDelayMs(index));
+  }
+  return !cancelled();
+}
+
 export async function typeDemoProgram({
   program,
   handle,
@@ -105,30 +180,17 @@ export async function typeDemoProgram({
   // The station's own drain rate wins over the fleet default; an explicit caller
   // argument (tests) still wins over both.
   const charMs = perCharMs === DEMO_PER_CHAR_MS ? (program.perCharMs ?? perCharMs) : perCharMs;
-  for (const [index, line] of program.lines.entries()) {
-    if (cancelled()) return false;
-    // An EMPTY line is a bare ENTER: nothing to type, so no per-line pace
-    // either -- the ENTER below is the whole line. bootOS's `enter` command
-    // reads hex lines until it gets one, and the registry validator admits
-    // exactly '' for it (never whitespace, which would type as nothing but
-    // read as content).
-    if (line.length > 0) {
-      if (!(await typePaced(applyKeyboard(line, keyboard), handle, charMs, sleep, cancelled))) return false;
-      // The line has reached the guest chunk by chunk; the inter-line pace is
-      // what is left.
-      await sleep(delayMs);
-      if (cancelled()) return false;
-    }
-    // ENTER commits the line; give the guest time to tokenise it before the
-    // next character arrives.
-    handle.typeText('\n');
-    const configured = program.enterDelayMs;
-    const lineMs = typeof configured === 'number' ? configured : configured?.[index];
-    await sleep(enterDelayMs ?? lineMs ?? DEMO_ENTER_DELAY_MS);
-  }
-  if (cancelled()) return false;
+  const configured = program.enterDelayMs;
+  const pace: TypingPace = {
+    perCharMs: charMs,
+    lineDelayMs: delayMs,
+    enterDelayMs: (index) =>
+      enterDelayMs ?? (typeof configured === 'number' ? configured : configured?.[index]) ?? DEMO_ENTER_DELAY_MS,
+  };
+  const prepare = (line: string) => applyKeyboard(line, keyboard);
+  if (!(await typeLines({ lines: program.lines, handle, pace, prepare, sleep, cancelled }))) return false;
   // No newline: the visitor supplies it.
-  return typePaced(applyKeyboard(program.runCommand, keyboard), handle, charMs, sleep, cancelled);
+  return typePaced(prepare(program.runCommand), handle, charMs, sleep, cancelled);
 }
 
 /**
@@ -152,11 +214,13 @@ async function typePaced(
   charMs: number,
   sleep: (ms: number) => Promise<void>,
   cancelled: () => boolean,
+  onTyped?: (n: number) => void,
 ): Promise<boolean> {
   for (let i = 0; i < text.length; i += DEMO_CHUNK_CHARS) {
     if (cancelled()) return false;
     const chunk = text.slice(i, i + DEMO_CHUNK_CHARS);
     handle.typeText(chunk);
+    onTyped?.(chunk.length);
     await sleep(chunk.length * charMs);
   }
   return true;

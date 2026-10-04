@@ -42,7 +42,7 @@ export function StageMenu({
   dotColor, statusLabel, streamable, transport, fs, mobile,
   oskOpen, onToggleOsk,
   restoreState, restoreToGolden,
-  demoLabel, demoState, demoTypeIn,
+  demoLabel, demoState, demoTypeIn, typeIn,
   toggleFullscreen, exit, posterAvailable, onOpenPoster,
 }: {
   dotColor: string;
@@ -61,6 +61,8 @@ export function StageMenu({
   demoLabel?: string;
   demoState: DemoState;
   demoTypeIn: () => void;
+  /** The type-in code editor — present only for registry `typeIn` stations. */
+  typeIn?: { open: boolean; toggle: () => void };
   toggleFullscreen: () => void;
   exit: () => void;
   posterAvailable: boolean;
@@ -149,6 +151,16 @@ export function StageMenu({
                 : demoState === 'err'
                   ? '⚠ Typing failed'
                   : `⌨ ${demoLabel}`}
+            </button>
+          )}
+
+          {typeIn && (
+            <button
+              style={typeIn.open ? { ...S.menuItem, ...S.btnOn } : S.menuItem}
+              onClick={run(typeIn.toggle)}
+              title="Write, paste or open a BASIC listing and have it typed into the machine"
+            >
+              {typeIn.open ? '✎ Code editor · on' : '✎ Code editor'}
             </button>
           )}
 

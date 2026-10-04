@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { PosterDoc } from '../types';
+import type { PosterDoc, TypeInDoc } from '../types';
 
 // '/' for the live gallery, '/staging/<session>/' for a staged UI
 // (scripts/dev/stage.sh) whose runtime documents are rendered from that
@@ -14,7 +14,11 @@ const RUNTIME_BASE: string = (import.meta as ImportMeta & { env?: { BASE_URL?: s
 // registry/posters/<id>.md is the single source, the served document is its only
 // projection, and ~450 kB of prose stays out of the build entirely. The dev
 // server renders the same document per request (see vite.config.ts).
-type DocsFile = { posters: Record<string, PosterDoc> };
+//
+// The same document carries the type-in editor's example programs and manual
+// links as a SIBLING key, `typeIn` (registry/examples/<id>/), so one fetch
+// serves both and a bundle that predates the editor reads it unchanged.
+type DocsFile = { posters: Record<string, PosterDoc>; typeIn?: Record<string, TypeInDoc> };
 
 function isDocsFile(value: unknown): value is DocsFile {
   return (
@@ -25,31 +29,31 @@ function isDocsFile(value: unknown): value is DocsFile {
   );
 }
 
-async function fetchDocs(): Promise<Record<string, PosterDoc>> {
+async function fetchDocs(): Promise<DocsFile> {
   try {
     const response = await fetch(`${RUNTIME_BASE}poster-docs.json`, { cache: 'no-cache' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const parsed: unknown = await response.json();
     if (!isDocsFile(parsed)) throw new Error('schema validation failed');
-    return parsed.posters;
+    return parsed;
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'unknown error';
     console.error(`[poster-docs] no poster prose (${reason}) — publish it with 'serve-https-spa.sh manifests'`);
-    return {};
+    return { posters: {} };
   }
 }
 
-let docsPromise: Promise<Record<string, PosterDoc>> | null = null;
+let docsPromise: Promise<DocsFile> | null = null;
 
-function loadPosterDocs(): Promise<Record<string, PosterDoc>> {
+function loadPosterDocs(): Promise<DocsFile> {
   docsPromise ??= fetchDocs();
   return docsPromise;
 }
 
-/** The full poster document for one exhibit; undefined while loading or absent. */
-export function usePosterDoc(osId: string): PosterDoc | undefined {
-  const [docs, setDocs] = useState<Record<string, PosterDoc> | null>(null);
+function useDocs(enabled = true): DocsFile | null {
+  const [docs, setDocs] = useState<DocsFile | null>(null);
   useEffect(() => {
+    if (!enabled) return;
     let alive = true;
     void loadPosterDocs().then((loaded) => {
       if (alive) setDocs(loaded);
@@ -57,6 +61,23 @@ export function usePosterDoc(osId: string): PosterDoc | undefined {
     return () => {
       alive = false;
     };
-  }, []);
-  return docs?.[osId];
+  }, [enabled]);
+  return docs;
+}
+
+/** The full poster document for one exhibit; undefined while loading or absent. */
+export function usePosterDoc(osId: string): PosterDoc | undefined {
+  return useDocs()?.posters[osId];
+}
+
+const NO_TYPE_IN: TypeInDoc = { examples: [], manuals: [] };
+
+/** One station's example programs + manual links. undefined while loading (or
+ *  while `enabled` is false — nothing is fetched until it is asked for); an
+ *  empty doc once loaded for a station that has none. */
+export function useTypeInDoc(osId: string, enabled = true): TypeInDoc | undefined {
+  const docs = useDocs(enabled);
+  if (!docs) return undefined;
+  const doc = docs.typeIn?.[osId];
+  return doc && Array.isArray(doc.examples) && Array.isArray(doc.manuals) ? doc : NO_TYPE_IN;
 }

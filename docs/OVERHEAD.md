@@ -113,11 +113,11 @@ A separate client-side floor nobody can optimise away: a frame waits a median
 
 | Path | Measured | Configured pacing |
 |---|---|---|
-| **gallery-hid** (`solaris`) | ring write 0.015 / 0.025 ms; inject→framebuffer 2.5 / 4.4 ms | latest-wins move slot, 64-entry ordered transition queue |
+| **gallery-hid** (`solaris`) | ring write 0.015 / 0.025 ms; inject→framebuffer 2.5 / 4.4 ms | latest-wins move slot, 1024-entry ordered transition queue (`sink_feed.rs`) |
 | **warpd vs gallery-hid**, inject→cursor-visible | idle: warpd **2.688 / 4.817** vs gallery-hid **2.716 / 4.751** — statistically indistinguishable. Loaded: gallery-hid **21% worse at pooled p99** | `SH_WARPD_PACE_MS` 8 ms |
 | **warpd hybrid** (`win311`, `os2warp`) | not measured end-to-end | `SH_WARPD_BUTTON_DELAY_MS` **80 ms**, re-armed by every reposition |
 | **dbus-rel homing** | not measured end-to-end | 250 ms settle once per session; 256 px chunks at 16 ms |
-| **mamesock** (`irix`) | not measured end-to-end | ack deadline 5 s + 200 ms per outstanding verb |
+| **mamesock** (`irix`) | not measured end-to-end | ack liveness by progress: the head write gets 5 s (+200 ms if paced) from when it became the head (`sink_feed.rs`) |
 | **dbus-abs** | not measured per-station | `SH_ABS_PACE_MS` 30 on the 11 old-GUI dbus-abs stations (2026-07-26 drag investigation; recorded in the registry 2026-08-11), 0 elsewhere |
 
 The warpd-vs-gallery-hid campaign is marked **PARTIAL** in its own document and

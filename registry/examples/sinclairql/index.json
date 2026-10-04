@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Sunburst",
+      "description": "Sixty spokes in seven colours radiate from the middle of the screen, drawn with LINE in the QL's eight-colour MODE 8."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Mirror writer",
+      "description": "Type a word and the QL spells it backwards using SuperBASIC string slicing, then uses the case-blind == comparison to spot a palindrome."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Guess my number",
+      "description": "The QL thinks of a number from 1 to 100 and answers Higher or Lower until you find it, inside a named REPeat loop, SuperBASIC's structured alternative to GO TO."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Sinclair QL User Guide (1984)",
+      "url": "https://archive.org/details/sinclair-ql-user-guide",
+      "lang": "en",
+      "note": "Sinclair Research's original manual, facsimile scan"
+    },
+    {
+      "title": "The Online Sinclair QL User Guide",
+      "url": "https://archive.org/download/SinclairQLHomepage/docs/ebooks/olqlug/index.htm",
+      "lang": "en",
+      "note": "The second edition as web pages, including the SuperBASIC keyword reference"
+    }
+  ]
+}

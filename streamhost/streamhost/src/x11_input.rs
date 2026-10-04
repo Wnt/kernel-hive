@@ -94,6 +94,9 @@ struct PtrState {
 struct Paced {
     pacer: Mutex<Pacer>,
     notify: Notify,
+    /// The injection task drained edges out of the pacer: a key refused as
+    /// Overflow may be re-offered (`InputRouter::key` waits on it).
+    room: Notify,
 }
 
 pub struct X11TestSink {
@@ -159,6 +162,7 @@ impl X11TestSink {
                     opts.btn_hold_ms,
                 )),
                 notify: Notify::new(),
+                room: Notify::new(),
             })
         });
         let sink = Arc::new(Self {
@@ -406,6 +410,13 @@ impl RealtimeInputSink for X11TestSink {
     fn backend_name(&self) -> &'static str {
         "x11test"
     }
+
+    /// The dwell pacer IS this sink's key backlog (pacing runs daemon-side
+    /// here), so a paste longer than it waits for the injection task to drain
+    /// instead of being cut off at `PACER_CAPACITY`.
+    fn room(&self) -> Option<&Notify> {
+        self.paced.as_deref().map(|p| &p.room)
+    }
 }
 
 /// Resolve the scancode->keysym table against the DISPLAY'S OWN keyboard
@@ -480,6 +491,9 @@ async fn paced_inject_task(sink: Weak<X11TestSink>, paced: Arc<Paced>) {
             };
             pacer.drain(std::time::Instant::now())
         };
+        if !edges.is_empty() {
+            paced.room.notify_waiters();
+        }
         {
             let Some(sink) = sink.upgrade() else { return };
             let n = edges.len();

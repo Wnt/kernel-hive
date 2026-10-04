@@ -62,6 +62,11 @@ control) and confirm `journalctl -u streamhost@<id>` logged a `SESSION_ACCEPTED`
 for the run. A probe that fails on a healthy station is a broken probe, and
 every reading it produces on a sick one is noise.
 
+- `typein-editor-probe.mjs <id> <listing.bas> [--run <cmd>] [--stop-after <s>] [--fb-shot <dir>] [--restore]`
+  — drives the BASIC machines' type-in code editor end to end (paste, Type into
+  machine, RUN, Stop, restore) and prints ms/char; the tool for tuning a
+  station's `typeIn` pace on long listings. See `docs/TYPE-IN-EDITOR.md`.
+
 - `open-check.mjs <id> [more…]` — did the visitor path OPEN the station, and
   nothing else. No input, no QMP, no guest state touched, so it is safe on a
   live or a sick station. Run it before any probe that claims to measure.
@@ -173,6 +178,13 @@ its own before/after, not to zero.
 - `direct-stream-proof.mjs <signaling.json> <out-prefix> [hex-scancodes]` —
   catalog-free WebTransport decode, non-black framebuffer, and reliable-key
   proof for a throwaway tile that must not enter the live lineup.
+- `key-burst-proof.mjs <signaling.json> <text-file> [--pace-ms N]` — types a
+  whole text through the daemon's REAL key receive path (WebTransport,
+  `ICLASS_KEY` stream) with no pacing, the AutoHotkey-paste shape; judge the
+  result on the framebuffer (`fb-wait.py --shm … --out`). How the 2026-10-04
+  long-input fix was proven (`docs/guests/vic20.md` "Long input");
+  `key-replay.py` writes the emulator's socket directly and cannot see a
+  daemon-side loss.
 - `decoder-buffer-probe.mjs [Tile] [samples]` — headed Chrome probe that records
   each live `VideoDecoder.decode()` submit-to-output span and whether a later
   chunk was submitted first. A consistent one-frame DPB hold appears as roughly

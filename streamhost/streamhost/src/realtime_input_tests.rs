@@ -115,6 +115,7 @@ fn pointer_slot_is_latest_wins_and_transition_flushes_in_order() {
 struct CountingSink {
     edges: AtomicU64,
     moves: AtomicU64,
+    keys: AtomicU64,
 }
 
 impl RealtimeInputSink for CountingSink {
@@ -125,6 +126,11 @@ impl RealtimeInputSink for CountingSink {
             self.moves.fetch_add(1, Ordering::Relaxed);
         }
         std::thread::yield_now(); // widen the window the mover races for
+        Ok(AcceptedSeq(event.seq))
+    }
+    fn try_key(&self, event: KeyEvent) -> Result<AcceptedSeq, Reject> {
+        self.keys.fetch_add(1, Ordering::Relaxed);
+        std::thread::yield_now();
         Ok(AcceptedSeq(event.seq))
     }
     fn health(&self) -> SinkHealth {
@@ -187,6 +193,131 @@ fn every_button_edge_survives_a_flood_of_moves() {
         sink.moves.load(Ordering::Relaxed) > 0,
         "the flood really ran"
     );
+}
+
+// The same rule for keys. `try_key` took the router state with `try_lock`, so a
+// pointer move holding it on another task turned a keystroke into a `Busy`
+// that `handle_key` then discarded unlogged. A pasted line typed while the
+// visitor's mouse rests on the canvas is exactly that race.
+#[test]
+fn every_key_edge_survives_a_flood_of_moves() {
+    let (router, sink) = counting_router();
+    let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let movers: Vec<_> = (0..4)
+        .map(|_| {
+            let r = router.clone();
+            let stop = stop.clone();
+            std::thread::spawn(move || {
+                while !stop.load(Ordering::Relaxed) {
+                    let _ = r.try_move(10, 20, 640, 480);
+                }
+            })
+        })
+        .collect();
+
+    // Type only once the flood is really holding the lock.
+    while sink.moves.load(Ordering::Relaxed) == 0 {
+        std::thread::yield_now();
+    }
+    const EDGES: u64 = 400;
+    for i in 0..EDGES {
+        router
+            .try_key(0x1e, i % 2 == 0, false)
+            .expect("a key edge must not be dropped");
+    }
+    stop.store(true, Ordering::Relaxed);
+    for m in movers {
+        m.join().unwrap();
+    }
+    assert_eq!(sink.keys.load(Ordering::Relaxed), EDGES);
+}
+
+/// A sink with a deliberately tiny hand-off queue and a writer task that only
+/// gets to run when the offering task yields — the shape of the vic20 incident
+/// (the receive task does not yield between records, and the writer it woke
+/// waits in the same worker's LIFO slot).
+struct TinySink {
+    queue: Mutex<VecDeque<u64>>,
+    work: Notify,
+    room: Notify,
+}
+
+impl RealtimeInputSink for TinySink {
+    fn try_pointer_abs(&self, _event: PointerAbs) -> Result<AcceptedSeq, Reject> {
+        Err(Reject::Unsupported)
+    }
+    fn try_key(&self, event: KeyEvent) -> Result<AcceptedSeq, Reject> {
+        let mut q = self.queue.lock().unwrap();
+        if q.len() >= 8 {
+            return Err(Reject::Overflow);
+        }
+        q.push_back(event.seq);
+        drop(q);
+        self.work.notify_one();
+        Ok(AcceptedSeq(event.seq))
+    }
+    fn health(&self) -> SinkHealth {
+        SinkHealth::Healthy
+    }
+    fn backend_name(&self) -> &'static str {
+        "tiny"
+    }
+    fn room(&self) -> Option<&Notify> {
+        Some(&self.room)
+    }
+}
+
+/// `InputRouter::key` never drops an edge because the queue is full: it
+/// waits for the writer's `room` signal and re-offers, so 500 edges through an
+/// 8-deep queue all arrive, in order.
+#[tokio::test]
+async fn a_full_sink_makes_key_wait_for_room_instead_of_dropping() {
+    let sink = Arc::new(TinySink {
+        queue: Mutex::new(VecDeque::new()),
+        work: Notify::new(),
+        room: Notify::new(),
+    });
+    let written: Arc<Mutex<Vec<u64>>> = Arc::default();
+    let writer = {
+        let (sink, written) = (sink.clone(), written.clone());
+        tokio::spawn(async move {
+            loop {
+                sink.work.notified().await;
+                let drained: Vec<u64> = sink.queue.lock().unwrap().drain(..).collect();
+                written.lock().unwrap().extend(drained);
+                sink.room.notify_waiters();
+            }
+        })
+    };
+    let router = InputRouter {
+        sink: sink.clone(),
+        seq: AtomicU64::new(1),
+        state: Mutex::new(RouterState {
+            x: 0,
+            y: 0,
+            width: 1,
+            height: 1,
+            buttons: 0,
+            modifiers: 0,
+        }),
+    };
+    const EDGES: u64 = 500;
+    for i in 0..EDGES {
+        // A refused-then-retried offer takes a fresh seq; what matters is
+        // that every EDGE lands, once, in order.
+        assert!(router.key(0x1e, i % 2 == 0, false).await.is_ok());
+    }
+    sink.work.notify_one();
+    for _ in 0..100 {
+        if written.lock().unwrap().len() as u64 == EDGES {
+            break;
+        }
+        tokio::task::yield_now().await;
+    }
+    let got = written.lock().unwrap().clone();
+    assert_eq!(got.len() as u64, EDGES, "edges lost");
+    assert!(got.windows(2).all(|w| w[0] < w[1]), "edges reordered");
+    writer.abort();
 }
 
 // …and the carried point rides the SAME acquisition as the edge, so no

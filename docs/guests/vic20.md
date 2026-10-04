@@ -41,8 +41,9 @@ builder's only external input is the frozen bridge seed.
 - **Pointer:** none. `--pointer none --input-backend disabled`; X runs with
   `-nocursor`. The real machine had no pointing device (its other input was a
   joystick), so there is nothing to emulate and nothing to calibrate.
-- **Keyboard:** PS/2 only, paced at 80 ms hold / 80 ms gap (measured — see
-  "Why four frames" below).
+- **Keyboard:** host-native `vicectl` (no PS/2 since the 2026-08-16
+  de-bridge), paced inside the module at 60 ms hold / 60 ms gap with EXCL —
+  see "Keyboard" below. A pasted listing of any length arrives whole.
 - **Login:** none. `credentialsRef` is `guest/vic20` for form only; the guest
   Debian kiosk is reached with the shared bridge key, never a password.
 
@@ -135,18 +136,25 @@ getty — is why the builder asserts both conditions explicitly.
 
 ## Keyboard
 
-- **Pacing: `SH_KEY_MIN_HOLD_MS=80`, `SH_KEY_MIN_GAP_MS=80`** — four PAL frames
-  each way, twice the playbook's usual two. See "Why four frames" below; the
-  short version is that the failure this guards against is a host scheduling
-  stall, not frame quantisation, so it does not scale with the frame period.
+The station is host-native since 2026-08-16: browser key edges go
+transport -> `InputRouter` -> `vice_sock.rs` -> the `vicectl` socket of the
+headless VICE (`docs/lab/research/vice-daemon-plane.md`).
+
+- **Pacing lives in the module: `VICE_CTL_KEY_HOLD/_GAP` 60/60 with
+  `VICE_CTL_KEY_EXCL=1`** (the launcher hands `SH_KEY_MIN_HOLD_MS/_GAP_MS` to
+  the module; the daemon's own gate only runs on the QEMU/dbus path). Re-bisected
+  against this engine with realistic overlapping bursts; the curve and why it is
+  60/60 and not the bridge's 80/80 are in
+  `streamhost/stations/vic20/station.env.fixture`. Ceiling ~8 keys/s.
 - **`demoProgram.perCharMs: 170`.** The UI typist waits `line.length *
-  perCharMs` before submitting the next line, and this station drains typed keys at
-  hold+gap = 160 ms/char — more than twice the fleet default's assumed 70.
-  `validate_demo_pacing` in `scripts/stations-registry.py` fails the build if the
-  budget that applies is below a station's drain rate, so the two cannot drift.
-- **No `SH_KEY_MAP`.** Unlike the MPF-II, this matrix does not have to be
-  re-derived: VICE's default SDL **symbolic** keymap (`sdl_sym.vkm`) already
-  maps host ASCII onto the Commodore key that produces that character.
+  perCharMs` before submitting the next line, so the demo reads as typing at
+  this station's pace (hold+gap = 120 ms/char) and its ENTER settle lands after
+  the line. `validate_demo_pacing` in `scripts/stations-registry.py` fails the
+  build if the budget that applies is below a station's drain rate.
+- **No per-station keymap.** VICE resolves the keysym through the machine's own
+  symbolic keymap (`VIC20/gtk3_sym.vkm`), and the daemon applies the host's US
+  layout before the wire from the one shared table
+  (`streamhost/stations/vice-native/us-layout.keysyms`).
 - **`keyboard.letterCase: upper-only`.** A *shifted* letter on a VIC-20 is a
   graphics glyph, not a capital, so the UI typist sends letters unshifted.
 - **On-screen keyboard:** the `c64` profile, because it is literally the same
@@ -154,7 +162,43 @@ getty — is why the builder asserts both conditions explicitly.
   — and the same VICE bindings drive it (RUN/STOP = Esc, RESTORE = PageUp,
   C= = Tab).
 
-## Why four frames, not two — the pacing bisect (2026-08-08)
+### Long input — pastes, the type-in demo, a code editor
+
+**A burst of any length is delivered whole and in order.** The daemon forwards
+every edge to the module as it arrives and the module queues it without bound,
+so a pasted listing is the module's backlog, drained at ~8 keys/s; nothing in
+between drops an edge for being early. This was not true before 2026-10-04,
+when a visitor pasted a listing as keystrokes (AutoHotkey `SendText`, i.e.
+browser key events as fast as Windows fires them) and lost most of it:
+`[input-router] vicesock accepted=3500 dropped=137 overflow=137` and eight
+`[vicesock] ack timeout (7..28 outstanding); reconnecting`. Two defects, both
+in the daemon and both shared by every socket sink (`sink_feed.rs` has the
+mechanism):
+
+- the 64-edge hand-off queue overflowed, because a paste reaches the sink as one
+  synchronous batch (~128 edges per poll) before the writer task runs. The queue
+  is now 1024, and a key that finds it full waits for room instead of dropping;
+- the ack deadline was counted from the oldest edge's SEND, so a module working
+  through a deep backlog looked dead — and each reconnect sent `KEYCLEAR`, which
+  flushes the module's whole paced queue. Liveness is now progress: the head
+  edge gets 5 s from the moment it became the head.
+
+Evidence (sandbox clone, real daemon receive path via
+`scripts/e2e/key-burst-proof.mjs`, 12 BASIC lines / 558 characters / 1398 edges
+written in one 48 ms burst), in
+`/data/vms/streamhost/stations/vic20/evidence/keyburst-2026-10-04/`:
+`old-01-typed.png` and `old-list{1,2,3}.png` are the shipped binary — line 40
+gone, line 30 fused with line 40's tail, a `:` turned `[` in line 80, lines
+100-120 never arrived; `new-01-typed.png` and `new-list{1,2,3}.png` are the
+fixed one — all twelve lines exact, `accepted=1398 dropped=0 overflow=0`, no
+reconnect. The listing typed is `listing.txt` beside them.
+
+## Why four frames, not two — the bridge-era pacing bisect (2026-08-08)
+
+This measured the BRIDGED station (QEMU send-key into an SDL kiosk). The
+host-native engine was re-bisected on 2026-08-16/17 and runs 60/60 with EXCL —
+see "Keyboard" above; the mechanism below (a host stall, not frame
+quantisation) is why that margin is still a step above the last failing rung.
 
 The station shipped at 40/40 (the playbook's two frames) and a visitor's type-in
 came back corrupted: `PRINT CHR(147)` for `CHR$(147)`, `GOTO 0` for `GOTO 20`,

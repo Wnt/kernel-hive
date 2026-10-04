@@ -97,8 +97,8 @@ use std::sync::{Arc, Condvar, Mutex, OnceLock, TryLockError};
 use std::time::{Duration, Instant};
 
 use crate::realtime_input::{AcceptedSeq, PointerAbs, RealtimeInputSink, Reject, SinkHealth};
+use crate::sink_feed::ORDERED_CAPACITY;
 
-const ORDERED_CAPACITY: usize = 64;
 /// Readback attempts per ordered target before the sink refuses to claim
 /// success (counted `warp-gaveup`, connection torn down, health Down).
 const VERIFY_TRIES: usize = 3;

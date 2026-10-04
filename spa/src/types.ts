@@ -184,3 +184,55 @@ export interface GuestKeyboard {
    *  letters must be sent UNSHIFTED or they arrive as punctuation. */
   readonly letterCase?: 'upper-only';
 }
+
+/** BASIC dialects the type-in editor highlights (registry `typeIn.dialect`;
+ *  keyword lists in ui/typein/basicDialects.ts). */
+export type BasicDialect =
+  | 'cbm-basic' | 'bbc-basic' | 'msx-basic' | 'locomotive-basic' | 'superbasic'
+  | 'sam-basic' | 'oric-basic' | 'color-basic' | 'applesoft';
+
+/** How letters become keystrokes (registry `typeIn.case`). */
+export type TypeInCase = 'as-typed' | 'unshifted' | 'code-upper' | 'code-lower';
+
+/** A station's opt-in for the type-in code editor (registry `typeIn`). Every
+ *  pacing number is validated against the station's own drain rate by
+ *  scripts/stations_registry/validate_typein.py; absent block = no editor. */
+export interface TypeInConfig {
+  readonly dialect: BasicDialect;
+  /** Wait per typed character, >= SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS. */
+  readonly perCharMs: number;
+  readonly lineDelayMs?: number;
+  readonly enterDelayMs?: number;
+  readonly case?: TypeInCase;
+  /** Longest logical line the machine's screen editor accepts. */
+  readonly maxLineChars?: number;
+  /** One sentence shown above the Type button (a step the machine needs first). */
+  readonly hint?: string;
+  /** Longer ENTER settles for named direct commands (whole line, upper case):
+   *  samcoupe's NEW redraws the MGT banner and eats the next key. */
+  readonly settleAfter?: Readonly<Record<string, number>>;
+  /** Printable ASCII the station's keymap cannot produce: flagged, never typed. */
+  readonly unreachable?: string;
+}
+
+/** One example program (registry/examples/<id>/), inlined into poster-docs.json. */
+interface TypeInExample {
+  file: string;
+  kind: 'draw' | 'input' | 'game' | 'sound' | 'other';
+  title: string;
+  description?: string;
+  text: string;
+}
+
+/** A link to the machine's own manual (registry/examples/<id>/index.json). */
+interface TypeInManual {
+  title: string;
+  url: string;
+  lang?: string;
+  note?: string;
+}
+
+export interface TypeInDoc {
+  examples: TypeInExample[];
+  manuals: TypeInManual[];
+}

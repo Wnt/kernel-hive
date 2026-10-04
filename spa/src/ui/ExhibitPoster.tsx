@@ -1,7 +1,8 @@
 import { publicAssetUrl } from '../data/publicAssetUrl';
 import { Fragment, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { usePosterDoc } from '../data/posterDocs';
+import { usePosterDoc, useTypeInDoc } from '../data/posterDocs';
+import { reach } from '../analytics';
 import type {
   EnrichedVM,
   PosterBlock,
@@ -114,6 +115,9 @@ export default function ExhibitPoster({
   onClose: () => void;
 }) {
   const poster = usePosterDoc(osId);
+  // The machine's own manuals (registry/examples/<id>/index.json) — linked here
+  // too, so they are one tap away without opening the type-in editor.
+  const manuals = useTypeInDoc(osId)?.manuals ?? [];
   const posterReady = poster !== undefined;
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -260,6 +264,22 @@ export default function ExhibitPoster({
             </Fragment>
           ))}
           {remainingImages.map((image) => <PosterFigure key={image.src} image={image} />)}
+          {manuals.length > 0 && (
+            <section aria-label="Manuals">
+              <h2>Manuals</h2>
+              <ul>
+                {manuals.map((m) => (
+                  <li key={m.url}>
+                    <a href={m.url} target="_blank" rel="noreferrer" onClick={() => reach('poster.manual.opened', 'act')}>
+                      {m.title}
+                    </a>
+                    {m.lang && m.lang !== 'en' ? ` (${m.lang})` : ''}
+                    {m.note ? ` · ${m.note}` : ''}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
 
         <footer className="exhibit-poster-footer">

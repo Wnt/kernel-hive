@@ -154,6 +154,11 @@
     "runCommand": "run",
     "perCharMs": 160
   },
+  "typeIn": {
+    "dialect": "oric-basic",
+    "perCharMs": 160,
+    "case": "unshifted"
+  },
   "museum": {
     "id": "oricatmos",
     "displayName": "Oric Atmos",

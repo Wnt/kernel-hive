@@ -152,6 +152,12 @@
     "runCommand": "run",
     "perCharMs": 170
   },
+  "typeIn": {
+    "dialect": "cbm-basic",
+    "perCharMs": 170,
+    "case": "code-lower",
+    "maxLineChars": 80
+  },
   "museum": {
     "id": "cbm8032",
     "displayName": "Commodore CBM 8032",

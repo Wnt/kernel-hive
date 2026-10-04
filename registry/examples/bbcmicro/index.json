@@ -1,0 +1,30 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Twisted squares",
+      "description": "Forty squares in MODE 1, each a little smaller and a little more turned than the last, build a spiral out of nothing but straight red, yellow and white lines."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "What day was it?",
+      "description": "Type a day, a month and a year and the machine works out the weekday with Zeller's congruence; try 1 12 1981, the month the BBC Micro first shipped."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Catch the star",
+      "description": "Steer the paddle with Z and X to catch each falling star; the stars speed up as your score grows, and SPACE starts a new game after a miss."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "BBC Microcomputer System User Guide",
+      "url": "https://archive.org/details/BBCUG",
+      "lang": "en",
+      "note": "Acorn's own manual, October 1984 edition, with the complete BBC BASIC reference; PDF scan"
+    }
+  ]
+}

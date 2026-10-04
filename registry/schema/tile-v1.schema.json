@@ -508,6 +508,74 @@
       },
       "additionalProperties": false
     },
+    "typeIn": {
+      "type": "object",
+      "description": "Opt-in for the SPA's type-in code editor (stage menu → 'Code editor'): a station that boots into a program interpreter declares its dialect and the pace the editor may type at. A station without this block gets no editor. Example programs and manual links live beside it in registry/examples/<id>/ (scripts/stations_registry/validate_typein.py). See docs/TYPE-IN-EDITOR.md.",
+      "required": [
+        "dialect",
+        "perCharMs"
+      ],
+      "properties": {
+        "dialect": {
+          "enum": [
+            "cbm-basic",
+            "bbc-basic",
+            "msx-basic",
+            "locomotive-basic",
+            "superbasic",
+            "sam-basic",
+            "oric-basic",
+            "color-basic",
+            "applesoft"
+          ],
+          "description": "Which keyword list the editor highlights with (spa/src/ui/typein/basicDialects.ts)."
+        },
+        "perCharMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Milliseconds the editor waits per typed character. REQUIRED, never defaulted, and validated >= SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS: the editor types one character per call and must never out-run the daemon's drain rate."
+        },
+        "lineDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Pause after a line's last character, before its ENTER (default 260, the demo typist's)."
+        },
+        "enterDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Settle after each ENTER while BASIC tokenises the line (default 600, the demo typist's)."
+        },
+        "case": {
+          "enum": [
+            "as-typed",
+            "unshifted",
+            "code-upper",
+            "code-lower"
+          ],
+          "description": "How letters become keystrokes. as-typed (default): upper case is Shift+letter. unshifted: every letter goes down unshifted (caps lock on at boot, or no lower case). code-upper / code-lower: letters outside string literals, REM and DATA are folded to that case first; literals keep the visitor's case."
+        },
+        "maxLineChars": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Longest logical line the machine's screen editor accepts; the editor flags longer lines before typing them."
+        },
+        "hint": {
+          "type": "string",
+          "minLength": 1,
+          "description": "One sentence the editor shows above the Type button, for a machine that needs a step first (e.g. a menu key)."
+        },
+        "settleAfter": {
+          "type": "object",
+          "description": "Longer ENTER settles for named direct commands, keyed by the whole line in upper case (matched case-insensitively): {\"NEW\": 2000} where NEW redraws a banner that eats the next key (samcoupe). The larger of this and enterDelayMs applies."
+        },
+        "unreachable": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Printable-ASCII symbols the station's keymap cannot produce. The editor flags them like non-ASCII and refuses to type a listing holding one; the examples validator refuses them too."
+        }
+      },
+      "additionalProperties": false
+    },
     "ui": {
       "enum": [
         "desktop",

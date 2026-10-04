@@ -171,7 +171,7 @@ flowchart TD
 |---|---|---|---|---|
 | **QMP/dbus send-key** | most QEMU stations | qcode injection; types uppercase and symbols correctly where the browser path mangles them | `SH_KEY_MIN_HOLD_MS` / `SH_KEY_MIN_GAP_MS` | Characters vanish or arrive scrambled |
 | **warpd / serial agent** | `win311 os2warp templeos ninefront win95` | agent verbs over TCP hostfwd or serial chardev | agent-side pace | Modifier batched into one event is not seen as a chord |
-| **mamesock** | `irix`, `w2kalpha`, `tru64` | paced verbs with per-verb acks into the emulator | ack deadline | — |
+| **mamesock** / **vicesock** | the MAME- and VICE-native keyboard stations | paced verbs with per-verb acks into the emulator; the daemon forwards the whole burst, the module queues it | module-side `*_CTL_KEY_HOLD/_GAP/_EXCL` | Before 2026-10-04: a long paste overflowed the daemon's 64-edge queue and a busy module was declared dead (`sink_feed.rs`) |
 | **kiosk X → emulator** | kiosks | key reaches the kiosk's Xorg, then the full-screen emulator's own input sampling | **per-machine**, frame-derived | Dropped keys that look like flaky typing |
 
 **The pacing rule is the whole story, and it is not about speed.** An emulator

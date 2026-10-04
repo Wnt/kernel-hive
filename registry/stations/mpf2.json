@@ -176,6 +176,12 @@
     ],
     "runCommand": "run"
   },
+  "typeIn": {
+    "dialect": "applesoft",
+    "perCharMs": 70,
+    "case": "unshifted",
+    "unreachable": "[\\]_`{|}~"
+  },
   "museum": {
     "id": "mpf2",
     "displayName": "Multitech Microprofessor II",

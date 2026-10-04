@@ -1,0 +1,30 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Sine and Cosine",
+      "description": "The PET has no graphics mode, so these two curves are drawn by poking character codes into screen memory at 32768; press any key to clear."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Temperatures",
+      "description": "Type a temperature in Celsius and get it back in Fahrenheit and Kelvin; press RETURN on an empty line to stop."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Guess the Number",
+      "description": "The PET picks a number from 1 to 100 and tells you higher or lower after every guess."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "PET 2001-8 Personal Computer User Manual (1978)",
+      "url": "https://archive.org/details/PET_2001-8_Personal_Computer_User_Manual_1978-10_Commodore",
+      "lang": "en",
+      "note": "The original 8 KB machine's manual, BASIC included. Scan at the Internet Archive."
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Rainbow fan",
+      "description": "Thirty-two lines fan out from a single point in fifteen colours, using the SAM's 16-colour MODE 4 and SAM BASIC's DRAW TO."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Circle maker",
+      "description": "Type a radius and the SAM draws that circle in a random colour and works out its area; type 0 to stop."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Higher or lower",
+      "description": "A card from 1 to 13 is dealt; press H or L to guess whether the next one is higher or lower, and see how long your run lasts."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "SAM Coupé Users' Manual (1989)",
+      "url": "https://archive.org/details/manualzilla-id-6882509",
+      "lang": "en",
+      "note": "MGT's original manual by Mel Croucher, with its SAM BASIC guide; PDF scan"
+    },
+    {
+      "title": "SAM Coupé Technical Manual v3.0 (1990)",
+      "url": "https://www.worldofsam.org/system/files/2018-05/sam-coupe_tech-man_v3-0.pdf",
+      "lang": "en",
+      "note": "MGT's hardware and ROM reference, PDF"
+    }
+  ]
+}

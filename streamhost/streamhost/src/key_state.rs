@@ -151,9 +151,25 @@ pub(crate) async fn handle_key(
     // keyboard minor, so keys stay on QEMU's normal keyboard path. The stock
     // guest keyboard driver consumes this D-Bus injection. x11test joins
     // only when SH_X11TEST_KEYS is set (routes_keys).
+    //
+    // `key` WAITS for a full sink to make room rather than dropping the edge
+    // (a pasted line used to lose everything past the sink's queue), and a
+    // refusal it cannot wait out is LOUD: before, the result was discarded and
+    // a lost keystroke left no trace on the router's side at all.
     if let Some(router) = router.filter(|r| r.routes_keys(cfg)) {
         let value = code as u16;
-        let _ = router.try_key(value, down, false);
+        match router.key(value, down, false).await {
+            Ok(_) => {}
+            // Unmapped scancodes are counted and named by the sink itself.
+            Err(crate::realtime_input::Reject::Unsupported) => {}
+            Err(e) => {
+                crate::input_telemetry::record_router_drop(router.backend());
+                eprintln!(
+                    "[input] key edge REJECTED code=0x{value:04x} down={down} backend={} err={e:?}",
+                    router.backend()
+                );
+            }
+        }
         keys.lock().await.note_sent(value, down);
         return;
     }
@@ -268,7 +284,7 @@ pub async fn run_reaper(
             count_forced_release();
             match &routed {
                 Some(r) => {
-                    let _ = r.try_key(value, false, false);
+                    let _ = r.key(value, false, false).await;
                 }
                 None => force_release_dbus(&cap, value).await,
             }

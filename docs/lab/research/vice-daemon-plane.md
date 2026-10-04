@@ -90,15 +90,29 @@ to end. It belongs in the same script, the day the fork lands.
 
 `mame_sock.rs`'s state machine, minus the pointer:
 
-- `try_lock`-and-offer on the browser path; connect / banner / write / ack-read /
-  reconnect in one background task; bounded ordered queue (64); health
-  Starting/Healthy/Down; 50 ms..1 s reconnect backoff.
+- Offer on the browser path (a key waits the few microseconds for the queue
+  lock; it is never `try_lock`ed and dropped); connect / banner / write /
+  ack-read / reconnect in one background task; health Starting/Healthy/Down;
+  50 ms..1 s reconnect backoff. The hand-off queue is the 1024-edge one every
+  socket sink shares (`sink_feed.rs`), and a key that finds it full is not
+  dropped: `InputRouter::key` waits for the writer's `room` signal and
+  re-offers, so a paste longer than any queue waits in the session's QUIC
+  stream. The module's own queue is unbounded and it reads its socket freely,
+  so the daemon forwards every edge as it arrives — a pasted listing is the
+  MODULE's backlog, not the daemon's.
 - **Banner**: `vicectl/1 …`, with or without a `HELLO ` prefix, within 1 s, else
   the peer is not a compatible module.
-- **Ack budget**: 5 s base + 200 ms per outstanding paced verb. Every `KEY` is
-  paced, because pacing lives in the EMULATOR on this path (the daemon's
-  `SH_KEY_MIN_*` gate only runs on the QEMU/dbus path) and the guest's own
-  ceiling is ~8.5 keys/s.
+- **Liveness is progress, not age.** The module acks a `KEY` when it APPLIES it
+  — pacing lives in the EMULATOR on this path (the daemon's `SH_KEY_MIN_*` gate
+  only runs on the QEMU/dbus path) and the guest's ceiling is ~8 keys/s — so a
+  pasted listing keeps edges outstanding for a minute or more. The head of the
+  outstanding list therefore gets 5 s (+200 ms if paced) from the moment it
+  BECAME the head (`sink_feed::AckLedger`), never a budget counted from its
+  send. The first budget was age-based (oldest send + 5 s + 200 ms x what was
+  still outstanding), and on 2026-10-04 it declared a busy vic20 dead eight
+  times in one visitor's paste, each reconnect KEYCLEARing the rest of the
+  text; see `docs/guests/vic20.md` "Long input". A module that stops acking is
+  still caught 5 s after its last progress.
 - **Unmapped scancodes** are counted AND logged per edge, `mame_sock.rs`'s
   hard-won rule: a silent unmapped reject was the one loss the 2026-08-12 typing
   investigation could not see in any counter. Counters line every 10 s:

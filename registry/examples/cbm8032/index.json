@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Bar Chart",
+      "description": "A year of monthly figures drawn as reverse-video bars across the 80-column screen; edit the data lines to chart your own."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Savings Plan",
+      "description": "Enter a yearly saving, an interest rate and a number of years, and get the balance year by year."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Reaction Timer",
+      "description": "Five rounds: press any key the moment NOW! appears, and the machine's own sixty-a-second clock times you."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Commodore Business Computer User's Guide, Series 8000 (1980)",
+      "url": "https://www.zimmers.net/anonftp/pub/cbm/manuals/pet/Series_8000_Users_Guide_1980_Commodore.pdf",
+      "lang": "en",
+      "note": "The user's guide for the 8032 and its 8000-series siblings. PDF scan."
+    },
+    {
+      "title": "Commodore BASIC Version 4.0 User's Reference Manual (1980)",
+      "url": "https://www.zimmers.net/anonftp/pub/cbm/manuals/pet/BASIC_v4_Users_Reference_Manual.pdf",
+      "lang": "en",
+      "note": "The BASIC 4.0 reference, disk commands included. PDF scan."
+    }
+  ]
+}
