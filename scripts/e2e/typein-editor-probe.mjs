@@ -14,7 +14,7 @@
 //   INVITE=<code or path> GALLERY_URL=https://kernelhive.madekivi.fi \
 //     node typein-editor-probe.mjs <station> <listing.bas> [--run <cmd>] [--restore] [--fb-shot <dir>]
 //                                  [--stop-after <seconds>] [--inject-keys <seconds>] [--then <steps>]
-//                                  [--first <steps>] [--demo <label>]
+//                                  [--first <steps>] [--demo <label>] [--restore-first]
 //
 // The listing is pasted (a synthetic `paste` event, so the editor's own paste
 // cleaning runs). `--run` types its argument + RETURN through the real
@@ -38,12 +38,16 @@
 // `-` as the listing) presses the stage menu's demo-typist row instead of the
 // editor, for a keyboard station with a demoProgram but no typeIn block; `-`
 // alone types nothing, so `--first`/`--then` are the visitor's whole input.
+// `--restore-first` presses the visitor's own ☰ → Restore to golden BEFORE
+// typing, then types the moment the SPA has reconnected by itself (no reload,
+// no wait of its own): "the first keys after a restore" exactly as a visitor
+// produces them (docs/TYPE-IN-EDITOR.md, "Typing right after a Restore").
 // A signed-in session is required to see the stream at all
 // (station-open.mjs's signIn header), hence INVITE + the public origin.
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import { galleryUrl, inviteCode, openStation, shotDir, signIn } from './station-open.mjs';
+import { galleryUrl, inviteCode, openStation, probeVideo, shotDir, signIn } from './station-open.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name) => {
@@ -59,6 +63,7 @@ const listing = listingPath === '-' ? '' : fs.readFileSync(listingPath, 'utf8');
 const runCmd = flag('--run');
 const fbDir = flag('--fb-shot');
 const restore = args.includes('--restore');
+const restoreFirst = args.includes('--restore-first');
 const stopAfter = Number(flag('--stop-after') ?? 0);
 const thenSteps = (flag('--then') ?? '').split(',').filter(Boolean);
 const firstSteps = (flag('--first') ?? '').split(',').filter(Boolean);
@@ -183,6 +188,31 @@ const typeDemo = async (page, label) => {
   fbShot('typed');
 };
 
+// ☰ → Restore to golden, and the host's answer. Returns the POST's status.
+const pressRestore = async (page) => {
+  await page.click('button[aria-label="Controls"]');
+  const answered = page.waitForResponse(
+    (r) => r.url().includes(`/restore/${id}`) && r.request().method() === 'POST', { timeout: 180000 });
+  const t0 = Date.now();
+  await page.getByRole('button', { name: /Restore to golden/ }).click();
+  const reply = await answered;
+  console.log(`restore POST: HTTP ${reply.status()} after ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  return t0;
+};
+
+// The SPA's own reconnect after a restore: its "Restoring tile…" and
+// "Reconnecting to restored tile…" overlay gone and the video live again.
+const waitRestoredLive = async (page, t0) => {
+  for (;;) {
+    const busy = await page.getByText(/Restoring tile|Reconnecting to restored tile/).count();
+    const video = busy ? null : await page.evaluate(probeVideo);
+    if (video && video.readyState >= 2 && video.w > 0) break;
+    if (Date.now() - t0 > 180000) throw new Error('no live stream within 180 s of Restore');
+    await page.waitForTimeout(100);
+  }
+  console.log(`restore: stream live again ${((Date.now() - t0) / 1000).toFixed(1)} s after the click`);
+};
+
 const browser = await chromium.launch({
   headless: false,
   channel: 'chrome',
@@ -200,6 +230,10 @@ try {
   const opened = await openStation(page, base, id, { direct: true, log: (m) => console.log(m) });
   if (!opened.ok) throw new Error(`station did not open: ${opened.why}`);
   console.log(`stream live ${opened.video.w}x${opened.video.h}`);
+  if (restoreFirst) {
+    await waitRestoredLive(page, await pressRestore(page));
+    fbShot('restored-first');
+  }
   if (firstSteps.length) {
     const vbox = await page.locator('video').first().boundingBox();
     if (vbox) await page.mouse.click(vbox.x + vbox.width / 2, vbox.y + vbox.height / 2);
@@ -227,15 +261,10 @@ try {
   await play(page, thenSteps);
 
   if (restore) {
-    await page.click('button[aria-label="Controls"]');
     // Wait for the host to ANSWER the reset before reloading: a reload while the
     // POST is in flight sees the old stream still live, and the "restored"
     // framebuffer is then taken before the relaunch happened.
-    const answered = page.waitForResponse(
-      (r) => r.url().includes(`/restore/${id}`) && r.request().method() === 'POST', { timeout: 180000 });
-    await page.getByRole('button', { name: /Restore to golden/ }).click();
-    const reply = await answered;
-    console.log(`restore POST: HTTP ${reply.status()}`);
+    await pressRestore(page);
     const back = await openStation(page, base, id, { direct: true, waitMs: 60000 });
     console.log(`restore: ${back.ok ? 'stream live again' : back.why}`);
     fbShot('restored');

@@ -124,6 +124,17 @@ export function withClearFirst(lines: readonly string[], spec: DialectSpec, on: 
   return [spec.clearCommand, ...lines];
 }
 
+/** A bare ENTER (an empty line) after each line that is one of `after`'s
+ *  direct commands. The SAM Coupé's NEW, with a program in memory, puts the
+ *  MGT banner up until a key arrives, and the key that dismisses it is lost
+ *  about one time in six (2026-10-04, framebuffer timelines): the listing's
+ *  first line went with it. An ENTER is harmless whether it is eaten or typed
+ *  (an empty line). */
+export function withEnterAfter(lines: readonly string[], after: readonly string[] | undefined): string[] {
+  if (!after?.length) return [...lines];
+  return lines.flatMap((line) => (after.includes(line.trim().toUpperCase()) ? [line, ''] : [line]));
+}
+
 /** Fold the letters of BASIC CODE, leaving literals (strings, REM, DATA, `'`
  *  comments) in the visitor's case. */
 function foldCode(line: string, fold: (s: string) => string, spec: DialectSpec): string {

@@ -271,6 +271,7 @@ const DEMO_PROGRAMS = {
     "label": "Type in a demo program (press B for SAM BASIC first)",
     "lines": [
       "NEW",
+      "",
       "10 MODE 4",
       "20 PAPER 0: PEN 15: CLS",
       "30 FOR r=4 TO 80 STEP 4",
@@ -534,6 +535,9 @@ const TYPE_IN = {
     "settleAfter": {
       "NEW": 2000
     },
+    "enterAfter": [
+      "NEW"
+    ],
     "unreachable": "<>?[]{}\\|"
   },
   "sinclairql": {

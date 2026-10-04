@@ -82,6 +82,13 @@ class TypeInPacingTest(unittest.TestCase):
         self.assertIn("0..60000", text)
         self.assertIn("never a letter", text)
 
+    def test_enter_after_shape(self) -> None:
+        base = {"dialect": "sam-basic", "perCharMs": 170}
+        self.assertEqual(errors_for([station(type_in={**base, "enterAfter": ["NEW"]})]), [])
+        for bad in ([], ["new"], ["NEW", "NEW"], "NEW", [""], [7]):
+            errors = errors_for([station(type_in={**base, "enterAfter": bad})])
+            self.assertTrue(any("enterAfter" in e for e in errors), bad)
+
     def test_wrap_pause_shape(self) -> None:
         base = {"dialect": "applesoft", "perCharMs": 70}
         for good in ({"cols": 40, "ms": 0}, {"cols": 40, "ms": 250, "promptCols": 1}):
