@@ -44,13 +44,14 @@ export function useDemoProgram({
     const handle = controlRef.current;
     if (!handle) { setState('err'); return; }
     busyRef.current = true;
+    const resumeKeys = handle.holdKeyboard();
     setState('typing');
     void typeDemoProgram({
       program, handle, keyboard: keyboardFor(osId), cancelled: () => goneRef.current,
     })
       .then(() => { if (!goneRef.current) setState('idle'); })
       .catch(() => { if (!goneRef.current) setState('err'); })
-      .finally(() => { busyRef.current = false; });
+      .finally(() => { resumeKeys(); busyRef.current = false; });
   }, [program, osId, controlRef]);
 
   return { program, state, typeIn };

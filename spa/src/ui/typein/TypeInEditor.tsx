@@ -120,7 +120,12 @@ export function TypeInEditor({ model, displayName, onClose }: {
 
   let status: ReactNode;
   if (typing && progress) {
-    status = <span>Typing line {Math.max(1, progress.line)} of {progress.lines}…</span>;
+    status = (
+      <>
+        <span>Typing line {Math.max(1, progress.line)} of {progress.lines}…</span>
+        <span className="ti-note">Your keyboard is paused while the editor types — press Stop to take over.</span>
+      </>
+    );
   } else if (run === 'done') {
     status = <span className="ti-ok">Typed {plural(model.runLines, 'line')}. Click the picture, type RUN and press RETURN.</span>;
   } else if (run === 'stopped' && progress) {

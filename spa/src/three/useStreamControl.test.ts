@@ -174,3 +174,67 @@ describe('station.key.stuckAtSessionEnd probe', () => {
     expect(reach).not.toHaveBeenCalledWith('station.key.stuckAtSessionEnd', 'auto');
   });
 });
+
+describe('holdKeyboard (a typist is keying into the guest)', () => {
+  const key = (code: string, key_: string) => ({ key: key_, code, getModifierState: noMods });
+  const SHIFT = 0x2a;
+
+  it('releases keys held at the start, and sends nothing for the visitor during the hold', () => {
+    const { handle, scancodes } = makeHandle();
+    handle.sendKeyEvent(key('ShiftLeft', 'Shift'), true);
+    scancodes.length = 0;
+    const resume = handle.holdKeyboard();
+    expect(scancodes).toEqual([{ code: SHIFT, down: false }]);
+    scancodes.length = 0;
+    handle.sendKeyEvent(key('MetaLeft', 'Meta'), true);
+    handle.sendKeyEvent(key('KeyS', 's'), true);
+    handle.sendKeyEvent(key('KeyS', 's'), false);
+    handle.sendKey(0xff0d, true);
+    handle.sendKey(0xff0d, false);
+    handle.sendKeyEvent(key('Escape', 'Escape'), true);
+    expect(scancodes).toEqual([]);
+    resume();
+  });
+
+  it('resumes after the hold, with no orphan release and no retroactive press', () => {
+    const { handle, scancodes } = makeHandle();
+    handle.sendKeyEvent(key('ShiftLeft', 'Shift'), true); // held at start
+    const resume = handle.holdKeyboard();
+    handle.sendKeyEvent(key('MetaLeft', 'Meta'), true);   // pressed during
+    scancodes.length = 0;
+    resume();
+    vi.mocked(reach).mockClear();
+    // Both come up after the end, one repeats: all swallowed.
+    handle.sendKeyEvent(key('ShiftLeft', 'Shift'), true);
+    handle.sendKeyEvent(key('ShiftLeft', 'Shift'), false);
+    handle.sendKeyEvent(key('MetaLeft', 'Meta'), false);
+    expect(scancodes).toEqual([]);
+    expect(reach).not.toHaveBeenCalledWith('station.key.orphanedRelease', 'auto');
+    // A fresh press works normally.
+    handle.sendKeyEvent(key('KeyA', 'a'), true);
+    handle.sendKeyEvent(key('KeyA', 'a'), false);
+    expect(scancodes).toEqual([{ code: 0x1e, down: true }, { code: 0x1e, down: false }]);
+  });
+
+  it('a key pressed and released inside the hold leaves no trace', () => {
+    const { handle, scancodes } = makeHandle();
+    const resume = handle.holdKeyboard();
+    handle.sendKeyEvent(key('KeyA', 'a'), true);
+    handle.sendKeyEvent(key('KeyA', 'a'), false);
+    resume();
+    handle.sendKeyEvent(key('KeyA', 'a'), true);
+    expect(scancodes).toEqual([{ code: 0x1e, down: true }]);
+  });
+
+  it('holds nest, and a release function works once', () => {
+    const { handle, scancodes } = makeHandle();
+    const a = handle.holdKeyboard();
+    const b = handle.holdKeyboard();
+    a(); a();
+    handle.sendKeyEvent(key('KeyA', 'a'), true);
+    expect(scancodes).toEqual([]);
+    b();
+    handle.sendKeyEvent(key('KeyB', 'b'), true);
+    expect(scancodes).toEqual([{ code: 0x30, down: true }]);
+  });
+});
