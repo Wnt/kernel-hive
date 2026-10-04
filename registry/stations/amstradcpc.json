@@ -94,11 +94,11 @@
       "110 goto 20"
     ],
     "runCommand": "run",
-    "perCharMs": 170
+    "perCharMs": 180
   },
   "typeIn": {
     "dialect": "locomotive-basic",
-    "perCharMs": 170
+    "perCharMs": 180
   },
   "runtime": {
     "stationEnv": {

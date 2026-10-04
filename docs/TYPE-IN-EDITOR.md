@@ -379,7 +379,7 @@ characters through its own editor rules (`survey` frames in the evidence):
 | bbcmicro, dragon32, samcoupe, svi728, mpf2 | 0 in one pass |
 | msx2 | 0 in lines 2 to 16 of three passes (line 1: see below) |
 | zxspectrum, zx81 | 0 in 60 and 40 Symbol Shift / SHIFT chords |
-| amstradcpc (daemon dbus pacer, Caprice32 in a kiosk) | no Shift tear in about 3,800 shifted keys (20 passes); it loses keys of every kind under host load instead (below) |
+| amstradcpc (daemon dbus pacer, Caprice32 in a kiosk) | 1 in about 4,500 (`"` as `2`), plus `)` as `9` once in the examples run; it loses far more keys of every kind under host load (below). Lead 20 ms |
 | freedos (daemon dbus pacer, PC BIOS) | 0 in three 95-character bursts sent with no pacing at all |
 | vax43bsd's xterm (daemon x11test sink) | 0 in three 307-character bursts at 40/40 |
 
@@ -397,28 +397,35 @@ releases never wait it, the order of edges and the one FIFO gate are
 unchanged, and unset or 0 is the old gate, number for number. The x11test sink
 does not read it. Each shape was measured through a sandbox daemon of the new
 binary in front of a rig (`key-burst-proof.mjs`, the result read back from the
-framebuffer or as bytes), and none of the three needs a lead today:
+framebuffer or as bytes). Two of the three shapes cannot tear at all:
 
 - **PC guests** (freedos) decode scancodes in order in the BIOS and keep their
   own Shift state. There is no matrix to scan, so there is nothing to tear.
 - **x11test** feeds an X client (vax43bsd's xterm), which takes the modifier
   state from each KeyPress event.
-- **amstradcpc** has a matrix, scanned by the CPC's firmware 50 times a
-  second, behind Caprice32 in a Debian kiosk guest. A 12-line listing with 196
-  shifted characters, read back from the LIST by a glyph matcher, never showed
-  a shifted key arriving unshifted at lead 0. What the station does lose is
-  keys of every kind when labhost is loaded. The kiosk guest needs about a
+- **amstradcpc** can. It has a matrix, scanned by the CPC's firmware 50 times
+  a second, behind Caprice32 in a Debian kiosk guest. Caprice32 puts a shifted
+  key's Shift and the key into the matrix in one update, and a scan that
+  straddles that update reads the key unshifted. A 12-line listing with 196
+  shifted characters, read back from the LIST by a glyph matcher, showed it
+  once in about 4,500 shifted keys at lead 0 (`"` as `2`). That is too rare to
+  bisect, so the station's lead is set by construction at 20 ms, one CPC
+  frame: Shift and its key then reach Caprice32 in different polls unless the
+  guest stalls. Far more often, the station loses keys of every kind when
+  labhost is loaded. The kiosk guest needs about a
   core, and when it stalls, one key's press and release (or a repeated key's
   release and re-press) reach Caprice32 in the same frame. At its 40/40
   pacing every one of 12 passes lost 1 to 11 keys at a 1-minute load of 25 to
   60: `$$` as `$`, `110` as `10`, `print` as `prnt`. A lead of 20 or 40 ms
-  did not change that. One pass at lead 40 even read a `4` as `$`, with 80 ms
+  did not change those. One pass at lead 40 even read a `4` as `$`, with 80 ms
   between Shift-up and the key, because a stall compresses host-side timing of
   every kind, the lead included. Longer holds and gaps lose less: 60/60
   with a 20 ms lead was exact in 2 of 4 passes below load 60, and 80/80 in
   5 of 6 at load 35 to 54. Nothing survived load 70 and above. amstradcpc
-  therefore ships 80/80 with no lead, and its `perCharMs` is 170. The real fix
-  is the host-native conversion, where the key module paces in emulated time.
+  therefore ships 80/80 with a 20 ms lead, and its `perCharMs` is 180
+  (HOLD + max(GAP, LEAD) + LEAD). The real fix is the host-native conversion,
+  where the key module paces in emulated time, which host load cannot
+  compress.
 
 Evidence: `/data/vms/streamhost/stations/{amstradcpc,freedos,vax43bsd}/evidence/daemon-mod-lead-2026-10-04/`.
 

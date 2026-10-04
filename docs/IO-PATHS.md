@@ -169,7 +169,7 @@ flowchart TD
 
 | Path | Used by | Mechanism | Pacing required | Failure mode when wrong |
 |---|---|---|---|---|
-| **QMP/dbus send-key** | most QEMU stations | qcode injection; types uppercase and symbols correctly where the browser path mangles them | `SH_KEY_MIN_HOLD_MS` / `SH_KEY_MIN_GAP_MS`, and `SH_KEY_MOD_LEAD_MS` (a key's press trails the last Shift/Ctrl/Alt edge; no QEMU station needs one yet, see below) | Characters vanish or arrive scrambled |
+| **QMP/dbus send-key** | most QEMU stations | qcode injection; types uppercase and symbols correctly where the browser path mangles them | `SH_KEY_MIN_HOLD_MS` / `SH_KEY_MIN_GAP_MS`, and `SH_KEY_MOD_LEAD_MS` (a key's press trails the last Shift/Ctrl/Alt edge; amstradcpc 20, see below) | Characters vanish or arrive scrambled |
 | **warpd / serial agent** | `win311 os2warp templeos ninefront win95` | agent verbs over TCP hostfwd or serial chardev | agent-side pace | Modifier batched into one event is not seen as a chord |
 | **mamesock** / **vicesock** | the MAME- and VICE-native keyboard stations | paced verbs with per-verb acks into the emulator; the daemon forwards the whole burst, the module queues it | module-side `*_CTL_KEY_HOLD/_GAP/_EXCL` | Before 2026-10-04: a long paste overflowed the daemon's 64-edge queue and a busy module was declared dead (`sink_feed.rs`) |
 | **kiosk X → emulator** | kiosks | key reaches the kiosk's Xorg, then the full-screen emulator's own input sampling | **per-machine**, frame-derived, plus margin for the kiosk guest's own stalls under host load | Dropped keys that look like flaky typing; repeated keys merged |
@@ -184,7 +184,7 @@ samples its key matrix once per emulated **frame**, so what must survive is the
 | `alto` (ContrAlto), 20-char line | 16/16 → 15 of 20; 33/33, 66/66, 120/120 → **20 of 20** | 66/66 (two 33 ms Alto fields) |
 | `vic20` | 40/40 still corrupted 1 line in 22; 60/60 and 80/80 corrupted none | 80/80 |
 | `pdp11` (SIMH behind a pty) | a 69-char line at **0 ms** gap echoed intact 5 of 5 — **no key matrix to scan** | 40/40 for the PS/2→X→xterm hops |
-| `amstradcpc` (Caprice32 in a kiosk guest) | 40/40 lost keys in 12 of 12 stress passes at load 25–60; 60/60 exact 2 of 4 below load 60; 80/80 exact 5 of 6 at load 35–54; nothing holds at 70+ | 80/80 |
+| `amstradcpc` (Caprice32 in a kiosk guest) | 40/40 lost keys in 12 of 12 stress passes at load 25–60; 60/60 exact 2 of 4 below load 60; 80/80 exact 5 of 6 at load 35–54; nothing holds at 70+ | 80/80, lead 20 |
 
 `pdp11` is the control that proves the mechanism: a serial-line machine has no
 matrix to sample, so it has no gap requirement at all. The residual `vic20`
@@ -209,8 +209,8 @@ cannot: its BIOS decodes scancodes in order and keeps its own Shift state, and
 freedos typed three 95-character shifted bursts exactly with no pacing at all.
 Neither can an X client behind `x11test`, because the modifier state rides in
 each KeyPress; vax43bsd's xterm took three 307-character bursts exactly at
-40/40. amstradcpc does scan a matrix, but no shifted key arrived unshifted in
-about 3,800 at lead 0, so no QEMU station declares a lead today. The host-native
+40/40. amstradcpc does scan a matrix, and tore once in about 4,500 shifted keys
+at lead 0 (`"` as `2`), so it declares 20 ms, one CPC frame. The host-native
 MAME and VICE modules apply the same knob in emulated time, which host load
 cannot compress (`docs/TYPE-IN-EDITOR.md` "Shifted characters").
 
