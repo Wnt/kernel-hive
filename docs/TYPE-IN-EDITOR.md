@@ -288,6 +288,49 @@ from this module. Under `VICE_CTL_KEY_EXCL=1`, which every VICE station runs,
 a frame's drain applies at most one press, one release and one edge per
 modifier key, and the queue empties within about a frame.
 
+**Proof through the real daemon.** `scripts/e2e/key-burst-proof.mjs --char-ms`
+types with the editor's own edges and cadence over a WebTransport session into
+a sandbox daemon in front of a rig. On the old binaries this reproduces the
+loss: sinclairql 0 of 12 lines, vic20 and cbm8032 11 of 12, and oricatmos one
+line in two runs. On the new ones, sinclairql, vic20, cbm8032 and oricatmos
+were all byte-exact. vic20's three examples were typed exactly as the editor
+types them, `NEW` first, ten times each through the daemon at 40 ms: 30 of 30
+byte-exact, with `dropped=0 overflow=0` throughout. Evidence is in
+`/data/vms/streamhost/stations/{sinclairql,vic20}/evidence/shift-lead-2026-10-04/`.
+
+**Which other stations are exposed.** Every MAME keyboard station applied
+Shift and the key in one drain pass before this, by construction. How much that
+costs depends on how the machine scans its keyboard. Each station was measured
+on a rig of its live binary, typing a 16-line listing with 176 shifted
+characters through its own editor rules (`survey` frames in the evidence):
+
+| Station | Shifted characters lost on the old binary |
+|---|---|
+| sinclairql | all of them (fixed, 20 ms) |
+| oricatmos | 6 in 5 passes, e.g. `(` -> `9`, `$` -> `4`, `*` -> `8`; 0 in 6 with the new binary at 20 ms, not deployed |
+| apple2e | `PRINT 6502*2` arrived as `650282` (seen by the Acorn examples agent, not measured here) |
+| bbcmicro, dragon32, samcoupe, svi728, mpf2 | 0 in one pass |
+| msx2 | 0 in lines 2 to 16 of three passes (line 1: see below) |
+| zxspectrum, zx81 | 0 in 60 and 40 Symbol Shift / SHIFT chords |
+
+msx2 loses keys at the start of its first line in every run, old binary or new
+(`10 PRINT` arrives as `10 NT`). That is not Shift: the lead does not change
+it. On the VICE side, c64basic is exposed (above) and has no fix yet. The
+QEMU/dbus pacer in the daemon (`key_quirks.rs` `KeyHold`) also sends Shift and
+the key back to back by design, and amstradcpc once dropped the Shift of a `)`
+there. That needs the same lead in the daemon and is not part of this change.
+
+**A visitor's own keys reach the guest during a run.** The editor does not
+take the keyboard away while it types. On 2026-10-04 the operator's run of
+vic20's Colour Squares came out with `GOSUB 100` as `GOS` plus six graphics
+glyphs. The SPA's key recorder (`serve/key-trace.py`, session `9061260b`) shows
+why: a physical Shift (`0x2a`) and Left-GUI (`0xe05b`) went down mid-run,
+148 ms after the `s`, off the typist's 171 ms cadence. That is Cmd+Shift, the
+macOS screenshot shortcut. The guest then typed `u b space 1 0 0` shifted,
+until the typist's next `:` released Shift. Replaying exactly those recorded
+edges into a rig reproduces line 50. The modules are not at fault: a held
+Shift is a Shift. Keeping the visitor's keys out of a run is an editor change.
+
 ### SAM Coupé: what the typist cannot reach, and what NEW does
 
 **Keys a US typist cannot produce on the SAM.** `<` `>` `?` `[` `]` `{` `}`
