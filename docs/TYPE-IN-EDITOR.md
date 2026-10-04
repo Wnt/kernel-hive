@@ -114,6 +114,20 @@ hold and repeat work and the keyup releases the same scancode. The on-screen
 keyboard's `char` keys (`typeText`) are NOT changed: its shifted layer is the
 visitor choosing Shift, and the editor's own typing already follows `case`.
 
+**The station charMap on the visitor's keyboard (`keyboard.physical`).** By
+default `keyboard.charMap` maps only the typists (this editor, the demo listing,
+labctl): a visitor's own key reaches the guest at its US position. A station
+that sets `keyboard.physical: true` applies its charMap to the visitor's
+printable keys too. Physical keys and the on-screen keyboard's inline field go
+through `sendCharEvent`; the on-screen keyboard's `char` buttons and compose
+field go through `physicalTypist` (`spa/src/three/physicalCharMap.ts`). The
+order is fixed: the case rule above first (which character the visitor
+means), then the charMap (which US key makes it on the guest), the order the
+typists use too. A held key's keyup releases the scancode its press sent.
+cpm22 (a German CP/M, `docs/guests/cpm22.md`) is the only station with it on
+(2026-10-04); each other charMap station is rechecked before it gets the flag,
+because a map written for the typists can be wrong for a visitor's keys.
+
 ## Example programs and manual links
 
 `registry/examples/<station-id>/` holds them. The content is written per

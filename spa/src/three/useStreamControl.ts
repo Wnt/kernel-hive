@@ -25,6 +25,7 @@ import type {
 import type { StreamInputClient } from './streamInputClient';
 import { isComposedChar, isMacPlatform } from './composeKey';
 import { capitalsAreBareLetters, isBareCapital } from './capitalsAsLetters';
+import { physicalChar, physicalCharMapFor } from './physicalCharMap';
 import {
   codeToScancode,
   keysymToScancode,
@@ -152,6 +153,7 @@ export function createStreamController(
   const { getResolution } = config;
   const quirks: GuestQuirks = quirksFor(config.osId);
   const capsAsLetters = capitalsAreBareLetters(config.osId);
+  const physMap = physicalCharMapFor(config.osId);
   const autoJitter = config.autoJitter !== false;
 
   const state: StreamControlState = {
@@ -283,13 +285,17 @@ export function createStreamController(
     // for a keyup that reaches sendCharEvent with no recorded press (e.g. the
     // keydown never came through this path) — resolve from e.key as before.
     if (!down) {
-      const s = asciiToScancode(e.key);
+      const s = asciiToScancode(physicalChar(e.key, false, physMap));
       if (!s) return false;
       rawScancode(s.code, false);
       return true;
     }
 
-    let s = asciiToScancode(e.key);
+    // Capitals-are-letters machine (capitalsAsLetters.ts): a capital with no
+    // PHYSICAL Shift is the bare letter key; Shift held keeps Shift (graphics).
+    // Then the station's physical charMap (physicalCharMap.ts) — that order.
+    const bareLetter = capsAsLetters && isBareCapital(e.key) && !guestShiftDown() && !altGr;
+    const s = asciiToScancode(physicalChar(e.key, bareLetter, physMap));
     if (!s) return false; // non-ASCII (ä/ö/å, dead-key composites): fall back to .code
 
     // AltGr layer (FI | \ @ $ { } …): the browser also delivers the raw Ctrl+Alt
@@ -301,9 +307,6 @@ export function createStreamController(
       }
     }
 
-    // Capitals-are-letters machine (capitalsAsLetters.ts): a capital with no
-    // PHYSICAL Shift is the bare letter key. Shift held keeps Shift (graphics).
-    if (capsAsLetters && isBareCapital(e.key) && !guestShiftDown() && !altGr) s = { code: s.code, shift: false };
     const needShift = s.shift;
     if (needShift === guestShiftDown() && !altGr) {
       // Shift already correct, nothing to strip → forward a real make/break so

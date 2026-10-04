@@ -183,6 +183,9 @@ export interface GuestKeyboard {
   /** 'upper-only': no lower case, and the shifted letter row is symbols, so
    *  letters must be sent UNSHIFTED or they arrive as punctuation. */
   readonly letterCase?: 'upper-only';
+  /** Apply `charMap` to the visitor's own printable keys too, not only to the
+   *  typists (spa/src/three/physicalCharMap.ts). Opt-in per station. */
+  readonly physical?: boolean;
 }
 
 /** BASIC dialects the type-in editor highlights (registry `typeIn.dialect`;

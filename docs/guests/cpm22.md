@@ -44,14 +44,10 @@ Status: **production** (Tier 1, host-native MAME `kayproii`) — cpm22 wave, 202
 
 - Reset mode: `relaunch`, restoring the golden savestate captured at the
   `A>` prompt (`kayproii` ships `MACHINE_SUPPORTS_SAVE`).
-- Keyboard proof: MEASURED 2026-09-20 against the ACTUAL fleet-pinned 0.289
-  native binary (sandbox rig) — `DIR` sent via `POST`+`CODE {ENTER}` re-ran
-  the directory listing from the `A>` prompt cleanly, no dropped/duplicated
-  characters, at `SH_KEY_MIN_HOLD_MS`/`GAP` = 80/80 ms and no
-  `MAME_CTL_KEY_EXCL`; the Kaypro II keyboard is HLE'd via an Intel i8048
-  MCU (`kayproiikbd` device), not a CPU-scanned matrix the driver polls
-  directly. The real-browser proof (from the deployed station) is the
-  authority on whether EXCL is needed under a production SPA burst.
+- Keyboard: `SH_KEY_MIN_HOLD_MS`/`GAP` = 80/80 ms, modifier lead 10 ms,
+  `MAME_CTL_KEY_EXCL=:KEYS`, and a German charMap that also applies to a
+  visitor's own keys — see "Keyboard" below. The 2026-09-20 `DIR` proof
+  (no EXCL) was a single slow command and did not show the overlap problem.
 - Golden savestate: `sta/kayproii/golden.sta`, 14338 bytes, sha256
   `bba86537a6a02963ddecdd908e6ed22cc02708852310a4716c1bff54f4ae4bd5` —
   captured at the settled `A>` prompt, restore-proven pixel-identical
@@ -64,3 +60,45 @@ Status: **production** (Tier 1, host-native MAME `kayproii`) — cpm22 wave, 202
 - Rollback plan: disable the registry entry (`enabled: false`) and stop the
   station; no persistent guest state to roll back (immutable floppy media,
   relaunch resets to the golden savestate).
+
+## Keyboard: a German CP/M on a US keyboard (2026-10-04)
+
+The boot disk is **KAYPRO CP/M 2.2 (GMv2.72)**, a German BIOS. MAME's
+Kaypro keyboard is a US one, and the BIOS reinterprets its keys the way a
+DIN keyboard is labelled. Measured key by key at `A>` (every US key bare and
+with Shift, slow, one rig pass — sandbox `shots/cpm22/keytable*`):
+
+| US key | bare | Shift | | US key | bare | Shift |
+|---|---|---|---|---|---|---|
+| `1`..`0` | digits | `! " (none) $ % & / ( ) =` | | `]` | `+` | `*` |
+| `-` | (none) | `?` | | `\` | `'` | `~` |
+| `=` | (none) | (none) | | `,` | `,` | `;` |
+| `[` `;` `'` | (none) | (none) | | `.` | `.` | `:` |
+| `` ` `` | ESC | ESC | | `/` | `-` | `_` |
+
+Y and Z are swapped (QWERTZ); every other letter is where a US keyboard
+has it. "(none)" means nothing reaches the CCP's line editor: the keymap
+has a row for the key and MAME delivers it, so this is the BIOS, not a
+missing binding.
+
+So the station carries `keyboard.charMap` (guest character -> the US key
+that makes it) and `SH_KEY_MAP` (the same map for labctl), and
+`keyboard.physical: true` applies the map to the **visitor's own keys**
+too (`spa/src/three/physicalCharMap.ts`): a US visitor typing `"` sends
+Shift+2, `+` sends the bare `]` key, `y` sends the Z key. cpm22 is the first
+station with `physical` set. The other charMap stations still map only the
+typists until each is rechecked.
+
+**Unreachable on this disk:** ``# @ [ \ ] ^ ` { | } < >``. No key produces
+them. A visitor who types one gets whatever the US key makes here: `@` gives
+`"`, `]` gives `+`, `\` gives `'`. cpm22 has no type-in editor, so there is
+no `typeIn.unreachable` to declare them; this list is the record.
+
+**Exclusive scan.** The keyboard is an i8048 MCU device, but it still scans
+a matrix, and two keys down together arrive in scan order, not press order.
+Live typing before this fix came out as `PRINTA"B* *C`. A paired burst (each
+key pressed while the previous one is still down) of "the quick brown fox
+jumps over the layz dog 1234567890" (sent at US positions, hence `layz`) came back as `th equic kbrwo nfo xujpm
+svoert ehl ayz odg 1243567890` without EXCL, and exact in 2/2 runs with
+`MAME_CTL_KEY_EXCL=:KEYS` (it matches `:kbd:kayproii:KEYS0`..`KEYS11`).
+

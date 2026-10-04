@@ -173,9 +173,12 @@ const typeDemo = async (page, label) => {
   const t0 = Date.now();
   for (;;) {
     await page.waitForTimeout(3000);
+    // the Controls button TOGGLES the menu: open it only if the row is not
+    // showing, read the row (disabled while the typist runs), close it again
+    const shown = (await row().count()) && (await row().isVisible());
+    if (!shown) await page.click('button[aria-label="Controls"]');
+    const busy = await row().isDisabled();
     await page.click('button[aria-label="Controls"]');
-    const busy = (await row().count()) && (await row().isDisabled());
-    await page.keyboard.press('Escape');
     if (!busy) break;
     if (Date.now() - t0 > 30 * 60 * 1000) throw new Error('demo did not finish in 30 min');
   }
