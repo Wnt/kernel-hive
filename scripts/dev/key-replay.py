@@ -72,6 +72,18 @@ XT.update(
         "?": (0x35, True),
         "'": (0x28, False),
         '"': (0x28, True),
+        # The rest of the SPA's US map (spa/src/three/guestQuirks.ts), so a
+        # synthesized burst can carry everything a visitor's typist can.
+        "<": (0x33, True),
+        ">": (0x34, True),
+        "[": (0x1A, False),
+        "]": (0x1B, False),
+        "{": (0x1A, True),
+        "}": (0x1B, True),
+        "\\": (0x2B, False),
+        "|": (0x2B, True),
+        "`": (0x29, False),
+        "~": (0x29, True),
     }
 )
 for ch in "abcdefghijklmnopqrstuvwxyz":
@@ -110,16 +122,24 @@ def synth(text: str, cps: float, hold_ms: float) -> list[dict]:
     period = 1000.0 / cps
     edges: list[dict] = []
     at = 0.0
+    shift_up: dict | None = None  # the pending Shift release, while it may still be extended
     for ch in text:
         if ch not in XT:
             raise SystemExit(f"--type: no XT mapping for {ch!r}")
         code, shift = XT[ch]
         if shift:
-            edges.append({"off_ms": at - period / 3, "code": LSHIFT, "down": 1})
+            # Two shifted characters in a row (`":`, `"N"`) would otherwise
+            # press Shift again before releasing it: a key nobody can press
+            # twice, and the --vice sender then has a release with no press to
+            # pair it with. Keep holding it instead, the way a typist does.
+            if shift_up is not None and shift_up["off_ms"] >= at - period / 3:
+                shift_up["off_ms"] = at + hold_ms + period / 3
+            else:
+                edges.append({"off_ms": at - period / 3, "code": LSHIFT, "down": 1})
+                shift_up = {"off_ms": at + hold_ms + period / 3, "code": LSHIFT, "down": 0}
+                edges.append(shift_up)
         edges.append({"off_ms": at, "code": code, "down": 1})
         edges.append({"off_ms": at + hold_ms, "code": code, "down": 0})
-        if shift:
-            edges.append({"off_ms": at + hold_ms + period / 3, "code": LSHIFT, "down": 0})
         at += period
     edges.sort(key=lambda e: e["off_ms"])
     base = edges[0]["off_ms"]  # a leading Shift press can sit before t=0
