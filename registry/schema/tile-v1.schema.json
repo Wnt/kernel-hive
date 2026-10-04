@@ -553,6 +553,17 @@
           "minimum": 0,
           "description": "Added to the settle after line N (0-based) N times: a machine that redraws its whole listing after every ENTER takes longer as the listing grows. Measured on the 1 KB ZX81 (collapsed display rebuilt byte by byte): about 90 ms more per listed line. Default 0."
         },
+        "wrapPause": {
+          "type": "object",
+          "properties": {
+            "cols": {"type": "integer", "minimum": 1, "description": "The screen width in characters. A typed line wraps after every cols-th character, counting the line number the visitor typed."},
+            "ms": {"type": "integer", "minimum": 0, "description": "Extra wait after each wrap, before the next character."},
+            "promptCols": {"type": "integer", "minimum": 0, "description": "Columns the prompt takes on a line's first row (Applesoft's > is 1), so the first wrap comes that many characters sooner. Default 0."}
+          },
+          "required": ["cols", "ms"],
+          "additionalProperties": false,
+          "description": "For a machine that drops keys while the screen scrolls on a wrapped edit line (mpf2): after every cols-th character of a line (not the last), wait ms more. Absent = no pause."
+        },
         "case": {
           "enum": [
             "as-typed",

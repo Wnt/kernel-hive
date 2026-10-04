@@ -13,7 +13,7 @@
 // works on a sandbox daemon that is never published.
 //
 //   node key-burst-proof.mjs <signaling.json> <text-file> [--pace-ms N] [--hold-ms N]
-//        [--char-ms N [--line-ms N] [--enter-ms N]]
+//        [--char-ms N [--line-ms N] [--enter-ms N] [--wrap-cols N --wrap-ms N [--wrap-prompt N]]]
 //   node key-burst-proof.mjs <signaling.json> --edges <edges.json> [--hold-ms N]
 //
 // <text-file>: what to type; each '\n' is Enter. Letters are sent UNSHIFTED
@@ -23,6 +23,10 @@
 // case. --pace-ms 0 (default) writes every record at once; N > 0 waits N ms
 // between records (a slow reference run). The session stays open --hold-ms
 // (default 5000) after the last write so the daemon reads the whole stream.
+//
+// --wrap-cols N --wrap-ms M models registry typeIn.wrapPause: after every N-th
+// character of a line (not the last) the next one waits M ms more;
+// --wrap-prompt N counts N prompt columns on the line's first row.
 //
 // --char-ms N is the TYPE-IN EDITOR's shape instead of a paste: one character's
 // edges at a time (Shift, key down, key up, Shift up, back to back — exactly
@@ -56,6 +60,10 @@ const HOLD_MS = flag('--hold-ms', 5000);
 const CHAR_MS = flag('--char-ms', 0);
 const LINE_MS = flag('--line-ms', 260);
 const ENTER_MS = flag('--enter-ms', 600);
+// typeIn.wrapPause: after every WRAP_COLS-th character of a line (not its last), WRAP_MS more.
+const WRAP_COLS = flag('--wrap-cols', 0);
+const WRAP_MS = flag('--wrap-ms', 0);
+const WRAP_PROMPT = flag('--wrap-prompt', 0);
 const edgesAt = args.indexOf('--edges');
 const EDGES_PATH = edgesAt < 0 ? null : args.splice(edgesAt, 2)[1];
 const [signalPath, textArg] = args;
@@ -83,6 +91,10 @@ const SHIFT_L = 0x2a;
 const text = EDGES_PATH ? '' : fs.readFileSync(textPath, 'utf8').replace(/\r/g, '');
 // [scancode, down, ms to wait after this edge]
 const edges = EDGES_PATH ? JSON.parse(fs.readFileSync(EDGES_PATH, 'utf8')) : [];
+let col = 0; // characters typed on the current line
+const lineLen = [];
+for (const line of text.split('\n')) lineLen.push(line.length);
+let lineNo = 0;
 for (const ch of text) {
   const k = US[ch];
   if (!k) {
@@ -96,6 +108,9 @@ for (const ch of text) {
   edges.push([code, 1, 0], [code, 0, 0]);
   if (shifted) edges.push([SHIFT_L, 0, 0]);
   if (CHAR_MS > 0) edges.at(-1)[2] = ch === '\n' ? ENTER_MS : CHAR_MS;
+  if (ch === '\n') { col = 0; lineNo += 1; continue; }
+  col += 1;
+  if (WRAP_COLS > 0 && CHAR_MS > 0 && (col + WRAP_PROMPT) % WRAP_COLS === 0 && col < lineLen[lineNo]) edges.at(-1)[2] += WRAP_MS;
 }
 
 const sig = JSON.parse(fs.readFileSync(signalPath, 'utf8'));

@@ -188,6 +188,52 @@ describe('typeListing — the editor typist', () => {
   });
 });
 
+describe('typeIn.wrapPause — the typist waits at the screen wrap', () => {
+  const base: TypeInConfig = { dialect: 'applesoft', perCharMs: 70, lineDelayMs: 200, enterDelayMs: 500 };
+  const run = async (config: TypeInConfig, lines: string[]) => {
+    const r = recorder();
+    const trace: string[] = []; // keys and waits, in order
+    const handle = { ...r.handle, typeText: (t: string) => { trace.push(`k${t === '\n' ? 'N' : t}`); } };
+    await typeListing({
+      osId: 'x', config, spec: dialectSpec('applesoft'), lines, handle, signal: new AbortController().signal,
+      sleep: async (ms) => { trace.push(`w${ms}`); },
+    });
+    return trace;
+  };
+
+  it('adds ms after exactly every cols-th character, several wraps in one line', async () => {
+    const trace = await run({ ...base, wrapPause: { cols: 4, ms: 900 } }, ['aaaaaaaaaa']); // 10 chars
+    const waits = trace.filter((t) => t[0] === 'w').map((t) => Number(t.slice(1)));
+    // chars 1..10: 70 each, 970 after the 4th and 8th; line delay 200, settle 500.
+    expect(waits).toEqual([70, 70, 70, 970, 70, 70, 70, 970, 70, 70, 200, 500]);
+  });
+
+  it('restarts the count on every line, and skips a line that ends on the wrap', async () => {
+    const trace = await run({ ...base, wrapPause: { cols: 4, ms: 900 } }, ['aaaa', 'aaaaa']);
+    const waits = trace.filter((t) => t[0] === 'w').map((t) => Number(t.slice(1)));
+    expect(waits).toEqual([70, 70, 70, 70, 200, 500, 70, 70, 70, 970, 70, 200, 500]);
+  });
+
+  it('promptCols moves the first wrap sooner (the prompt owns column 0), the later ones every cols', async () => {
+    const trace = await run({ ...base, wrapPause: { cols: 4, ms: 900, promptCols: 1 } }, ['aaaaaaaaaa']);
+    const waits = trace.filter((t) => t[0] === 'w').map((t) => Number(t.slice(1)));
+    // wraps after chars 3 and 7 (3 + 1 prompt = 4, 7 + 1 = 8)
+    expect(waits).toEqual([70, 70, 970, 70, 70, 70, 970, 70, 70, 70, 200, 500]);
+  });
+
+  it('adds no pause when the field is absent', async () => {
+    const trace = await run(base, ['aaaaaaaaaa']);
+    const waits = trace.filter((t) => t[0] === 'w').map((t) => Number(t.slice(1)));
+    expect(Math.max(...waits)).toBe(500);
+    expect(waits.slice(0, 10).every((w) => w === 70)).toBe(true);
+  });
+
+  it('paceFor carries it from the registry', () => {
+    expect(paceFor({ ...base, wrapPause: { cols: 40, ms: 1 } }, []).wrapPause).toEqual({ cols: 40, ms: 1 });
+    expect(paceFor(base, []).wrapPause).toBeUndefined();
+  });
+});
+
 describe('station-specific traps (registry typeIn)', () => {
   const sam = dialectSpec('sam-basic');
 
@@ -221,6 +267,11 @@ describe('station-specific traps (registry typeIn)', () => {
 });
 
 describe('registry typeIn data', () => {
+  it('mpf2 pauses at the screen wrap, declared as data', () => {
+    expect(typeInFor('mpf2')!.wrapPause).toEqual({ cols: 40, ms: 500, promptCols: 1 });
+    expect(typeInFor('vic20')!.wrapPause).toBeUndefined();
+  });
+
   it('gives every editor station a declared pace and a dialect', () => {
     for (const id of ['vic20', 'pet2001', 'cbm8032', 'c128', 'plus4', 'cbm2', 'bbcmicro', 'armeval', 'dragon32',
       'oricatmos', 'msx2', 'svi728', 'svi328', 'amstradcpc', 'mpf2', 'sinclairql', 'samcoupe', 'zxspectrum', 'zx81']) {

@@ -26,6 +26,7 @@ export function paceFor(config: TypeInConfig, lines: readonly string[]): TypingP
   const growth = config.enterDelayPerLineMs ?? 0;
   return {
     perCharMs: config.perCharMs,
+    wrapPause: config.wrapPause,
     lineDelayMs: config.lineDelayMs ?? DEMO_LINE_DELAY_MS,
     enterDelayMs: (index) =>
       Math.max(enterMs, config.settleAfter?.[(lines[index] ?? '').trim().toUpperCase()] ?? 0) + index * growth,

@@ -91,6 +91,17 @@ const play = async (page, steps) => {
   }
 };
 
+// The page screenshot is a courtesy: with a decoder busy on a heavy picture it can
+// time out, and that must not take the run (and its --restore) down with it. The
+// station framebuffer (fbShot) is the proof.
+const pageShot = async (page, path) => {
+  try {
+    await page.screenshot({ path, timeout: 15000 });
+  } catch (e) {
+    console.log(`page screenshot ${path}: FAILED (${String(e.message || e).split('\n')[0].slice(0, 100)})`);
+  }
+};
+
 const browser = await chromium.launch({
   headless: false,
   channel: 'chrome',
@@ -127,7 +138,7 @@ try {
   }, listing);
   const status = page.locator('.ti-status');
   console.log(`editor: ${(await status.innerText()).trim()}`);
-  await page.screenshot({ path: `${OUT}/${tag}-before.png` });
+  await pageShot(page, `${OUT}/${tag}-before.png`);
 
   const go = page.locator('button.ti-go');
   for (let waited = 0; await go.isDisabled(); waited += 500) {
@@ -166,7 +177,7 @@ try {
   const typed = listing.split('\n').filter((l) => l.trim()).join('').length;
   console.log(`editor: ${(await status.innerText()).trim()}`);
   console.log(`run ended after ${(ms / 1000).toFixed(1)} s: ${typed} chars, ${(ms / Math.max(1, typed)).toFixed(0)} ms/char all-in`);
-  await page.screenshot({ path: `${OUT}/${tag}-typed.png` });
+  await pageShot(page, `${OUT}/${tag}-typed.png`);
   fbShot('typed');
 
   if (runCmd) {
@@ -178,7 +189,7 @@ try {
     }
     await page.keyboard.press('Enter');
     await page.waitForTimeout(4000);
-    await page.screenshot({ path: `${OUT}/${tag}-run.png` });
+    await pageShot(page, `${OUT}/${tag}-run.png`);
     fbShot('run');
   }
 

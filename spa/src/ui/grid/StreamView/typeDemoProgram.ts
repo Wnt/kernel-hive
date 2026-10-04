@@ -102,6 +102,20 @@ export interface TypingPace {
   readonly lineDelayMs: number;
   /** Settle after the ENTER of line `index` while BASIC tokenises it. */
   readonly enterDelayMs: (index: number) => number;
+  /** A machine that drops keys while its screen scrolls: after every
+   *  `cols`-th typed character of a line (the screen width), wait `ms` more
+   *  before the next one. Not after a line's last character (the line delay
+   *  and ENTER settle follow). Absent = no pause. */
+  readonly wrapPause?: WrapPause;
+}
+
+/** Registry `typeIn.wrapPause`: the screen width and the extra wait per wrap. */
+interface WrapPause {
+  readonly cols: number;
+  readonly ms: number;
+  /** Columns the prompt takes on a line's first row (Applesoft's `>` is 1), so
+   *  the first wrap comes `promptCols` characters sooner. Default 0. */
+  readonly promptCols?: number;
 }
 
 /** Where a run stands: line k of N (1-based once started), characters keyed. */
@@ -160,7 +174,7 @@ export async function typeLines({
         : await typePaced(prepare(line), handle, pace.perCharMs, sleep, cancelled, (n) => {
           chars += n;
           report();
-        });
+        }, pace.wrapPause);
       if (!typed) return false;
       chars = start + line.length;
       // The line has reached the guest chunk by chunk; the inter-line pace is
@@ -239,13 +253,18 @@ async function typePaced(
   sleep: (ms: number) => Promise<void>,
   cancelled: () => boolean,
   onTyped?: (n: number) => void,
+  wrapPause?: WrapPause,
 ): Promise<boolean> {
   for (let i = 0; i < text.length; i += DEMO_CHUNK_CHARS) {
     if (cancelled()) return false;
     const chunk = text.slice(i, i + DEMO_CHUNK_CHARS);
     handle.typeText(chunk);
     onTyped?.(chunk.length);
-    await sleep(chunk.length * charMs);
+    const end = i + chunk.length;
+    // The cursor has just wrapped onto the next row: the machine scrolls and
+    // drops keys that arrive meanwhile.
+    const wraps = wrapPause && end < text.length && (end + (wrapPause.promptCols ?? 0)) % wrapPause.cols === 0;
+    await sleep(chunk.length * charMs + (wraps ? wrapPause.ms : 0));
   }
   return true;
 }

@@ -227,6 +227,9 @@ export interface TypeInConfig {
   readonly enterDelayMs?: number;
   /** Added per line already typed: the settle grows with the listing (ZX81). */
   readonly enterDelayPerLineMs?: number;
+  /** Screen width and the extra wait after each wrap: the machine drops keys
+   *  while it scrolls (mpf2). */
+  readonly wrapPause?: { readonly cols: number; readonly ms: number; readonly promptCols?: number };
   readonly case?: TypeInCase;
   /** Longest logical line the machine's screen editor accepts. */
   readonly maxLineChars?: number;

@@ -66,6 +66,7 @@ nothing to validate the editor's pace against.
 | `perCharMs` | **Required.** The wait after every typed character. Must be ≥ hold+gap (`scripts/stations_registry/validate_typein.py`). It is never defaulted: the demo may fall back to the SPA's 70 ms, but the editor may not. |
 | `lineDelayMs` / `enterDelayMs` | The pause before a line's ENTER and the settle after it, for BASIC to tokenise. They default to the demo typist's 260 / 600 ms. **These three numbers are the tuning surface for long listings.** Change them here, never in a component. |
 | `enterDelayPerLineMs` | Added to the settle after line N, N times (0-based), for a machine whose redraw after ENTER grows with the listing (the ZX81). Default 0. |
+| `wrapPause` | `{ "cols": 40, "ms": 500, "promptCols": 1 }`. For a machine that drops keys while it scrolls: after every `cols`-th screen column of a typed line (the screen width) the typist waits `ms` more before the next character. `promptCols` (default 0) is how many columns the prompt takes on the first row, so the first wrap comes that many characters sooner. Not after a line's last character. Absent = no pause. Measured on mpf2: [below](#mpf-ii-dragon-32-and-the-msx-family-punctuation-and-the-mpf-ii-scroll). |
 | `case` | How letters become keystrokes (below). |
 | `maxLineChars` | The machine's logical line length. The editor strikes through what the screen editor would cut off. Declared only where the number is certain (VIC-20 88, PET/8032 80, C64 80, C128 160). |
 | `hint` | One sentence above the Type button, for a step the machine needs first. |
@@ -415,15 +416,42 @@ MPF-II, so it vanished; `:` and `;` came out swapped, as did `/` and `?`, and
 line was wrong. The map now carries all of them, each read back on a rig
 framebuffer on 2026-10-04 (`docs/guests/mpf2.md`).
 
-**The MPF-II loses keys while it scrolls.** Its text is painted into the hires
-bitmap and scrolled in software, and the keyboard is not scanned meanwhile.
-When a typed line wrapped past column 39 at the bottom of the screen, the next
-one or two characters were lost (`CANNOT` arrived as `CAOT`, and a `:` after a
-closing quote disappeared). The MPF-II examples keep every line within 38
-characters. A visitor's longer line is still exposed: a pause in the typist at
-the wrap column, or `maxLineChars: 38` (which would strike text the machine
-does not actually cut off), are the two candidate fixes. Keys pressed while a
-program prints are lost the same way; there is no type-ahead buffer.
+**The MPF-II loses keys while it scrolls, so the typist pauses at the wrap.**
+Its text is painted into the hires bitmap and scrolled in software, and the
+keyboard is not scanned meanwhile. A typed line that wraps at the
+bottom row (40 columns, the `>` prompt owning column 0) scrolls the display, and
+keys that arrive meanwhile are lost: `CANNOT` arrived as `CAOT`, a `:` after a
+closing quote vanished (examples-msbasic rig). `typeIn.wrapPause` is the fix:
+`{ "cols": 40, "ms": 500, "promptCols": 1 }`.
+
+Measured 2026-10-04 on a sandbox clone (MAME 0.289 binary of 2026-08-16, hold/gap
+32/32, `perCharMs` 70), through the real path: `key-burst-proof.mjs --char-ms 70
+--wrap-cols 40 --wrap-ms N --wrap-prompt 1`, a daemon in front of the rig. The
+listing is 20 short lines (to put the cursor on the bottom row) and seven REM
+lines of 62 to 100 characters, so every wrap scrolls. The final screen was
+compared pixel for pixel against a reference typed with a 2 s pause.
+
+| pause after a wrap | runs byte-exact |
+|---|---|
+| none | 0 of 3 (characters lost at each wrap) |
+| 100 / 120 ms | 0 of 1 / 0 of 2 |
+| 140 ms | 3 of 5 |
+| 160 ms | 5 of 5 |
+| 200 ms | 5 of 5 |
+| 250 ms | 5 of 5 in the sandbox; 1 of 2 through the live editor (a lost `PA` at the last wrap) |
+| 500 ms (shipped) | 3 of 3 through the live editor on /os/mpf2 (`LIST 100,160` frame-identical, all seven long lines intact); sandbox 1 of 1 |
+
+Pausing after the 40th typed character, not the 39th, loses a letter at each
+wrap: the prompt is column 0, so the wrap comes after 39 typed characters.
+That is why `promptCols` exists. The smallest pause that was byte-exact in 5 of 5 is 160 ms. The shipped 500 ms
+is margin for the real path: through the browser the key writes arrive with
+jitter that eats part of the pause, and 250 ms lost two characters in one live
+run. It costs 500 ms per screen row of a long line (about 17% on top of the
+2.8 s a row already takes). Evidence:
+`/data/vms/streamhost/stations/mpf2/evidence/wrap-pause-2026-10-04/`.
+Keys pressed while a program is PRINTING are also lost, about 2 in 20; the
+editor does not type then, so it is not covered. The MPF-II examples still
+keep every line within 38 characters.
 
 **`unreachable` for the five Microsoft-BASIC stations** was derived from each
 keymap and checked on the framebuffer for msx2 and svi328. On the MSX keyboards

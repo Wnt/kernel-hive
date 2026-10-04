@@ -495,6 +495,11 @@ const TYPE_IN = {
   "mpf2": {
     "dialect": "applesoft",
     "perCharMs": 74,
+    "wrapPause": {
+      "cols": 40,
+      "ms": 500,
+      "promptCols": 1
+    },
     "case": "unshifted",
     "unreachable": "[\\]_`{|}~"
   },
