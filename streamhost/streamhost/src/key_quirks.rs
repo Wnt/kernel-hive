@@ -5,7 +5,10 @@
 //   * `key_qnum`      — wire scancode -> QEMU dbus qnum, incl. the SH_LEGACY_KBD
 //                       pre-1986 cursor-cluster quirk;
 //   * `remap_key`     — the registry-declared SH_KEY_REMAP table;
-//   * `KeyHold`/`gate`— the SH_KEY_MIN_HOLD_MS minimum hold and its serializer.
+//   * `KeyHold`/`pace_edge` — the SH_KEY_MIN_HOLD_MS / _GAP_MS / SH_KEY_MOD_LEAD_MS
+//                       pacing of the QEMU/dbus keyboard and its serializer.
+
+use std::time::{Duration, Instant};
 
 use tokio::sync::Mutex;
 
@@ -62,53 +65,103 @@ pub fn remap_key(code: u32, map: &[(u32, u32)]) -> u32 {
     }
 }
 
+/// Is this QEMU `qnum` a modifier the guest reads as a LEVEL: Shift, Ctrl or
+/// Alt, either side (the right-hand ones in `key_qnum`'s folded 0x80| form)?
+/// These are the edges `SH_KEY_MOD_LEAD_MS` keeps ahead of the key they modify.
+pub(crate) fn is_modifier_qnum(qnum: u32) -> bool {
+    matches!(qnum, 0x2a | 0x36 | 0x1d | 0x9d | 0x38 | 0xb8)
+}
+
+/// The dbus key gate's three knobs (`SH_KEY_MIN_HOLD_MS`, `SH_KEY_MIN_GAP_MS`,
+/// `SH_KEY_MOD_LEAD_MS`; see the config field docs). All zero = no gate at all.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct KeyPacing {
+    pub(crate) hold: Duration,
+    pub(crate) gap: Duration,
+    pub(crate) lead: Duration,
+}
+
+impl KeyPacing {
+    pub(crate) fn from_ms(hold: u64, gap: u64, lead: u64) -> Self {
+        Self {
+            hold: Duration::from_millis(hold),
+            gap: Duration::from_millis(gap),
+            lead: Duration::from_millis(lead),
+        }
+    }
+
+    fn is_off(&self) -> bool {
+        self.hold.is_zero() && self.gap.is_zero() && self.lead.is_zero()
+    }
+}
+
 /// Minimum-hold bookkeeping for `SH_KEY_MIN_HOLD_MS` (see the config field doc).
 /// Pure and time-injected so the frame arithmetic is unit-testable.
 #[derive(Default)]
 pub struct KeyHold {
-    pressed: std::collections::HashMap<u32, std::time::Instant>,
-    last_release: Option<std::time::Instant>,
+    pressed: std::collections::HashMap<u32, Instant>,
+    last_release: Option<Instant>,
+    /// When the last Shift/Ctrl/Alt edge, press OR release, went out to QEMU:
+    /// the clock `SH_KEY_MOD_LEAD_MS` runs against.
+    last_mod_edge: Option<Instant>,
 }
 
 impl KeyHold {
-    pub fn on_press(&mut self, qnum: u32, now: std::time::Instant) {
+    pub fn on_press(&mut self, qnum: u32, now: Instant) {
         self.pressed.insert(qnum, now);
+        self.note_modifier(qnum, now);
     }
 
-    /// How much longer the caller must wait before sending this Press, so the
-    /// emulator gets to sample an all-keys-up frame between two characters
-    /// (SH_KEY_MIN_GAP_MS). Only a Press that follows a Release is delayed: with
-    /// no previous Release — the first key, or a modifier still held down from
-    /// the chord typeText builds for an uppercase character — the wait is zero,
-    /// so chords are never pulled apart.
-    pub fn press_delay(
-        &self,
-        now: std::time::Instant,
-        min_gap: std::time::Duration,
-    ) -> std::time::Duration {
-        match self.last_release {
-            Some(at) => min_gap.saturating_sub(now.saturating_duration_since(at)),
-            None => std::time::Duration::ZERO,
+    fn note_modifier(&mut self, qnum: u32, now: Instant) {
+        if is_modifier_qnum(qnum) {
+            self.last_mod_edge = Some(now);
         }
     }
 
-    /// Record that a Release has just gone out on the wire; starts the gap clock.
-    pub fn on_release(&mut self, now: std::time::Instant) {
+    /// How much longer the caller must wait before sending this Press.
+    ///
+    /// GAP (SH_KEY_MIN_GAP_MS): the emulator gets to sample an all-keys-up frame
+    /// between two characters. Only a Press that follows a Release waits it:
+    /// the first key ever, or the letter of a chord whose Shift is still down,
+    /// owes no gap.
+    ///
+    /// LEAD (SH_KEY_MOD_LEAD_MS): a NON-modifier Press also waits until the last
+    /// modifier edge has been on the wire this long, so a guest that scans its
+    /// keyboard once a frame sees Shift (or its release) a scan BEFORE the key,
+    /// never in the same one. A modifier press itself never waits the lead, so
+    /// Shift+Ctrl chords and the order of edges are unchanged; 0 = no lead.
+    pub fn press_delay(
+        &self,
+        qnum: u32,
+        now: Instant,
+        min_gap: Duration,
+        mod_lead: Duration,
+    ) -> Duration {
+        let since = |at: Instant| now.saturating_duration_since(at);
+        let gap = self
+            .last_release
+            .map_or(Duration::ZERO, |at| min_gap.saturating_sub(since(at)));
+        let lead = match self.last_mod_edge {
+            Some(at) if !is_modifier_qnum(qnum) => mod_lead.saturating_sub(since(at)),
+            _ => Duration::ZERO,
+        };
+        gap.max(lead)
+    }
+
+    /// Record that a Release has just gone out on the wire; starts the gap clock
+    /// (and the lead clock, when it was a modifier's).
+    pub fn on_release(&mut self, qnum: u32, now: Instant) {
         self.last_release = Some(now);
+        self.note_modifier(qnum, now);
     }
 
     /// How much longer this key must stay down before its Release may be sent.
     /// Zero for a key we never saw pressed (idempotent release) or one already
     /// held long enough.
-    pub fn release_delay(
-        &mut self,
-        qnum: u32,
-        now: std::time::Instant,
-        min_hold: std::time::Duration,
-    ) -> std::time::Duration {
+    pub fn release_delay(&mut self, qnum: u32, now: Instant, min_hold: Duration) -> Duration {
         match self.pressed.remove(&qnum) {
             Some(at) => min_hold.saturating_sub(now.saturating_duration_since(at)),
-            None => std::time::Duration::ZERO,
+            None => Duration::ZERO,
         }
     }
 }
@@ -123,6 +176,40 @@ impl KeyHold {
 pub(crate) fn key_gate() -> &'static Mutex<KeyHold> {
     static GATE: std::sync::OnceLock<Mutex<KeyHold>> = std::sync::OnceLock::new();
     GATE.get_or_init(Mutex::default)
+}
+
+/// Put one key edge through `gate`: wait out whatever it owes (hold, gap or
+/// lead), run `send` (the actual dbus call plus its held-key bookkeeping), then
+/// record when it went out. With every knob at 0 there is no gate at all, the
+/// edge goes straight out as it always has. The clock is tokio's, which IS the
+/// wall clock in production and a virtual one under a paused-clock test.
+pub(crate) async fn pace_edge(
+    gate: &Mutex<KeyHold>,
+    pacing: KeyPacing,
+    qnum: u32,
+    down: bool,
+    send: impl std::future::Future<Output = ()>,
+) {
+    if pacing.is_off() {
+        send.await;
+        return;
+    }
+    let now = || tokio::time::Instant::now().into_std();
+    let mut gate = gate.lock().await;
+    let wait = if down {
+        gate.press_delay(qnum, now(), pacing.gap, pacing.lead)
+    } else {
+        gate.release_delay(qnum, now(), pacing.hold)
+    };
+    if !wait.is_zero() {
+        tokio::time::sleep(wait).await;
+    }
+    send.await;
+    if down {
+        gate.on_press(qnum, now());
+    } else {
+        gate.on_release(qnum, now());
+    }
 }
 
 #[cfg(test)]
@@ -204,13 +291,13 @@ mod tests {
         let mut hold = KeyHold::default();
         let gap = Duration::from_millis(32);
         let t0 = Instant::now();
-        hold.on_release(t0);
+        hold.on_release(0x1e, t0);
         assert_eq!(
-            hold.press_delay(t0 + Duration::from_millis(2), gap),
+            hold.press_delay(0x30, t0 + Duration::from_millis(2), gap, Duration::ZERO),
             Duration::from_millis(30)
         );
         assert!(hold
-            .press_delay(t0 + Duration::from_millis(50), gap)
+            .press_delay(0x30, t0 + Duration::from_millis(50), gap, Duration::ZERO)
             .is_zero());
     }
 
@@ -221,9 +308,9 @@ mod tests {
         let mut hold = KeyHold::default();
         let gap = Duration::from_millis(32);
         let t0 = Instant::now();
-        assert!(hold.press_delay(t0, gap).is_zero()); // first key ever
+        assert!(hold.press_delay(0x1e, t0, gap, Duration::ZERO).is_zero()); // first key ever
         hold.on_press(0x2a, t0); // Shift down
-        assert!(hold.press_delay(t0, gap).is_zero()); // letter down, same chord
+        assert!(hold.press_delay(0x1e, t0, gap, Duration::ZERO).is_zero()); // letter down, same chord
     }
 
     // Hold and gap compose over a two-character burst: 'a' down at t0 is held
@@ -237,8 +324,11 @@ mod tests {
         let wait = hold.release_delay(0x1e, t0 + Duration::from_millis(1), min);
         assert_eq!(wait, Duration::from_millis(31));
         let released = t0 + Duration::from_millis(1) + wait;
-        hold.on_release(released);
-        assert_eq!(hold.press_delay(released, gap), Duration::from_millis(32));
+        hold.on_release(0x1e, released);
+        assert_eq!(
+            hold.press_delay(0x30, released, gap, Duration::ZERO),
+            Duration::from_millis(32)
+        );
     }
 
     // Legacy OFF (modern guests): dedicated cursor cluster keeps the ENHANCED
@@ -282,3 +372,7 @@ mod tests {
         assert_eq!(key_qnum(0x1e, true), 0x1e); // 'a' (plain)
     }
 }
+
+#[cfg(test)]
+#[path = "key_pacing_tests.rs"]
+mod pacing_tests;
