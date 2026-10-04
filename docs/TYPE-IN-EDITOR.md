@@ -119,7 +119,7 @@ A station with no folder simply has no examples. That is never an error.
 the old program's lines wherever the new one does not reuse their numbers.
 That happens to the second example a visitor opens, and to the SAM's boot-menu
 program (lines 85 and 9000 survive pressing B). So a run starts with the
-dialect's `NEW` (`clearCommand` in `basicDialects.ts`; it is `NEW` in all nine).
+dialect's `NEW` (`clearCommand` in `basicDialects.ts`; it is `NEW` in all ten, HC-BASIC included).
 The panel's "Clear the machine's old program first" checkbox controls it. It is
 on by default and turns back on whenever an example or a file is opened. A
 visitor adding lines to a program already in memory can untick it. A listing
@@ -286,7 +286,7 @@ after its own `NEW` (`demoProgram.enterDelayMs: [2000]`).
 
 **The dialect.** The `kc-basic` word list is read from the two token tables in the shipping ROMs: the 8 KB BASIC ROM, and CAOS 4.2's extension table (`CLS`, `PSET`, `PRESET`, `LINE`, `CIRCLE`, `LOCATE`, `INKEY$`, `COLOR`, `INK`, `PAPER`, `BEEP`, `SOUND` and others). Graphics coordinates are 320 by 256 with `y` counted up from the bottom; the colour is the last argument (`CIRCLE x,y,r,c`, 2 red, 4 green, 6 yellow, 7 white). `LOCATE` takes row, then column. `INPUT` works only inside a program (direct mode gives `?ID ERROR`).
 
-**Traps found.** `THEN END ELSE 20` is a `?SN ERROR`; use two lines. `LIST` of a long program stops when the screen fills and swallows the next keys until one is typed, so type something harmless before `RUN`. The examples start with `NEW`.
+**Traps found.** `THEN END ELSE 20` is a `?SN ERROR`; use two lines. `LIST` of a long program stops when the screen fills and swallows the next keys until one is typed, so type something harmless before `RUN`.
 
 **Examples (`registry/examples/kc854/`).** Each was typed whole with the editor's timing and read off the framebuffer: *Rainbow target* draws six coloured rings and a crosshair; *Times table* asks for a number and prints its ten-times table (typed 7, got 7 x 1 = 7 down to 7 x 10 = 70); *Stop the dot* stops on a key (OFF BY 7 and OFF BY 2 in two rounds), replays on any key and ends cleanly on N. The manuals are the original German BASIC-Handbuch and Systemhandbuch (1988).
 
