@@ -543,7 +543,7 @@ detail is in each guest doc.
 | bbcmicro, armeval | 10 | 0 lost | exact | 160 -> 170 (+6 %) on armeval | live speed 0.91 and 0.49 |
 | mpf2 | 10 | 0 lost | exact | 70 -> 74 (+6 %), ENTER 800 ms | |
 | svi728, dragon32, kc854, svi328, msx2, svi328cpm | 10 | 0 lost | exact | | |
-| samcoupe | 10 | 0 lost | exact | | the first line can be lost right after a restore ([below](#typing-right-after-a-restore)) |
+| samcoupe | 10 | 0 lost | exact | | the first line can be lost right after a restore ([above](#typing-right-after-a-restore)) |
 | svi738 | 10 | 0 lost | exact | | the first keys of a CP/M line are lost, old and new |
 | riscos3, newsos, symbos | none | 0 lost (a typed line, 2 of 2) | not swapped | | measured clean |
 | domainos | none | Shift and order lost | not shipped | | hidden; runs were below its own speed |
@@ -565,7 +565,7 @@ Other key paths, measured before this rollout:
 msx2 lost keys at the start of its first line in every run, old binary or new
 (`10 PRINT` arrived as `10 NT`). That was not Shift, and not the key path: the
 rig started typing during the machine's cold boot
-([below](#typing-right-after-a-restore)). Every VICE station has the fix (above).
+([above](#typing-right-after-a-restore)). Every VICE station has the fix (above).
 
 **The daemon's own pacers.** The QEMU/dbus key gate (`key_quirks.rs`,
 `pace_edge`) forwarded Shift and the key back to back as well, and amstradcpc

@@ -116,7 +116,7 @@ const play = async (page, steps) => {
   for (const step of steps) {
     if (step.startsWith('@')) await page.waitForTimeout(Number(step.slice(1)));
     else if (step.startsWith('#')) fbShot(step.slice(1));
-    else if (step.startsWith('!')) await pointer(page, step.slice(1));
+    else if (/^!d?click:/.test(step)) await pointer(page, step.slice(1)); // not the `!` key
     else {
       const [key, times] = step.split('*');
       for (let i = 0; i < Number(times ?? 1); i += 1) {

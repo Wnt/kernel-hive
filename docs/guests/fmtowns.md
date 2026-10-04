@@ -87,6 +87,17 @@ reference also shows the `charMap` is wrong here: `"` arrives as `[`, `+` as
 `^`, `*` as `‾`: it is samcoupe's map, entry for entry. Re-derive it from the keymap
 before `keyboard.physical` is considered.
 
+**Live since 2026-10-04** (final-patch binary, `:key`, 20 ms; savestate
+signature `1ebe131a` unchanged, golden pixel-identical but for the guest's
+wall clock). Through the real SPA: a double-click on コマンドモード, then
+bare characters, so the SPA adds a synthetic Shift. `PRINT (A$! 1984 %OK` arrived
+as `PRINT )A$! 1984 %OK`: every Shift landed, and `(` `)` fall on the JIS
+layout (Shift+8 and Shift+9 there), the layout gap above. Restore to golden
+brought back the desktop. Evidence:
+`/data/vms/streamhost/stations/fmtowns/evidence/shift-lead-2026-10-04/`.
+Rollback: `assets/fmtowns/mame-native/fmtowns.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`.
+
 ## Pointer — 1:1 absolute (write route, guest's own cursor word)
 
 `stream.pointer.transport` is `"abs"`, method `mame-guestram-abswrite`, since

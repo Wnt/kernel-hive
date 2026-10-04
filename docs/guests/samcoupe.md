@@ -218,10 +218,10 @@ the keys through a sandbox daemon, exactly as the editor sends them
 time. A 12-line listing with `"A+B*C:D(E)$!";1+2*3` on every line, through the
 station's `charMap`, never lost a shifted character: not at lead 0, not at
 lead 10, not on the old binary. What it did lose is the FIRST LINE, whole, in
-4 of 13 fresh-restore runs (old binary 1 of 1, lead 0 1 of 4, lead 10 2 of 8),
-with the editor's own `NEW` and its 2000 ms settle in front. That is a
-key-after-restore problem, independent of the lead (handed to the restore-keys
-investigation; frames in `evidence/shift-lead-2026-10-04/first-line-loss/`).
+4 of 13 fresh-restore runs (lead 0 1 of 4, lead 10 3 of 9), with the editor's
+own `NEW` and its 2000 ms settle in front. That is a key-after-restore problem,
+independent of the lead (see [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#typing-right-after-a-restore);
+frames in `evidence/shift-lead-2026-10-04/first-line-loss/`).
 All three examples typed exactly, twice each. The golden is pixel-identical
 under the new binary, and the savestate signature is unchanged (`a1e84e4c`,
 1174 entries).
