@@ -300,11 +300,20 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
             runtime_node.get("x11", {}).get("auxFiles", []) or []
         )
 
-    sib_aux_rel = _aux_of(sib)
+    sib_aux_all = _aux_of(sib)
+    new_aux_all = _aux_of(row)
+    # An aux file outside the sibling's own station dir that exists in the repo
+    # is SHARED by the engine's stations (vice-native/us-layout.keysyms), like
+    # the shared launcher above: the new row keeps naming it and nothing is
+    # copied. c64basic --like c64 (2026-10-04) hit "sibling 'c64' is missing
+    # streamhost/stations/c64/us-layout.keysyms" here.
+    sib_own_prefix = f"streamhost/stations/{sib_id}/"
+    keep = [i for i, p in enumerate(sib_aux_all) if p.startswith(sib_own_prefix) or not (REPO / p).is_file()]
+    sib_aux_rel = [sib_aux_all[i] for i in keep]
     # SOURCE basenames come from the sibling; DESTINATION basenames come from the
     # REWRITTEN row, because an aux file named after the sibling is renamed by
     # _rewrite_like_text (apple2e.keymap -> apple2gs.keymap).
-    new_aux_rel = _aux_of(row)
+    new_aux_rel = [new_aux_all[i] for i in keep] if len(new_aux_all) == len(sib_aux_all) else new_aux_all
     aux_names = [Path(p).name for p in sib_aux_rel]
     same_shape = len(new_aux_rel) == len(sib_aux_rel)
     aux_dest_names = [Path(p).name for p in new_aux_rel] if same_shape else list(aux_names)
