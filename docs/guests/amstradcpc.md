@@ -144,7 +144,7 @@ would have been invalid).
 | 20/20 | 20 | exact |
 | 30/30 | 20 | exact, at a 1-minute load of 63 to 86 |
 | 40/40 | 0, 1, 2, 5, 10 | exact, one run each |
-| **40/40** | **20** | **exact, see the proof below** |
+| **40/40** | **20** | **stress listing exact in 5 of 5 runs; each example exact in 3 of 3, and RUN right every time** |
 
 - **Hold and gap 40/40**: a key shorter than one 20 ms scan can fall between
   two scans, which is exactly what 10/10 shows, and 20/20 is the measured
@@ -159,9 +159,14 @@ would have been invalid).
   half again as fast as the kiosk's 180, and in emulated time nothing is lost
   if the host is slow, the queue just drains later.
 
-The proof at the shipped values is in
+At the shipped values, the 1-minute load was 62 to 101 during the five stress
+runs. RUN of `draw.bas` drew the string art (three pixel-identical frames),
+`input.bas` answered 1985 with `MCMLXXXV`, and `game.bas` ran its paddle and
+ball to `Missed! Score 0`. One reading trap: `game.bas` line 140 is exactly 40
+characters, and the firmware prints a blank row after a line that fills its
+last row. The rig proof is in
 `/data/vms/streamhost/stations/amstradcpc/evidence/cpc-native-2026-10-04/`
-(`INDEX.txt`).
+(`INDEX.txt`, frames in `rig/`, the harness in `tools/`).
 
 ## Ports
 
