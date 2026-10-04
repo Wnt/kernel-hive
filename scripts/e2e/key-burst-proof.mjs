@@ -13,6 +13,7 @@
 // works on a sandbox daemon that is never published.
 //
 //   node key-burst-proof.mjs <signaling.json> <text-file> [--pace-ms N] [--hold-ms N]
+//        [--char-ms N [--line-ms N] [--enter-ms N]]
 //
 // <text-file>: what to type; each '\n' is Enter. Letters are sent UNSHIFTED
 // (lower-case ASCII) and shifted punctuation gets real Shift_L edges round it,
@@ -21,6 +22,12 @@
 // case. --pace-ms 0 (default) writes every record at once; N > 0 waits N ms
 // between records (a slow reference run). The session stays open --hold-ms
 // (default 5000) after the last write so the daemon reads the whole stream.
+//
+// --char-ms N is the TYPE-IN EDITOR's shape instead of a paste: one character's
+// edges at a time (Shift, key down, key up, Shift up, back to back — exactly
+// what typeText() writes), then N ms; before each Enter --line-ms (default 260)
+// and after it --enter-ms (default 600), typeLines()'s settles. Give it the
+// station's typeIn.perCharMs to type at the editor's validated pace.
 //
 // PASS/FAIL is the framebuffer's, not this script's: screenshot the station
 // (fb-wait.py --shm ... --out, or the module's SHOT verb) and compare.
@@ -38,6 +45,9 @@ const flag = (name, dflt) => {
 };
 const PACE_MS = flag('--pace-ms', 0);
 const HOLD_MS = flag('--hold-ms', 5000);
+const CHAR_MS = flag('--char-ms', 0);
+const LINE_MS = flag('--line-ms', 260);
+const ENTER_MS = flag('--enter-ms', 600);
 const [signalPath, textPath] = args;
 if (!signalPath || !textPath) {
   console.error('usage: key-burst-proof.mjs <signaling.json> <text-file> [--pace-ms N] [--hold-ms N]');
@@ -60,6 +70,7 @@ US['\n'] = [0x1c, false];
 const SHIFT_L = 0x2a;
 
 const text = fs.readFileSync(textPath, 'utf8').replace(/\r/g, '');
+// [scancode, down, ms to wait after this edge]
 const edges = [];
 for (const ch of text) {
   const k = US[ch];
@@ -68,9 +79,12 @@ for (const ch of text) {
     process.exit(2);
   }
   const [code, shifted] = k;
-  if (shifted) edges.push([SHIFT_L, 1]);
-  edges.push([code, 1], [code, 0]);
-  if (shifted) edges.push([SHIFT_L, 0]);
+  // typeLines(): the line's own per-character wait, THEN lineDelayMs, then ENTER
+  if (CHAR_MS > 0 && ch === '\n' && edges.length) edges.at(-1)[2] += LINE_MS;
+  if (shifted) edges.push([SHIFT_L, 1, 0]);
+  edges.push([code, 1, 0], [code, 0, 0]);
+  if (shifted) edges.push([SHIFT_L, 0, 0]);
+  if (CHAR_MS > 0) edges.at(-1)[2] = ch === '\n' ? ENTER_MS : CHAR_MS;
 }
 
 const sig = JSON.parse(fs.readFileSync(signalPath, 'utf8'));
@@ -105,11 +119,15 @@ const result = await page.evaluate(async ({ sig, edges, paceMs, holdMs }) => {
   await writer.write(new Uint8Array([1])); // ICLASS_KEY
   const t0 = performance.now();
   const pending = [];
-  for (const [code, down] of edges) {
+  for (const [code, down, after] of edges) {
     const framed = new Uint8Array([4, 0, 3, down, code & 0xff, (code >> 8) & 0xff]);
     if (paceMs > 0) {
       await writer.write(framed);
       await delay(paceMs);
+    } else if (after > 0) {
+      pending.push(writer.write(framed)); // the editor: a character, then its wait
+      await Promise.all(pending.splice(0));
+      await delay(after);
     } else {
       pending.push(writer.write(framed)); // AHK shape: no wait between edges
     }
@@ -122,5 +140,5 @@ const result = await page.evaluate(async ({ sig, edges, paceMs, holdMs }) => {
   return { url, records: edges.length, writeMs: Math.round(writeMs) };
 }, { sig, edges, paceMs: PACE_MS, holdMs: HOLD_MS });
 
-console.log(JSON.stringify({ ...result, chars: [...text].length, paceMs: PACE_MS }));
+console.log(JSON.stringify({ ...result, chars: [...text].length, paceMs: PACE_MS, charMs: CHAR_MS }));
 await browser.close();

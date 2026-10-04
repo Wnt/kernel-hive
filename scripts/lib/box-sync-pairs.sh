@@ -160,6 +160,9 @@ box_sync_load_pairs() {
   box_sync_add_pair kh-claim scripts/lib/kh-claim.sh /usr/local/bin/kh-claim exact repo
   box_sync_add_pair kh-session scripts/lib/kh-session.sh /usr/local/lib/kh-session.sh exact repo
   box_sync_add_pair xvfb-alloc scripts/lib/xvfb-alloc.sh /usr/local/bin/xvfb-alloc exact repo
+  # Sourced by every nspawn launcher (must deploy before the re-emitted launchers).
+  box_sync_add_pair nspawn-unix-export scripts/lib/nspawn-unix-export.sh \
+    /usr/local/lib/nspawn-unix-export.sh exact repo
   box_sync_add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard exact repo
   box_sync_add_pair checkpoint-guard scripts/lib/checkpoint-guard.sh \
     /usr/local/bin/checkpoint-guard exact repo

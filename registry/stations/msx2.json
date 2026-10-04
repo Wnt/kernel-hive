@@ -195,7 +195,8 @@
   "typeIn": {
     "dialect": "msx-basic",
     "perCharMs": 260,
-    "case": "code-upper"
+    "case": "code-upper",
+    "unreachable": "\\`|~"
   },
   "keyboard": {
     "charMap": {}

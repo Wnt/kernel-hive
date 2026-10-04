@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { keywordMachineFor, transcodeLine, type KeywordMachine } from './keywordEntry';
-import { checkListing, isNewCommand } from './listingText';
+import { checkListing, keystrokeCounts } from './listingText';
 import { dialectSpec } from './basicDialects';
 import { markBad, highlightLine } from './basicHighlight';
 import { paceFor, typeListing } from './typeInRun';
@@ -123,7 +123,7 @@ describe('the editor around the transcoder', () => {
   it('lists the issues by editor line and counts chords for the estimate', () => {
     const check = checkListing('10 PRINT "Hi"\n\n20 a=1', {}, spec, spectrum);
     expect(check.keywordIssues.map((i) => `${i.line}:${i.text}`)).toEqual(['3:a']);
-    expect(check.keystrokes).toEqual([7, 4]); // typing goes on past an issue: 2 0 = 1
+    expect(keystrokeCounts(check.lines, spectrum)).toEqual([7, 4]); // typing goes on past an issue: 2 0 = 1
   });
 
   it('highlights from the key table, and paints an issue red', () => {
@@ -148,11 +148,10 @@ describe('the editor around the transcoder', () => {
     expect(sent).toEqual([[k('a')], ...chords('10 PRINT "Hi"', spectrum)]);
     expect(text).toEqual(['\n', '\n']); // ENTER, one per line
     expect(waits[0]).toBe(config.perCharMs);
-    expect(waits[2]).toBe(config.newDelayMs);
+    // The NEW the editor types first: the 48K ROM re-tests its memory, keys off.
+    expect(waits[2]).toBe(config.settleAfter?.NEW);
     const pace = paceFor(config, ['NEW', 'x']);
-    expect(pace.enterDelayMs(0)).toBe(config.newDelayMs);
     expect(pace.enterDelayMs(1)).toBe(config.enterDelayMs ?? 600);
-    expect(isNewCommand(' new ')).toBe(true);
   });
 
   it('grows the ZX81 settle with the listing: its 1 KB display is rebuilt after every ENTER', () => {

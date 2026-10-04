@@ -6,7 +6,7 @@ import {
 } from '../grid/StreamView/typeDemoProgram';
 import type { DialectSpec } from './basicDialects';
 import { transcodeLine, type KeywordMachine } from './keywordEntry';
-import { applyCase, isNewCommand } from './listingText';
+import { applyCase } from './listingText';
 
 // ---------------------------------------------------------------------------
 //  typeInRun — one editor run, pure and injectable so Stop and a dropped
@@ -15,18 +15,20 @@ import { applyCase, isNewCommand } from './listingText';
 
 export type RunOutcome = 'done' | 'stopped' | 'disconnected';
 
-/** The station's declared pace (registry `typeIn`), demo-typist defaults for
- *  the optional settles. The settle after line `index` of `lines` is
- *  `newDelayMs` for a bare NEW, else `enterDelayMs`, plus `index` times
- *  `enterDelayPerLineMs` for a machine whose redraw grows with the listing. */
-export function paceFor(config: TypeInConfig, lines: readonly string[] = []): TypingPace {
+/** The station's declared pace (registry `typeIn`) for THESE lines: demo-typist
+ *  defaults for the two optional settles, the longer `settleAfter` settle after
+ *  a named direct command (samcoupe: NEW redraws a banner that eats the next
+ *  key; the 48K Spectrum's NEW re-tests its memory), and `index` times
+ *  `enterDelayPerLineMs` on a machine whose redraw grows with the listing (the
+ *  1 KB ZX81). */
+export function paceFor(config: TypeInConfig, lines: readonly string[]): TypingPace {
   const enterMs = config.enterDelayMs ?? DEMO_ENTER_DELAY_MS;
-  const newMs = config.newDelayMs ?? enterMs;
   const growth = config.enterDelayPerLineMs ?? 0;
   return {
     perCharMs: config.perCharMs,
     lineDelayMs: config.lineDelayMs ?? DEMO_LINE_DELAY_MS,
-    enterDelayMs: (index) => (isNewCommand(lines[index] ?? '') ? newMs : enterMs) + index * growth,
+    enterDelayMs: (index) =>
+      Math.max(enterMs, config.settleAfter?.[(lines[index] ?? '').trim().toUpperCase()] ?? 0) + index * growth,
   };
 }
 

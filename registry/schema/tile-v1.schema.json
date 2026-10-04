@@ -527,6 +527,7 @@
             "oric-basic",
             "color-basic",
             "applesoft",
+            "kc-basic",
             "sinclair-basic",
             "zx81-basic"
           ],
@@ -552,11 +553,6 @@
           "minimum": 0,
           "description": "Added to the settle after line N (0-based) N times: a machine that redraws its whole listing after every ENTER takes longer as the listing grows. Measured on the 1 KB ZX81 (collapsed display rebuilt byte by byte): about 90 ms more per listed line. Default 0."
         },
-        "newDelayMs": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Settle after a line that is just NEW, instead of enterDelayMs: a machine that wipes and re-tests its memory ignores keys meanwhile (48K Spectrum: about 2 s). Default: enterDelayMs."
-        },
         "case": {
           "enum": [
             "as-typed",
@@ -575,6 +571,15 @@
           "type": "string",
           "minLength": 1,
           "description": "One sentence the editor shows above the Type button, for a machine that needs a step first (e.g. a menu key)."
+        },
+        "settleAfter": {
+          "type": "object",
+          "description": "Longer ENTER settles for named direct commands, keyed by the whole line in upper case (matched case-insensitively): {\"NEW\": 2000} where NEW redraws a banner that eats the next key (samcoupe). The larger of this and enterDelayMs applies."
+        },
+        "unreachable": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Printable-ASCII symbols the station's keymap cannot produce. The editor flags them like non-ASCII and refuses to type a listing holding one; the examples validator refuses them too."
         }
       },
       "additionalProperties": false

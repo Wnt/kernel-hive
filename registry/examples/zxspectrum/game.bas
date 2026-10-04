@@ -1,4 +1,3 @@
-NEW
 10 RANDOMIZE: LET b=14: LET s=0
 20 LET x=INT (RND*30): FOR y=1 TO 20
 30 PRINT AT y,x;"o": LET b=b+(INKEY$="p" AND b<28)-(INKEY$="o" AND b>0)

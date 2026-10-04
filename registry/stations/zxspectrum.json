@@ -158,7 +158,9 @@
   "typeIn": {
     "dialect": "sinclair-basic",
     "perCharMs": 400,
-    "newDelayMs": 3000
+    "settleAfter": {
+      "NEW": 3000
+    }
   },
   "museum": {
     "id": "zxspectrum",

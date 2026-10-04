@@ -12,28 +12,34 @@
 //! substitution here. XT 0xe05b/0xe05c (LWin/RWin) map to Super_L/Super_R,
 //! which FS-UAE maps to Left/Right Amiga.
 //!
-//! THE PACER mirrors the semantics of `drain_keys()` in the ctlsock module
-//! (`scripts/build-guests/emulators/mamectl/.../ctlsock.cpp`) as they apply
-//! WITHOUT exclusive-scan mode — which is the mode that applies here: XTEST
-//! feeds an SDL emulator's event queue, not a ROM-scanned matrix. That means
-//! per-field dwell gates with per-field ordering ONLY: a release waits HOLD
-//! after its own field's press, a re-press waits GAP after its own field's
-//! release, and edges of OTHER fields flow freely past a waiting one — the
-//! rule that keeps a stretched dwell on key A from deadlocking or delaying
-//! key B (strict arrival order wedges on real, overlapping typing; see the
-//! three-barrier commentary in ctlsock.cpp and docs/lab/DEBRIDGE-HANDOVER.md).
-//! Cross-field edges are never REORDERED relative to their own field, and a
-//! modifier is a field like any other: its press goes out the pass it
-//! arrives, so it is already down when the character it belongs to follows.
+//! THE PACER keeps the dwell gates of `drain_keys()` in the ctlsock module
+//! (`scripts/build-guests/emulators/mamectl/.../ctlsock.cpp`): a release waits
+//! HOLD after its own field's press, a re-press waits GAP after its own field's
+//! release. It does NOT keep that module's per-field-only ordering for keys,
+//! because per-key ordering is not enough for text: in the burst
+//! `e↓ e↑ e↓ e↑ x↓ x↑` the second `e↓` owes its GAP while `x↓` (a different
+//! key, no gate) passed it, and the guest typed "exe" for "eex". Any two keys
+//! that reorder are a defect in a paste.
 //!
-//! ONE EXCEPTION: the pointer buttons (X 1-3) are a single FIFO. A chord is
-//! meaningful in its order — Minesweeper's L+R, rio's 1-then-2, an X server's
-//! Emulate3Buttons window — and per-button gates reordered a quick one: with
-//! L↓ R↓ R↑ L↑ inside one hold, R↑ waited out R's dwell while L↑ (whose own
-//! dwell had already run) passed it, so the guest saw L↑ before R↑ (job MB,
-//! 2026-09-28). So a pointer-button edge still in its dwell holds back every
-//! LATER pointer-button edge, whichever button it is. Keys and the wheel
-//! (X 4/5) are unaffected.
+//! So ALL KEYS (a modifier is a key) are ONE FIFO: an edge still in its dwell
+//! holds back every LATER key edge, press or release, whichever key. That also
+//! keeps Shift around its character (`Shift↑` can never overtake a waiting
+//! `e↓`, which would type "e" for "E"). The deadlock the ctlsock and vicectl
+//! modules guard against (strict arrival order wedging an overlapped
+//! `A↓ B↓ A↑ B↑` under exclusive-scan rules, where one edge's gate depends on
+//! ANOTHER edge being applied) cannot arise here: this sink feeds an SDL event
+//! queue, there is no exclusive-scan gate, and every gate is a pure function of
+//! time, so a waiting head always becomes ready and the queue always drains
+//! (`overlapped_typing_drains_in_order` pins it). The cost is latency, never
+//! loss, and only inside a burst faster than HOLD/GAP: slow typing is not
+//! delayed at all.
+//!
+//! The pointer buttons (X 1-3) are a second, separate FIFO for the same
+//! reason: a chord is meaningful in its order — Minesweeper's L+R, rio's
+//! 1-then-2, an X server's Emulate3Buttons window — and per-button gates
+//! reordered L↓ R↓ R↑ L↑ into L↑ before R↑ (job MB, 2026-09-28). The wheel
+//! (X 4/5) keeps its independent per-field gate. Keys and buttons do not
+//! order against each other.
 //! Pure and time-injected so the state machine is unit-testable.
 
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -97,10 +103,21 @@ pub(crate) enum Field {
     Button(u8),
 }
 
+/// The FIFO a field belongs to (see the header): all keys share one, the
+/// pointer buttons X 1-3 another, the wheel none.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Lane {
+    Keys,
+    Buttons,
+}
+
 impl Field {
-    /// A real pointer button (X 1-3): these share one FIFO — see the header.
-    fn is_pointer_button(self) -> bool {
-        matches!(self, Field::Button(1..=3))
+    fn lane(self) -> Option<Lane> {
+        match self {
+            Field::Key(_) => Some(Lane::Keys),
+            Field::Button(1..=3) => Some(Lane::Buttons),
+            Field::Button(_) => None,
+        }
     }
 }
 
@@ -164,22 +181,26 @@ impl Pacer {
     }
 
     /// One drain pass at `now`. An edge still inside its own field's dwell
-    /// blocks LATER EDGES OF THAT FIELD ONLY (per-field order can never
-    /// invert); every other field's edges apply the pass they arrive — except
-    /// pointer buttons, where a waiting edge blocks every later pointer-button
-    /// edge (one FIFO, so a chord keeps its press/release order). Applied
-    /// edges stamp their gate time with `now`, so a press+release pair pushed
-    /// together emits the press and returns `now + hold` as the deadline for
-    /// the release.
+    /// blocks every LATER edge of its lane (all keys; or pointer buttons 1-3)
+    /// and of its own field (the wheel); other lanes apply the pass they
+    /// arrive. One FIFO per lane, so a paste or a chord keeps its order.
+    /// Applied edges stamp their gate time with `now`, so a press+release pair
+    /// pushed together emits the press and returns `now + hold` as the
+    /// deadline for the release.
     pub(crate) fn drain(&mut self, now: Instant) -> (Vec<Edge>, Option<Instant>) {
         let mut out = Vec::new();
         let mut blocked: HashSet<Field> = HashSet::new();
+        let mut keys_blocked = false;
         let mut buttons_blocked = false;
         let mut deadline: Option<Instant> = None;
         let mut i = 0;
         while i < self.queue.len() {
             let e = self.queue[i];
-            if blocked.contains(&e.field) || (buttons_blocked && e.field.is_pointer_button()) {
+            let lane = e.field.lane();
+            if blocked.contains(&e.field)
+                || (lane == Some(Lane::Keys) && keys_blocked)
+                || (lane == Some(Lane::Buttons) && buttons_blocked)
+            {
                 i += 1;
                 continue;
             }
@@ -193,7 +214,8 @@ impl Pacer {
                 .filter(|ready| *ready > now)
             {
                 blocked.insert(e.field);
-                buttons_blocked |= e.field.is_pointer_button();
+                keys_blocked |= lane == Some(Lane::Keys);
+                buttons_blocked |= lane == Some(Lane::Buttons);
                 deadline = Some(deadline.map_or(ready, |d| d.min(ready)));
                 i += 1;
                 continue;
@@ -220,6 +242,32 @@ mod tests {
             field: Field::Key(k),
             down,
         }
+    }
+
+    /// Push a burst (a press+release per code, all at one instant), drain by
+    /// deadline, and return the order the PRESSES were applied in.
+    fn typed(codes: &[u8]) -> Vec<u8> {
+        let mut p = Pacer::new(40, 40, 60);
+        let mut now = Instant::now();
+        for k in codes {
+            p.push(key(*k, true)).unwrap();
+            p.push(key(*k, false)).unwrap();
+        }
+        let mut order = Vec::new();
+        for _ in 0..1000 {
+            let (out, deadline) = p.drain(now);
+            for e in out {
+                if let (Field::Key(k), true) = (e.field, e.down) {
+                    order.push(k);
+                }
+            }
+            match deadline {
+                Some(d) => now = d,
+                None => break,
+            }
+        }
+        assert!(p.is_empty());
+        order
     }
 
     fn btn(b: u8, down: bool) -> Edge {
@@ -337,11 +385,11 @@ mod tests {
         assert_eq!(deadline, None);
     }
 
-    /// The anti-deadlock rule from the ctlsock drain: key A's dwell-deferred
-    /// release must not block key B's edges — other fields flow freely — while
-    /// A's own later edges stay strictly behind its deferred one.
+    /// Overlapped typing: A's dwell-deferred release holds B's edges behind it
+    /// (one key FIFO) without wedging, and A's own later edges stay strictly
+    /// behind its deferred one.
     #[test]
-    fn a_stretched_dwell_never_blocks_or_reorders_another_field() {
+    fn a_stretched_dwell_orders_every_later_key_edge() {
         let mut p = Pacer::new(40, 40, 60);
         let t0 = Instant::now();
         // Overlapped typing: A down, B down, A up, B up — all within 1 ms.
@@ -365,13 +413,11 @@ mod tests {
         assert!(p.is_empty());
     }
 
-    /// A modifier is a field like any other: Shift's press flows out ahead of
-    /// the character even while the PREVIOUS character's release sits in its
-    /// dwell — the level is already down when the character applies, and no
-    /// cross-field barrier exists to hold it back (this sink feeds an SDL
-    /// event queue, not a ROM-scanned matrix).
+    /// A modifier is a key like any other: Shift's press waits behind the
+    /// previous character's deferred release (one key FIFO) and the character
+    /// follows it, so Shift is always down before the character applies.
     #[test]
-    fn modifier_press_flows_past_another_keys_dwell() {
+    fn modifier_press_keeps_its_place_before_its_character() {
         let mut p = Pacer::new(40, 40, 60);
         let t0 = Instant::now();
         p.push(key(20, true)).unwrap(); // character 1 down
@@ -379,9 +425,46 @@ mod tests {
         p.push(key(50, true)).unwrap(); // Shift down
         p.push(key(21, true)).unwrap(); // character 2 down
         let (out, _) = p.drain(t0);
-        assert_eq!(out, vec![key(20, true), key(50, true), key(21, true)]);
+        assert_eq!(out, vec![key(20, true)]);
         let (out, _) = p.drain(t0 + Duration::from_millis(40));
-        assert_eq!(out, vec![key(20, false)]);
+        assert_eq!(out, vec![key(20, false), key(50, true), key(21, true)]);
+    }
+
+    /// The reported defect: "eex" arrived as "exe" because x's press, owing
+    /// nothing, passed the second e's press waiting out its GAP.
+    #[test]
+    fn repeated_letters_in_a_burst_keep_their_order() {
+        assert_eq!(typed(&[18, 18, 45]), [18, 18, 45]);
+    }
+
+    /// A longer paste, doubled letters throughout, applies in exactly the order
+    /// it was typed.
+    #[test]
+    fn a_long_paste_applies_in_typed_order() {
+        let codes: Vec<u8> = "aardvark bookkeeper committee".bytes().collect();
+        assert_eq!(typed(&codes), codes);
+    }
+
+    /// Overlapped typing A↓ B↓ A↑ B↑ (rollover) must still drain, in order.
+    #[test]
+    fn overlapped_typing_drains_in_order() {
+        let mut p = Pacer::new(40, 40, 60);
+        let mut now = Instant::now();
+        let want = [key(10, true), key(11, true), key(10, false), key(11, false)];
+        for e in want {
+            p.push(e).unwrap();
+        }
+        let mut applied = Vec::new();
+        for _ in 0..10 {
+            let (out, deadline) = p.drain(now);
+            applied.extend(out);
+            match deadline {
+                Some(d) => now = d,
+                None => break,
+            }
+        }
+        assert!(p.is_empty());
+        assert_eq!(applied, want);
     }
 
     /// Keys and buttons pace independently, buttons with their own knob for

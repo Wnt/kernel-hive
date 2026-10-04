@@ -147,7 +147,16 @@
       "+": "P",
       "(": "*",
       ")": "(",
-      "*": ")"
+      "*": ")",
+      "\"": "@",
+      "&": "^",
+      "'": "&",
+      ":": ";",
+      ";": ":",
+      "/": "?",
+      "?": "/",
+      "^": "K",
+      "@": "L"
     },
     "letterCase": "upper-only"
   },
@@ -170,7 +179,8 @@
   "typeIn": {
     "dialect": "applesoft",
     "perCharMs": 70,
-    "case": "unshifted"
+    "case": "unshifted",
+    "unreachable": "[\\]_`{|}~"
   },
   "museum": {
     "id": "mpf2",

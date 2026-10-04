@@ -189,7 +189,7 @@ export interface GuestKeyboard {
  *  keyword lists in ui/typein/basicDialects.ts). */
 export type BasicDialect =
   | 'cbm-basic' | 'bbc-basic' | 'msx-basic' | 'locomotive-basic' | 'superbasic'
-  | 'sam-basic' | 'oric-basic' | 'color-basic' | 'applesoft' | KeywordDialect;
+  | 'sam-basic' | 'oric-basic' | 'color-basic' | 'applesoft' | 'kc-basic' | KeywordDialect;
 
 /** Keyword-entry BASICs: one key is a keyword, so the editor types key chords
  *  through the keyword transcoder (ui/typein/keywordEntry.ts). */
@@ -225,8 +225,6 @@ export interface TypeInConfig {
   readonly perCharMs: number;
   readonly lineDelayMs?: number;
   readonly enterDelayMs?: number;
-  /** Settle after a line that is just NEW (a machine that re-tests its memory). */
-  readonly newDelayMs?: number;
   /** Added per line already typed: the settle grows with the listing (ZX81). */
   readonly enterDelayPerLineMs?: number;
   readonly case?: TypeInCase;
@@ -234,6 +232,12 @@ export interface TypeInConfig {
   readonly maxLineChars?: number;
   /** One sentence shown above the Type button (a step the machine needs first). */
   readonly hint?: string;
+  /** Longer ENTER settles for named direct commands (whole line, upper case):
+   *  samcoupe's NEW redraws the MGT banner and eats the next key; the 48K
+   *  Spectrum's NEW re-tests its memory with the keyboard off. */
+  readonly settleAfter?: Readonly<Record<string, number>>;
+  /** Printable ASCII the station's keymap cannot produce: flagged, never typed. */
+  readonly unreachable?: string;
 }
 
 /** One example program (registry/examples/<id>/), inlined into poster-docs.json. */

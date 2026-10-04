@@ -48,6 +48,21 @@ class TypeInPacingTest(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("below the tile's typed drain rate (120 ms/char", errors[0])
 
+    def test_the_modifier_lead_counts_in_the_drain_rate(self) -> None:
+        # vic20 ships 60/60 with a 40 ms lead: its worst character costs
+        # HOLD + max(GAP, LEAD) + LEAD = 160, which 170 covers and 150 does not.
+        def lead(per_char: int, lead_ms: int) -> list[str]:
+            row = station(type_in={"dialect": "cbm-basic", "perCharMs": per_char})
+            row["runtime"]["stationEnv"]["SH_KEY_MOD_LEAD_MS"] = str(lead_ms)
+            return errors_for([row])
+
+        self.assertEqual(lead(170, 40), [])
+        errors = lead(150, 40)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("(160 ms/char", errors[0])
+        # a lead longer than the gap replaces it rather than adding to it twice
+        self.assertIn("(220 ms/char", lead(200, 80)[0])
+
     def test_refuses_a_station_whose_drain_rate_is_undeclared(self) -> None:
         errors = errors_for([station(type_in={"dialect": "cbm-basic", "perCharMs": 170}, hold=None, gap=None)])
         self.assertEqual(len(errors), 1)
@@ -57,6 +72,15 @@ class TypeInPacingTest(unittest.TestCase):
         errors = errors_for([station(type_in={"dialect": "cbm-basic", "perCharMs": 170000, "speed": 1})])
         self.assertTrue(any("unknown key(s) ['speed']" in e for e in errors))
         self.assertTrue(any("above 2000" in e for e in errors))
+
+    def test_settle_after_and_unreachable_shapes(self) -> None:
+        good = {"dialect": "sam-basic", "perCharMs": 170, "settleAfter": {"NEW": 2000}, "unreachable": "<>?"}
+        self.assertEqual(errors_for([station(type_in=good)]), [])
+        bad = {"dialect": "sam-basic", "perCharMs": 170, "settleAfter": {"new ": 99999}, "unreachable": "<<a"}
+        text = "\n".join(errors_for([station(type_in=bad)]))
+        self.assertIn("trimmed upper case", text)
+        self.assertIn("0..60000", text)
+        self.assertIn("never a letter", text)
 
     def test_refuses_a_station_that_does_not_stream(self) -> None:
         row = station(type_in={"dialect": "cbm-basic", "perCharMs": 170})
@@ -151,6 +175,25 @@ class ExamplesFolderTest(unittest.TestCase):
         self.assertIn("d.bas:1: trailing spaces", text)
         self.assertIn("stray.bas: not listed in index.json", text)
         self.assertIn("must be an https:// URL", text)
+
+    def test_an_example_may_not_use_a_symbol_the_machine_cannot_reach(self) -> None:
+        self.rows[0]["typeIn"]["unreachable"] = "<>"
+        self.write(
+            "vic20",
+            {"examples": [{"file": "a.bas", "kind": "game", "title": "A"}]},
+            {"a.bas": b"10 IF A<B THEN 10\n"},
+        )
+        _, errors = self.load()
+        self.assertTrue(any("'<' has no key on this machine" in e for e in errors))
+
+    def test_an_example_may_not_start_with_new_the_editor_types_it(self) -> None:
+        self.write(
+            "vic20",
+            {"examples": [{"file": "a.bas", "kind": "game", "title": "A"}]},
+            {"a.bas": b"NEW\n10 PRINT 1\n"},
+        )
+        _, errors = self.load()
+        self.assertTrue(any("a.bas:1: starts with NEW" in e for e in errors))
 
     def test_a_missing_file_is_named(self) -> None:
         self.write("vic20", {"examples": [{"file": "gone.bas", "kind": "draw", "title": "G"}]}, {})

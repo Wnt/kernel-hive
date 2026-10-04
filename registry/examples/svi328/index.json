@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "House at night",
+      "description": "Paints a house, a moon and a sky of random stars in SV BASIC's high-resolution SCREEN 1, with a caption printed straight onto the graphics; press any key to return to BASIC."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Celsius to Fahrenheit",
+      "description": "Asks for a temperature in Celsius, converts it to Fahrenheit and notes when water would freeze or boil."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Guess my number",
+      "description": "The SV-328 picks a number from 1 to 100 and answers each guess with HIGHER or LOWER, then plays a short tune when you find it; Space starts a new round."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "SVI-328 Personal Computer - User's Manual",
+      "url": "https://archive.org/details/svi328usermanual",
+      "lang": "en",
+      "note": "Owner's manual (Spectravideo, 1983); Internet Archive scan"
+    },
+    {
+      "title": "BASIC Reference Manual for SVI-318/328",
+      "url": "https://archive.org/details/svi328basicreferencemanual",
+      "lang": "en",
+      "note": "Spectravideo's reference to SV Extended BASIC, every statement and function; Internet Archive scan"
+    }
+  ]
+}

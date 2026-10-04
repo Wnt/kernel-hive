@@ -99,13 +99,12 @@ class ChordPacingTest(unittest.TestCase):
         return errors
 
     def test_accepts_settles_that_cover_one_chord(self) -> None:
-        self.assertEqual(self.errors({"dialect": "sinclair-basic", "perCharMs": 400, "newDelayMs": 3000}), [])
+        type_in = {"dialect": "sinclair-basic", "perCharMs": 400, "settleAfter": {"NEW": 3000}}
+        self.assertEqual(self.errors(type_in), [])
 
     def test_refuses_a_settle_shorter_than_one_chord(self) -> None:
         errors = self.errors({"dialect": "sinclair-basic", "perCharMs": 400, "enterDelayMs": 300})
         self.assertTrue(any("typeIn.enterDelayMs=300 is below one chord (400 ms" in e for e in errors), errors)
-        # newDelayMs defaults to enterDelayMs, so it is short too.
-        self.assertTrue(any("typeIn.newDelayMs=300" in e for e in errors), errors)
 
     def test_refuses_a_case_rule_the_transcoder_owns(self) -> None:
         errors = self.errors({"dialect": "zx81-basic", "perCharMs": 400, "case": "unshifted"})

@@ -40,10 +40,11 @@ TYPEIN_KEYS = {
     "lineDelayMs",
     "enterDelayMs",
     "enterDelayPerLineMs",
-    "newDelayMs",
     "case",
     "maxLineChars",
     "hint",
+    "settleAfter",
+    "unreachable",
 }
 # Upper bounds the JSON-Schema-lite evaluator cannot express (it has no
 # `maximum`). Generous on purpose: they catch a unit slip (seconds typed as ms
@@ -53,7 +54,6 @@ TYPEIN_MAXIMA = {
     "lineDelayMs": 10000,
     "enterDelayMs": 60000,
     "enterDelayPerLineMs": 5000,
-    "newDelayMs": 60000,
     "maxLineChars": 255,
 }
 HINT_MAX = 160
@@ -63,18 +63,30 @@ EXAMPLE_KEYS = {"file", "kind", "title", "description"}
 MANUAL_KEYS = {"title", "url", "lang", "note"}
 EXAMPLE_FILE = re.compile(r"[a-z0-9][a-z0-9_-]*\.(bas|txt)")
 PRINTABLE = re.compile(r"[\x20-\x7e]*")
+# The direct command that wipes a BASIC program -- NEW in every editor dialect
+# (spa/src/ui/typein/basicDialects.ts `clearCommand`).
+CLEAR_COMMAND = "NEW"
 
 
 def drain_ms(row: dict[str, Any]) -> int:
-    """The daemon's per-character drain rate, or 0 when the station declares none."""
+    """The per-character drain rate, or 0 when the station declares none.
+
+    HOLD + GAP per key. A station with a modifier lead (SH_KEY_MOD_LEAD_MS: the
+    emulator's key module holds a press until the Shift level in front of it
+    has been visible that long) pays it on a shifted character, and again on
+    the key after one, so its worst character costs HOLD + max(GAP, LEAD) +
+    LEAD.
+    """
     env = (row.get("runtime") or {}).get("stationEnv", {})
-    total = 0
-    for key in ("SH_KEY_MIN_HOLD_MS", "SH_KEY_MIN_GAP_MS"):
-        try:
-            total += int(env.get(key, 0))
-        except (TypeError, ValueError):
-            return 0
-    return total
+    try:
+        hold = int(env.get("SH_KEY_MIN_HOLD_MS", 0))
+        gap = int(env.get("SH_KEY_MIN_GAP_MS", 0))
+        lead = int(env.get("SH_KEY_MOD_LEAD_MS", 0))
+    except (TypeError, ValueError):
+        return 0
+    if hold + gap == 0:
+        return 0
+    return hold + max(gap, lead) + lead
 
 
 def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
@@ -92,7 +104,7 @@ def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
                 errors,
                 row,
                 f"demoProgram.perCharMs={budget} is below the tile's typed drain rate "
-                f"({drain} ms/char = SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS); the typist "
+                f"({drain} ms/char = SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS, plus the modifier lead); the typist "
                 f"would out-run the guest and lose characters",
             )
 
@@ -121,6 +133,7 @@ def validate_type_in(rows: list[dict[str, Any]], errors: list[str]) -> None:
         hint = block.get("hint")
         if isinstance(hint, str) and (len(hint) > HINT_MAX or "\n" in hint):
             fail(errors, row, f"typeIn.hint must be one line of at most {HINT_MAX} characters")
+        _check_settle_and_reach(row, block, errors)
         if row.get("stream", {}).get("transport") != "streamhost":
             fail(errors, row, "typeIn on a station that does not stream -- there is no guest to type into")
         drain = drain_ms(row)
@@ -138,7 +151,7 @@ def validate_type_in(rows: list[dict[str, Any]], errors: list[str]) -> None:
                 errors,
                 row,
                 f"typeIn.perCharMs={budget} is below the tile's typed drain rate ({drain} ms/char = "
-                f"SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS); the editor would out-run the guest",
+                f"SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS, plus the modifier lead); the editor would out-run the guest",
             )
         if block.get("dialect") in KEYWORD_DIALECTS:
             validate_chord_pacing(row, block, drain, errors)
@@ -148,23 +161,46 @@ def validate_type_in(rows: list[dict[str, Any]], errors: list[str]) -> None:
 def validate_chord_pacing(row: dict[str, Any], block: dict[str, Any], drain: int, errors: list[str]) -> None:
     """A keyword-entry station is typed in CHORDS (modifiers + one key, or a
     modifiers-only E/FUNCTION prefix). The key module applies a chord's
-    modifiers in the same pass as its key, releases them with it after
-    SH_KEY_MIN_HOLD_MS, and admits the next press SH_KEY_MIN_GAP_MS later, so
-    one chord drains in hold+gap -- the same budget as one character. Every
-    wait that precedes a chord must cover it, the ENTER settles included, or
-    the next chord's edges queue behind a chord still in flight.
+    modifiers with its key and releases them with it, so one chord drains in
+    the same budget as one character (drain_ms). Every wait that precedes a
+    chord must cover it, the ENTER settle included (settleAfter only ever
+    lengthens it), or the next chord's edges queue behind a chord still in
+    flight.
     """
     enter = block.get("enterDelayMs", SPA_DEFAULT_ENTER_DELAY_MS)
-    for key, value in (("enterDelayMs", enter), ("newDelayMs", block.get("newDelayMs", enter))):
-        if isinstance(value, int) and value < drain:
-            fail(
-                errors,
-                row,
-                f"typeIn.{key}={value} is below one chord ({drain} ms = SH_KEY_MIN_HOLD_MS + "
-                f"SH_KEY_MIN_GAP_MS); the next line's first chord would land on the ENTER still in flight",
-            )
+    if isinstance(enter, int) and enter < drain:
+        fail(
+            errors,
+            row,
+            f"typeIn.enterDelayMs={enter} is below one chord ({drain} ms = SH_KEY_MIN_HOLD_MS + "
+            f"SH_KEY_MIN_GAP_MS, plus the modifier lead); the next line's first chord would land on the ENTER "
+            f"still in flight",
+        )
     if "case" in block:
         fail(errors, row, "typeIn.case on a keyword-entry dialect: the keyword transcoder owns letter case")
+
+
+def _check_settle_and_reach(row: dict[str, Any], block: dict[str, Any], errors: list[str]) -> None:
+    """`settleAfter` (extra ENTER settle after a named direct command) and
+    `unreachable` (ASCII the station's keymap cannot produce)."""
+    settle = block.get("settleAfter")
+    if settle is not None:
+        if not isinstance(settle, dict) or not settle:
+            fail(errors, row, "typeIn.settleAfter must be a non-empty object of command -> ms")
+        else:
+            for command, ms in settle.items():
+                if not (isinstance(command, str) and 0 < len(command) <= 40 and PRINTABLE.fullmatch(command)):
+                    fail(errors, row, f"typeIn.settleAfter key {command!r} must be a short printable-ASCII line")
+                if command != command.strip().upper():
+                    fail(errors, row, f"typeIn.settleAfter key {command!r} must be trimmed upper case (matching is)")
+                if not isinstance(ms, int) or isinstance(ms, bool) or not 0 <= ms <= 60000:
+                    fail(errors, row, f"typeIn.settleAfter[{command!r}]={ms!r} must be an integer 0..60000 ms")
+    reach = block.get("unreachable")
+    if reach is not None:
+        if not isinstance(reach, str) or not reach or not PRINTABLE.fullmatch(reach):
+            fail(errors, row, "typeIn.unreachable must be a non-empty string of printable ASCII")
+        elif len(set(reach)) != len(reach) or re.search(r"[A-Za-z0-9 ]", reach):
+            fail(errors, row, "typeIn.unreachable lists each symbol once, and never a letter, digit or space")
 
 
 def _example_errors(os_id: str, folder: Any, block: dict[str, Any], doc: Any) -> tuple[list[str], dict | None]:
@@ -218,11 +254,19 @@ def _example_errors(os_id: str, folder: Any, block: dict[str, Any], doc: Any) ->
         lines = text[:-1].split("\n") if text.endswith("\n") else text.split("\n")
         if not any(line.strip() for line in lines):
             problems.append(f"{where}/{name}: empty program")
+        elif lines[0].strip().upper() == CLEAR_COMMAND:
+            problems.append(
+                f"{where}/{name}:1: starts with NEW -- drop it: the editor types NEW before every run "
+                "(its 'clear the old program first' option), so a listing carries only its own lines"
+            )
         for number, line in enumerate(lines, start=1):
             if not PRINTABLE.fullmatch(line):
                 problems.append(f"{where}/{name}:{number}: only printable ASCII and LF line ends (no tabs, no CR)")
             elif line != line.rstrip(" "):
                 problems.append(f"{where}/{name}:{number}: trailing spaces")
+            elif set(line) & set(block.get("unreachable", "")):
+                bad = "".join(sorted(set(line) & set(block["unreachable"])))
+                problems.append(f"{where}/{name}:{number}: {bad!r} has no key on this machine (typeIn.unreachable)")
             elif isinstance(max_chars, int) and len(line) > max_chars:
                 problems.append(
                     f"{where}/{name}:{number}: {len(line)} characters, over this machine's "

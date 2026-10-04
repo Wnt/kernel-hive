@@ -168,11 +168,22 @@ on-screen keyboard, since it shares the same wire record):
   interleave into a stuck-key state.
 
 The MPF-II's 8×8 matrix is also not laid out like a PC's: `=` is Shift+O, `-` is
-Shift+I, `+` is Shift+P, and the shifted number row is offset by one (Shift+8/9/0
-give `( ) *`). Untranslated, `=` and `-` vanish — those PC keys have no matrix
-position — and brackets land one key over. The registry entry's
-`spa.demoProgram.keyMap` translates them; the pairings come from the `PORT_CHAR`
-declarations in `src/mame/apple/tk2000.cpp`.
+Shift+I, `+` is Shift+P, `^` is Shift+K, `@` is Shift+L, and the shifted number
+row follows the machine, not a PC (Shift+2 `"`, Shift+6 `&`, Shift+7 `'`,
+Shift+8/9/0 `( ) *`). The colon key is `:` unshifted and `;` shifted, and the
+slash key is `?` unshifted and `/` shifted — both the reverse of a PC. Untranslated,
+`=`, `-` and `"` vanish (those PC keys have no matrix position) and the rest land
+one key over. The registry entry's `keyboard.charMap` translates all of them for
+typed text (the demo and the type-in editor); every pair was read back on the
+framebuffer on 2026-10-04, from the `PORT_CHAR` declarations in
+`src/mame/apple/tk2000.cpp`.
+
+**Typed lines must stay within 38 characters.** The ROM paints text into the
+hires bitmap and scrolls it in software; while a scroll runs, the CPU-scanned
+keyboard is not read and keys are lost. A typed line that wraps past column 39
+at the bottom of the screen dropped the next one or two characters (`CANNOT`
+arrived as `CAOT`, measured 2026-10-04). The same applies to a key pressed while
+a program is printing: the machine has no type-ahead buffer.
 The certified proof types `PTRON` (a valid BASIC function returning TRUE/-1),
 presses Return, and visibly renders the result in the MPF-II framebuffer.
 

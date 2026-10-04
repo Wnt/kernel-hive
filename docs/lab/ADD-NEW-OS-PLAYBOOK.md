@@ -934,6 +934,22 @@ The UI's shift latch already has the right shape (shift as a separate
 `sendKey`, paced by `SH_KEY_MIN_HOLD_MS`); the trap lives in the ad-hoc
 XTEST/`send-key` helpers written during a bring-up.
 
+*On a host-native MAME or VICE station the lead is a fixture knob:
+`SH_KEY_MOD_LEAD_MS`.* `typeText()` still sends Shift and the key
+milliseconds apart, and the key modules used to apply both in the same
+instant. On the QL that lost every shifted character, and on the VICE machines
+the KERNAL's scan tore the latch and read `:` as `[`. With the knob set, the
+module (`ctlsock`, `vicectl`) holds a key press until the Shift level in front
+of it has been visible that long, and on VICE it also puts the level the key
+needs (deshift, virtual shift) in front of it. It needs a binary built with the
+knob. Measure it like the pacing: a listing dense in shifted characters,
+read back byte for byte, with the lead raised until it is clean, then a margin
+on top. sinclairql's threshold is 2 ms and it ships 20; VICE is safe by
+construction at two frames and ships 40. A station that leaves it unset keeps
+the old engine. `oricatmos` is measured as exposed (about one shifted character
+in 150 typed unshifted) and has no value yet. See
+[`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead).
+
 **Turn X's auto-repeat OFF in any kiosk driven by synthetic keys — before you
 touch the pacing at all.** On the Oric Atmos add (2026-08-09) the pacing was
 never the problem. Every key a kiosk sees is an injected press/release

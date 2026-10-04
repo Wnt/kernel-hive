@@ -32,12 +32,6 @@ export function linesToType(text: string): string[] {
   return cleanListing(text).split('\n').filter((line) => line.trim().length > 0);
 }
 
-/** A line that is just NEW: the machine clears (and may re-test) its memory and
- *  ignores the keyboard meanwhile, hence `typeIn.newDelayMs`. */
-export function isNewCommand(line: string): boolean {
-  return /^\s*new\s*$/i.test(line);
-}
-
 // Typographic look-alikes with an exact ASCII meaning. Anything not here
 // (accented letters, £, π, block graphics) stays an issue: guessing would put
 // a different program into the machine.
@@ -75,13 +69,13 @@ export interface ListingCheck {
   readonly keywordIssues: readonly (KeywordIssue & { readonly line: number })[];
   /** Lines the typist would send. */
   readonly lines: readonly string[];
-  /** Keystrokes per typed line: characters, or chords on a keyword machine. */
-  readonly keystrokes: readonly number[];
 }
 
 export function checkListing(
-  text: string, config: Pick<TypeInConfig, 'maxLineChars'>, spec: DialectSpec, keywords?: KeywordMachine,
+  text: string, config: Pick<TypeInConfig, 'maxLineChars' | 'unreachable'>, spec: DialectSpec,
+  keywords?: KeywordMachine,
 ): ListingCheck {
+  const unreachable = config.unreachable ?? '';
   const bad: string[] = [];
   const badLines: number[] = [];
   const longLines: number[] = [];
@@ -90,7 +84,7 @@ export function checkListing(
   cleanListing(text).split('\n').forEach((line, index) => {
     let lineBad = false;
     for (const ch of line) {
-      if (isTypable(ch)) continue;
+      if (isTypable(ch) && !unreachable.includes(ch)) continue;
       lineBad = true;
       if (!bad.includes(ch)) bad.push(ch);
     }
@@ -112,8 +106,22 @@ export function checkListing(
     braceLines,
     keywordIssues,
     lines,
-    keystrokes: lines.map((line) => (keywords ? transcodeLine(line, keywords).chords.length : line.length)),
   };
+}
+
+/** Keystrokes per line for the estimate: characters, or chords on a
+ *  keyword-entry machine. */
+export function keystrokeCounts(lines: readonly string[], keywords?: KeywordMachine): number[] {
+  return lines.map((line) => (keywords ? transcodeLine(line, keywords).chords.length : line.length));
+}
+
+/** The run's lines with the dialect's clear command (NEW) in front, so a
+ *  listing never merges with whatever program was in memory — an example's
+ *  lines would otherwise keep the previous program's lines wherever their
+ *  numbers differ. Not doubled when the listing already starts with it. */
+export function withClearFirst(lines: readonly string[], spec: DialectSpec, on: boolean): string[] {
+  if (!on || !lines.length || lines[0].trim().toUpperCase() === spec.clearCommand) return [...lines];
+  return [spec.clearCommand, ...lines];
 }
 
 /** Fold the letters of BASIC CODE, leaving literals (strings, REM, DATA, `'`
@@ -148,7 +156,7 @@ export function applyCase(line: string, rule: TypeInCase | undefined, spec: Dial
 }
 
 /** How long typing takes at this pace, given each line's keystroke count
- *  (ListingCheck.keystrokes), for the "about 2 min" estimate. */
+ *  (keystrokeCounts), for the "about 2 min" estimate. */
 export function estimateMs(
   keystrokes: readonly number[],
   pace: { perCharMs: number; lineDelayMs: number; enterDelayMs: (index: number) => number },

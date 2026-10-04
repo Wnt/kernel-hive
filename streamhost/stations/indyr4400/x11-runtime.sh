@@ -223,6 +223,15 @@ reap_previous() {
   sleep 0.5
   [ -z "$(station_emu_pids)" ]
 }
+# Stop the previous container cleanly (init SIGKILLed, nspawn then unmounts its own
+# unix-export), and record its init for the sweep below. scripts/lib/nspawn-unix-export.sh.
+# shellcheck source=/dev/null
+. /usr/local/lib/nspawn-unix-export.sh || {
+  echo "indyr4400[$TILE]: /usr/local/lib/nspawn-unix-export.sh missing — box-deploy --apply installs it" >&2
+  exit 1
+}
+PREV_INIT="$(nspawn_init_pids "$(cat "$NPIDFILE" 2>/dev/null || true)")"
+nspawn_stop_container "$(cat "$NPIDFILE" 2>/dev/null || true)" || true
 reap_previous ||
   die "previous iris still alive after SIGKILL: $(station_emu_pids | tr '\n' ' ')— refusing to start a second one into one mapping"
 rm -f "$PIDFILE" "$XPIDFILE" "$NPIDFILE"
@@ -301,6 +310,14 @@ fi
 # --as-pid2: nspawn's stub init is PID 1 and reaps; nspawn-inner.sh is PID 2 and
 # execs Iris, so Iris's exit ends the container. --keep-unit: stays in the
 # caller's BindsTo scope, so `systemctl stop streamhost@<tile>` sweeps it.
+# Sweep any container init the reap above orphaned (a TERMed supervisor leaves its
+# stub init, `script` wrapper and Xvfb running), then wait out nspawn's
+# asynchronous unix-export teardown, force-clear a stale mount, and refuse if a
+# live container holds the name (scripts/lib/nspawn-unix-export.sh).
+# shellcheck disable=SC2086 # PREV_INIT is a pid list
+nspawn_sweep_init $PREV_INIT || exit 1
+nspawn_export_clear "$MACHINE" || exit 1
+
 nohup systemd-nspawn \
   --quiet --register=no --keep-unit --as-pid2 \
   --machine="$MACHINE" --uuid="$(printf '%032x' "$UIDBASE")" \

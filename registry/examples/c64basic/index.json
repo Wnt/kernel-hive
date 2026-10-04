@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Diamond Rings",
+      "description": "All sixteen C64 colours as diamond rings, poked a cell at a time into screen memory at 1024 and colour memory at 55296 (BASIC V2 has no graphics commands); it takes about half a minute, then press any key to finish."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Border Colours",
+      "description": "Type a colour number from 0 to 15 and the program POKEs it into the VIC-II's border register at 53280 and tells you its name; -1 stops."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Quick Draw",
+      "description": "Wait for the screen to turn red, then press a key as fast as you can; BASIC times you with its jiffy clock, and a key pressed too early is a false start."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Commodore 64 User's Guide",
+      "url": "https://www.zimmers.net/anonftp/pub/cbm/manuals/c64/C64_Users_Guide.pdf",
+      "lang": "en",
+      "note": "The manual that came in the box: setting up, the keyboard, and BASIC from the first PRINT. PDF scan."
+    },
+    {
+      "title": "Commodore 64 Programmer's Reference Guide",
+      "url": "https://www.zimmers.net/anonftp/pub/cbm/manuals/c64/C64_Programmers_Reference_Guide.pdf",
+      "lang": "en",
+      "note": "Every BASIC V2 keyword, the memory map, the VIC-II, the SID and machine code. PDF scan of the 1984 printing."
+    }
+  ]
+}

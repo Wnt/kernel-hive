@@ -132,7 +132,7 @@ export function TypeInEditor({ model, displayName, onClose }: {
   } else if (run === 'done') {
     status = (
       <span className="ti-ok">
-        Typed {plural(check.lines.length, 'line')}. Click the picture, {spec.runHint ?? 'type RUN and press RETURN'}.
+        Typed {plural(model.runLines, 'line')}. Click the picture, {spec.runHint ?? 'type RUN and press RETURN'}.
       </span>
     );
   } else if (run === 'stopped' && progress) {
@@ -142,7 +142,7 @@ export function TypeInEditor({ model, displayName, onClose }: {
   } else if (run === 'error') {
     status = <span className="ti-err">Typing failed. Try again.</span>;
   } else if (check.lines.length) {
-    status = <span>{plural(check.lines.length, 'line')} · about {formatDuration(model.estimateMs)}</span>;
+    status = <span>{plural(model.runLines, 'line')} · about {formatDuration(model.estimateMs)}</span>;
   }
 
   return (
@@ -186,7 +186,12 @@ export function TypeInEditor({ model, displayName, onClose }: {
         <pre ref={preRef} className="ti-hl" aria-hidden="true">
           {lines.map((line, i) => (
             <span key={i}>
-              <Tokens tokens={markOverflow(markBad(highlightLine(line, spec), issueRanges.get(i + 1) ?? []), config.maxLineChars)} />
+              <Tokens
+                tokens={markOverflow(
+                  markBad(highlightLine(line, spec, config.unreachable), issueRanges.get(i + 1) ?? []),
+                  config.maxLineChars,
+                )}
+              />
               {'\n'}
             </span>
           ))}
@@ -263,6 +268,15 @@ export function TypeInEditor({ model, displayName, onClose }: {
             </button>
           )}
         </div>
+        <label className="ti-check">
+          <input
+            type="checkbox"
+            checked={model.clearFirst}
+            disabled={typing}
+            onChange={(e) => model.setClearFirst(e.target.checked)}
+          />
+          Clear the machine's old program first ({spec.clearCommand})
+        </label>
         {!typing && model.blocked && model.blocked !== 'Nothing to type yet' && (
           <p className="ti-note">{model.blocked}.</p>
         )}

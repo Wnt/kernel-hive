@@ -1,4 +1,3 @@
-NEW
 10 REMark Mirror writer
 20 MODE 4:WINDOW 512,200,0,0:PAPER 0:INK 4:CLS
 30 INPUT "Type a word: ";w$

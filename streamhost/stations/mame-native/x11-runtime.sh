@@ -153,6 +153,12 @@ export MAME_NO_UI=1
 # module defaults (100/50, IRIX's) are the fallback.
 [ -n "${SH_KEY_MIN_HOLD_MS:-}" ] && export MAME_CTL_KEY_HOLD="$SH_KEY_MIN_HOLD_MS"
 [ -n "${SH_KEY_MIN_GAP_MS:-}" ] && export MAME_CTL_KEY_GAP="$SH_KEY_MIN_GAP_MS"
+# The modifier lead: a key press waits this long after the last Shift/Ctrl
+# edge reached the matrix, so the guest's own scan sees the level before the
+# key it modifies (typeText() sends both back to back). Measured per station;
+# unset keeps the module's 0 = no lead. A binary that predates the knob
+# ignores it.
+[ -n "${SH_KEY_MOD_LEAD_MS:-}" ] && export MAME_CTL_KEY_MOD_LEAD="$SH_KEY_MOD_LEAD_MS"
 export SDL_VIDEODRIVER=dummy
 unset DISPLAY
 

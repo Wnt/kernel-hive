@@ -1,4 +1,3 @@
-NEW
 10 REM Rainbow fan
 20 MODE 4: PAPER 0: CLS
 30 FOR x=0 TO 255 STEP 8

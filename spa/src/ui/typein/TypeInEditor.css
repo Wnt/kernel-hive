@@ -89,6 +89,8 @@
 .ti-status { flex: 1; min-width: 0; color: var(--ink-soft); font-size: 12px; }
 .ti-bar { height: 4px; border-radius: 2px; background: var(--paper-sunken); overflow: hidden; }
 .ti-bar > span { display: block; height: 100%; background: var(--accent); transition: width 160ms linear; }
+.ti-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); cursor: pointer; }
+.ti-check input { margin: 0; width: 16px; height: 16px; accent-color: var(--accent); }
 .ti-manuals { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--ink-muted); }
 .ti-manuals a { color: var(--accent-ink); }
 .ti-issues { margin: 4px 0 0; padding-left: 18px; }
