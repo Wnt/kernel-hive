@@ -77,11 +77,16 @@ one character late — `echo Apollo DN3500 Domain/OS SR10.4.1` arrived as
 `APollo dN#500 - dOmain/Os sr!0.4.1`. At ~180 ms per edge the same line typed
 byte-perfect, twice.
 
-The shifted number row is **DEC-style, not US**: shift-2 is `"`, shift-6
-`&`, shift-7 `'`, shift-8 `(`, shift-9 `)`, shift-0 nothing; the key a US
-board calls `'` is `:`/`*`, and the backtick key is `~`/`'`. `@` and `^` sit
-on a real Apollo key the generated keymap does not carry, so they are
-**unavailable**.
+The shifted number row was measured at bring-up as **DEC-style, not US**:
+shift-2 `"`, shift-6 `&`, shift-7 `'`, shift-8 `(`, shift-9 `)`, shift-0
+nothing; the key a US board calls `'` is `:`/`*`, and the backtick key is
+`~`/`'`; `@` and `^` unavailable. The station's `keyboard.charMap` encodes
+that table. **CONTRADICTED 2026-10-04:** typed slowly (every edge 300 ms
+apart) through that charMap into the DM `Command:` bar, `PRINT
+"A+B*C:D(E)$!";1+2*3` arrived as `PRINT @A+B"C'D*E($!@;1+2"3`: shift-2 gave
+`@`, shift-8 `*`, shift-9 `(`, shift-`'` `"`, as on a US board. Re-derive the
+table and the charMap from the current keymap before anything relies on
+them (§Open).
 
 MAME names Backspace, Tab and Return all `"Unnamed Key"` on this driver, so
 the daemon's name-only KEY lookup sent Backspace for every Enter — fixed by
@@ -186,6 +191,25 @@ after a restore — not before.
   exists at all.
 
 ## §Open
+- **The stage-menu demo does nothing on the golden (2026-10-04).** Its lines
+  (`cp /com/pst`, `cp /com/sh`) are typed without `F1`, so on the golden the
+  keys land in a read-only pad: the message area says `Text is read-only` and
+  nothing opens (the process display and `pad0001` on screen are part of the
+  golden itself). With `F1` first, `cp /com/pst` opened a new process pad
+  (`pad0003`); the second line needs `F1` again. A `demoProgram` is text
+  only and cannot press `F1`. The station is hidden, so this waits for a
+  key-prefix feature or a golden with the cursor in the `Command:` bar.
+- **Shift and overlapping keys (2026-10-04, not fixed).** With `F1` first and
+  the typists' shape (Shift and its key back to back), the old binary and a
+  build with a 10 ms modifier lead both lost Shift on many characters
+  (`PRINT` as `priNT`/`PrinT`, `*` as `8`). Keys pressed while the previous
+  one is still down reorder: `the quick brown fox` arrived as `the quick rbwon
+  fox ujpms`. The rigs ran at 0.66 to 0.79 of real time against the live
+  station's 0.838, below its own speed, so these runs do not measure the lead.
+  Nothing was shipped: the live binary and env are unchanged. Evidence:
+  `/data/vms/streamhost/stations/domainos/evidence/shift-lead-2026-10-04/`.
+- **The `charMap` is wrong for this build**, see §Keyboard: do not set
+  `keyboard.physical` here before it is re-derived.
 - **Pointer**: proven root cause, proven unlock mechanism, not yet
   implemented — see §Pointer above.
 - **Clock, and the disk's shelf life**: the guest's calendar reads 2003-01-10
