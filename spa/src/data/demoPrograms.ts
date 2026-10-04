@@ -59,6 +59,18 @@ const DEMO_PROGRAMS = {
     "runCommand": "hello",
     "perCharMs": 80
   },
+  "c64basic": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 print chr$(147)",
+      "20 x=int(rnd(1)*1000)",
+      "30 poke 1024+x,81",
+      "40 poke 55296+x,int(rnd(1)*16)",
+      "50 goto 20"
+    ],
+    "runCommand": "run",
+    "perCharMs": 170
+  },
   "cbm8032": {
     "label": "Type in a demo program",
     "lines": [
@@ -267,7 +279,10 @@ const DEMO_PROGRAMS = {
       "70 PEN 15: PRINT AT 0,6;\"SAM COUPE 1989\""
     ],
     "runCommand": "RUN",
-    "perCharMs": 260
+    "perCharMs": 260,
+    "enterDelayMs": [
+      2000
+    ]
   },
   "sinclairql": {
     "label": "Draw a rose in SuperBASIC",
@@ -441,6 +456,13 @@ const TYPE_IN = {
     "case": "unshifted",
     "maxLineChars": 160
   },
+  "c64basic": {
+    "dialect": "cbm-basic",
+    "perCharMs": 170,
+    "case": "unshifted",
+    "maxLineChars": 80,
+    "unreachable": "{}"
+  },
   "cbm2": {
     "dialect": "cbm-basic",
     "perCharMs": 170,
@@ -455,17 +477,25 @@ const TYPE_IN = {
   "dragon32": {
     "dialect": "color-basic",
     "perCharMs": 170,
-    "case": "unshifted"
+    "case": "unshifted",
+    "unreachable": "[\\]^_`{|}~"
+  },
+  "kc854": {
+    "dialect": "kc-basic",
+    "perCharMs": 260,
+    "hint": "First type BASIC and press ENTER twice to wake HC-BASIC."
   },
   "mpf2": {
     "dialect": "applesoft",
     "perCharMs": 70,
-    "case": "unshifted"
+    "case": "unshifted",
+    "unreachable": "[\\]_`{|}~"
   },
   "msx2": {
     "dialect": "msx-basic",
     "perCharMs": 260,
-    "case": "code-upper"
+    "case": "code-upper",
+    "unreachable": "\\`|~"
   },
   "oricatmos": {
     "dialect": "oric-basic",
@@ -486,7 +516,11 @@ const TYPE_IN = {
   "samcoupe": {
     "dialect": "sam-basic",
     "perCharMs": 260,
-    "hint": "Press B on the boot menu for SAM BASIC first."
+    "hint": "Press B on the boot menu for SAM BASIC first.",
+    "settleAfter": {
+      "NEW": 2000
+    },
+    "unreachable": "<>?[]{}\\|"
   },
   "sinclairql": {
     "dialect": "superbasic",
@@ -495,12 +529,14 @@ const TYPE_IN = {
   "svi328": {
     "dialect": "msx-basic",
     "perCharMs": 500,
-    "case": "code-upper"
+    "case": "code-upper",
+    "unreachable": "`|~"
   },
   "svi728": {
     "dialect": "msx-basic",
     "perCharMs": 260,
-    "case": "code-upper"
+    "case": "code-upper",
+    "unreachable": "\\`|~"
   },
   "vic20": {
     "dialect": "cbm-basic",

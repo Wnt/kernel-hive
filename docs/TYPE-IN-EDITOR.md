@@ -24,23 +24,24 @@ typing engine is `typeLines()` in
 The opt-in is DATA: a station gets the editor if its registry entry has a
 `typeIn` block, and for no other reason. There are no id checks in the SPA.
 
-| In (17) | Why |
+| In (19) | Why |
 |---|---|
-| vic20 pet2001 cbm8032 c128 plus4 cbm2 | Commodore BASIC at power-on |
+| vic20 c64basic pet2001 cbm8032 c128 plus4 cbm2 | Commodore BASIC at power-on (c64basic is the C64 that stops at READY; the GEOS `c64` stays out) |
 | bbcmicro armeval | BBC BASIC (armeval: ARM BASIC on the tube) |
 | msx2 svi728 svi328 | MSX-BASIC / SV BASIC at power-on |
 | amstradcpc | Locomotive BASIC |
 | dragon32 oricatmos mpf2 | Microsoft-family BASICs (Color, Oric, Applesoft-like) |
 | sinclairql | SuperBASIC |
 | samcoupe | SAM BASIC, one keypress away (the `hint` tells the visitor to press B first) |
+| kc854 | HC-BASIC, one typed command away (the `hint` tells the visitor to type BASIC and press ENTER twice; [details below](#kc-854-getting-into-hc-basic-and-what-basic-does-twice)) |
 
 | Out | Why |
 |---|---|
 | zxspectrum, zx81 | **Keyword entry.** One key *is* a keyword (P gives PRINT), so ASCII typed letter by letter arrives as garbage. The demo listing types keystroke form (`10 b1`) for exactly this reason. Supporting them needs a keyword transcoder, which is a follow-up; its measured design is [below](#keyword-transcoder-for-zxspectrum-and-zx81-measured-not-built). |
 | svi328cpm, svi738 | Boot to CP/M; MBASIC has to be loaded first (their demo listings do that with a 20 s settle). |
-| kc854 | Boots to the CAOS 4.2 command menu. HC-BASIC is one typed command away, proven on a rig on 2026-10-04: `BASIC` + ENTER gives `MEMORY END ? :`, a bare ENTER gives `47854 BYTES FREE` / `OK`, and `10 PRINT "KC 85/4: ";6*7` typed through the existing `charMap` at 260 ms/char RUNs to `KC 85/4:  42`. The open question is the two-line preamble: a `typeIn` field for it, or examples that begin with `BASIC` and an empty line. Typing `BASIC` when HC-BASIC is already running is untested. |
 | atari800xl, apple2e | Boot to a menu or a DOS, not to an interpreter. |
-| c64, apple2, msxturbor | Boot to GEOS / MSX View desktops. |
+| c64 | Boots to the GEOS deskTop, not to BASIC. The C64 with the editor is its sibling [`c64basic`](guests/c64basic.md): the same x64sc binary, stopped at the BASIC V2 READY prompt. |
+| apple2, msxturbor | Boot to GEOS / MSX View desktops. |
 
 **A station without validated pacing never gets the editor.** The validator
 refuses a `typeIn` block on a station whose env does not declare
@@ -64,8 +65,10 @@ nothing to validate the editor's pace against.
 | `perCharMs` | **Required.** The wait after every typed character. Must be ≥ hold+gap (`scripts/stations_registry/validate_typein.py`). It is never defaulted: the demo may fall back to the SPA's 70 ms, but the editor may not. |
 | `lineDelayMs` / `enterDelayMs` | The pause before a line's ENTER and the settle after it, for BASIC to tokenise. They default to the demo typist's 260 / 600 ms. **These three numbers are the tuning surface for long listings.** Change them here, never in a component. |
 | `case` | How letters become keystrokes (below). |
-| `maxLineChars` | The machine's logical line length. The editor strikes through what the screen editor would cut off. Declared only where the number is certain (VIC-20 88, PET/8032 80, C128 160). |
+| `maxLineChars` | The machine's logical line length. The editor strikes through what the screen editor would cut off. Declared only where the number is certain (VIC-20 88, PET/8032 80, C64 80, C128 160). |
 | `hint` | One sentence above the Type button, for a step the machine needs first. |
+| `settleAfter` | A longer ENTER settle after a named direct command, keyed by the whole line in upper case. On samcoupe, `{"NEW": 2000}`: `NEW` redraws the MGT banner, and that eats the next key. With the default 600 ms, line 10 was lost in 4 of 7 runs; with 1.5 s it was lost in 1 of 7 (examples-sinclair rig, `tl-06…08.png`). The SAM demo listing waits 2 s after its own `NEW` (`demoProgram.enterDelayMs: [2000]`). |
+| `unreachable` | Printable ASCII that the station's keymap cannot produce. On samcoupe these are `< > ? [ ] { } \` and the vertical bar; on c64basic `{ }` (VICE's C64 keymap has no braces, and they vanish). The editor paints these red and blocks typing, exactly as it does for non-ASCII. The examples validator refuses them too. |
 
 `stations-registry.py new --like` does **not** copy `typeIn`. The dialect and
 case rule are facts about the sibling's interpreter, so a new machine opts in
@@ -78,10 +81,10 @@ wrong on most of these machines:
 
 | `case` | What reaches the guest | Stations |
 |---|---|---|
-| `unshifted` | every letter goes down unshifted | vic20 pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos (CAPS LOCK on at reset, so Shift+letter gives *lower* case and BBC BASIC answers `Mistake`); dragon32 mpf2 (no lower case) |
+| `unshifted` | every letter goes down unshifted | vic20 c64basic pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos (CAPS LOCK on at reset: every letter arrives upper case whichever way it is sent, so unshifted is simply the demo listings' proven path; lower case inside a string is out of reach either way); dragon32 mpf2 (no lower case) |
 | `code-lower` | letters outside strings, REM and DATA go down unshifted; literals keep the visitor's case | cbm8032 cbm2 (business keyboard, text mode: unshifted is lower case, and BASIC wants it) |
 | `code-upper` | code is upper-cased, literals kept | msx2 svi728 svi328 (the proven demo path) |
-| `as-typed` (default) | unchanged | amstradcpc sinclairql samcoupe |
+| `as-typed` (default) | unchanged | amstradcpc sinclairql samcoupe kc854 |
 
 The station `keyboard` block (`charMap`, `letterCase`) is applied after the
 case rule, exactly as for the demo listing.
@@ -107,19 +110,26 @@ pre-push gate) checks the following:
 - `kind` is one of `draw input game sound other`;
 - every listed file exists, and every `.bas`/`.txt` file in the folder is listed;
 - the files are printable ASCII and LF only, with no tabs, CRs or trailing spaces;
-- lines fit `maxLineChars`;
+- lines fit `maxLineChars` and use no `unreachable` symbol;
+- the first line is not `NEW` (see below);
 - manual URLs are `https://` and `lang` is a two-letter code.
 
 A station with no folder simply has no examples. That is never an error.
 
-The editor types exactly the file and sends nothing else, so `NEW` is part of
-the listing where a machine may already hold a program. The SAM Coupé must
-start with `NEW`: after B the boot menu's own program is still in memory, and
-its stray lines (85, 9000) would interleave with an example. The QL examples
-start with `NEW` too, so a second example does not inherit the first one's
-higher line numbers. Line 10 of those listings is a REM title on purpose. If a
-machine eats the first key after `NEW` (the SAM does, below), the worst case is
-a lost title, not a lost statement.
+**The editor clears the machine first.** A program typed over another keeps
+the old program's lines wherever the new one does not reuse their numbers.
+That happens to the second example a visitor opens, and to the SAM's boot-menu
+program (lines 85 and 9000 survive pressing B). So a run starts with the
+dialect's `NEW` (`clearCommand` in `basicDialects.ts`; it is `NEW` in all ten, HC-BASIC included).
+The panel's "Clear the machine's old program first" checkbox controls it. It is
+on by default and turns back on whenever an example or a file is opened. A
+visitor adding lines to a program already in memory can untick it. A listing
+that already starts with `NEW` (the SAM and SV-328 demo listings) does not get
+a second one. Example files therefore never carry `NEW`, and the validator
+refuses one that does, so the editor is the one place it comes from.
+Line 10 of the SAM and QL examples is a REM title on purpose: if a machine
+still eats a key after `NEW`, the worst case is a lost title, not a lost
+statement.
 
 Examples and manuals are **runtime content**. They are rendered into
 `poster-docs.json` as a top-level `typeIn` key, a sibling of `posters`, and
@@ -259,6 +269,13 @@ editor's edges at 170 ms per character, then read back byte for byte from a
 | cbm8032 | 5 bad lines in 3 passes | 0 in 3 |
 | c128 | 6 bad lines in 3 passes | 0 in 3 |
 
+The C64 is exposed the same way, at a higher rate. On c64basic (2026-10-04,
+a rig of the station's own x64sc and golden) a 10-line stress listing with 44
+such characters a pass lost about one in 20 at 60/60 (12 bad lines of 60), and
+still 10 of 30 at 100/100, while the same keysyms sent without a Shift edge
+lost none. Slowing the pacing down does not help, because the tear is not a
+pacing fault. c64basic needs the same binary and knob, and has neither yet.
+
 Two frames is the shipped value because it is the smallest one that is safe by
 construction rather than by luck. VICE latches an event at most about a frame
 and 1,000 cycles after it is pushed, so with a two-frame lead a whole frame
@@ -274,7 +291,9 @@ modifier key, and the queue empties within about a frame.
 ### SAM Coupé: what the typist cannot reach, and what NEW does
 
 **Keys a US typist cannot produce on the SAM.** `<` `>` `?` `[` `]` `{` `}`
-`\` `|` have no `charMap` entry. Typed anyway, `<` lands as `,`, `>` as `.`,
+`\` `|` have no `charMap` entry, so the station declares them in
+`typeIn.unreachable`. The editor paints them red and will not type a listing
+holding one, and the examples validator refuses them. Typed anyway, `<` lands as `,`, `>` as `.`,
 `?` toggles inverse video (the INV key), and `[` / `]` land as `=` / `"`. The
 SAM examples avoid them all and compare with `SGN`. Everything else in the
 `charMap`, including capitals, landed exactly through the `typeText()` path
@@ -289,9 +308,53 @@ that keypress is the `1` of line `10`. The SAM then rejects `0 REM …` with
 A frame-by-frame capture shows the banner up from 0.1 s to at least 0.5 s
 after the ENTER, and gone once the `1` arrives at 0.6 s. It happened in 4 of
 the 7 runs at 600 ms. Waiting 1.5 s or more after `NEW` avoided it in 6 of 7
-runs; the seventh is unexplained. A per-line settle after `NEW` (at least 2 s) is
-the fix, and it belongs in `typeIn`, not in the listings. The station's demo
-listing (`NEW`, then `10 MODE 4`) is exposed to the same loss.
+runs; the seventh is unexplained. **Fixed in `typeIn`, not in the listings:**
+`settleAfter: {"NEW": 2000}` makes the editor wait 2 s after the `NEW` it
+types, and the station's demo listing (`NEW`, then `10 MODE 4`) waits 2 s
+after its own `NEW` (`demoProgram.enterDelayMs: [2000]`).
+
+### MPF-II, Dragon 32 and the MSX family: punctuation and the MPF-II scroll
+
+**The MPF-II `charMap` used to drop quotes.** It covered only `= - + ( ) *`.
+A typed `"` went to the PC apostrophe key, which has no matrix position on the
+MPF-II, so it vanished; `:` and `;` came out swapped, as did `/` and `?`, and
+`&` / `'` landed one key along. Every `PRINT "…"` and every multi-statement
+line was wrong. The map now carries all of them, each read back on a rig
+framebuffer on 2026-10-04 (`docs/guests/mpf2.md`).
+
+**The MPF-II loses keys while it scrolls.** Its text is painted into the hires
+bitmap and scrolled in software, and the keyboard is not scanned meanwhile.
+When a typed line wrapped past column 39 at the bottom of the screen, the next
+one or two characters were lost (`CANNOT` arrived as `CAOT`, and a `:` after a
+closing quote disappeared). The MPF-II examples keep every line within 38
+characters. A visitor's longer line is still exposed: a pause in the typist at
+the wrap column, or `maxLineChars: 38` (which would strike text the machine
+does not actually cut off), are the two candidate fixes. Keys pressed while a
+program prints are lost the same way; there is no type-ahead buffer.
+
+**`unreachable` for the five Microsoft-BASIC stations** was derived from each
+keymap and checked on the framebuffer for msx2 and svi328. On the MSX keyboards
+the PC backslash key is the MSX backtick key and the PC backtick is a dead key,
+so backslash, vertical bar, backtick and tilde cannot be typed (MSX BASIC's
+integer-division `\` included); the SV-328 loses only the last three. The
+Dragon 32 also cannot reach `[ ] ^ _ { }`: its `^` lives on the up-arrow key,
+and a typed `^` arrives as `&`. The MPF-II has no `[ ] _ { }` either.
+
+### KC 85/4: getting into HC-BASIC, and what BASIC does twice
+
+**Proven on a sandbox rig of the station's own MAME binary and 80/80 pacing, 2026-10-04**, typing through the registry `charMap` at the editor's 260 ms/char with 260/600 ms line and ENTER settles.
+
+**The way in.** The machine boots to the CAOS 4.2 menu. `BASIC` + ENTER answers `MEMORY END ? :`, and a bare ENTER accepts the default: `47854 BYTES FREE`, `OK`. That is the `hint` ("First type BASIC and press ENTER twice to wake HC-BASIC."). The registry carries no preamble field, and the examples do not start with `BASIC`.
+
+**`BASIC` typed again inside HC-BASIC is harmless.** HC-BASIC reads it as a variable name and answers `?SN ERROR` / `OK`; the next bare ENTER is an empty line (a program in memory was not tried). A visitor who follows the hint twice loses nothing. (To leave and come back with the program kept, CAOS has `REBASIC`; `BYE` leaves HC-BASIC. The BASIC-Handbuch chapter 1 documents both.)
+
+**Case.** The case rule is `as-typed`. The KC's unshifted letters are capitals, and the station `charMap` swaps the case, so a capital listing arrives unshifted. HC-BASIC also accepts keywords in lower case (`print 1+2` printed 3), so a visitor's lower-case code does not break either.
+
+**The dialect.** The `kc-basic` word list is read from the two token tables in the shipping ROMs: the 8 KB BASIC ROM, and CAOS 4.2's extension table (`CLS`, `PSET`, `PRESET`, `LINE`, `CIRCLE`, `LOCATE`, `INKEY$`, `COLOR`, `INK`, `PAPER`, `BEEP`, `SOUND` and others). Graphics coordinates are 320 by 256 with `y` counted up from the bottom; the colour is the last argument (`CIRCLE x,y,r,c`, 2 red, 4 green, 6 yellow, 7 white). `LOCATE` takes row, then column. `INPUT` works only inside a program (direct mode gives `?ID ERROR`).
+
+**Traps found.** `THEN END ELSE 20` is a `?SN ERROR`; use two lines. `LIST` of a long program stops when the screen fills and swallows the next keys until one is typed, so type something harmless before `RUN`.
+
+**Examples (`registry/examples/kc854/`).** Each was typed whole with the editor's timing and read off the framebuffer: *Rainbow target* draws six coloured rings and a crosshair; *Times table* asks for a number and prints its ten-times table (typed 7, got 7 x 1 = 7 down to 7 x 10 = 70); *Stop the dot* stops on a key (OFF BY 7 and OFF BY 2 in two rounds), replays on any key and ends cleanly on N. The manuals are the original German BASIC-Handbuch and Systemhandbuch (1988).
 
 ### Keyword transcoder for zxspectrum and zx81 (measured, not built)
 

@@ -1,0 +1,42 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Sunset over the sea",
+      "description": "Mixes its own orange with COLOR= and paints a setting sun and its reflection in SCREEN 5, the MSX2's 16-colour bitmap mode; press any key to return to BASIC."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Times table",
+      "description": "Asks which times table you would like and prints it from 1 to 10, lined up in columns with PRINT USING."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Catch the star",
+      "description": "Move the basket with the cursor keys to catch the falling stars; after three misses, press Space to play again."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Philips NMS 8250 Computer - Gebruiksaanwijzing",
+      "url": "https://archive.org/details/philips-nms-8250-computer-gebruiksaanwijzing",
+      "lang": "nl",
+      "note": "Owner's manual for this machine (1986), in Dutch; Internet Archive scan"
+    },
+    {
+      "title": "A Guide to MSX-BASIC Version 2.0",
+      "url": "https://archive.org/details/AGuideToMSXVersion2.0",
+      "lang": "en",
+      "note": "MSX2 BASIC guide and reference chart (Sony, 1985); the same BASIC family as this machine's; Internet Archive scan"
+    },
+    {
+      "title": "Kaikkien MSX",
+      "url": "https://ftp.kameli.net/pub/misc/Kaikkien_MSX-Amersoft-ocr.pdf",
+      "lang": "fi",
+      "note": "Finnish introduction to MSX and MSX-BASIC (Amersoft, 1985), PDF scan, about 60 MB"
+    }
+  ]
+}

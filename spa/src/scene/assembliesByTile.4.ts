@@ -14,4 +14,9 @@ export const ASSEMBLIES_BY_TILE_4 = {
     kind: 'pizzaBox', body: 'pizzaBoxB', monitor: 'homeCrtD',
     mouse: 'paramMouseA',
   },
+  // A second breadbin C64 on a different CRT, and no mouse: at the BASIC
+  // prompt the machine is keyboard-only (the c64 scene keeps GEOS's mouse).
+  c64basic: {
+    kind: 'homeMicro', body: 'c64A', monitor: 'homeCrtB',
+  },
 } as const satisfies Record<string, Assembly>;

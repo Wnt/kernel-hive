@@ -189,7 +189,7 @@ export interface GuestKeyboard {
  *  keyword lists in ui/typein/basicDialects.ts). */
 export type BasicDialect =
   | 'cbm-basic' | 'bbc-basic' | 'msx-basic' | 'locomotive-basic' | 'superbasic'
-  | 'sam-basic' | 'oric-basic' | 'color-basic' | 'applesoft';
+  | 'sam-basic' | 'oric-basic' | 'color-basic' | 'applesoft' | 'kc-basic';
 
 /** How letters become keystrokes (registry `typeIn.case`). */
 export type TypeInCase = 'as-typed' | 'unshifted' | 'code-upper' | 'code-lower';
@@ -208,6 +208,11 @@ export interface TypeInConfig {
   readonly maxLineChars?: number;
   /** One sentence shown above the Type button (a step the machine needs first). */
   readonly hint?: string;
+  /** Longer ENTER settles for named direct commands (whole line, upper case):
+   *  samcoupe's NEW redraws the MGT banner and eats the next key. */
+  readonly settleAfter?: Readonly<Record<string, number>>;
+  /** Printable ASCII the station's keymap cannot produce: flagged, never typed. */
+  readonly unreachable?: string;
 }
 
 /** One example program (registry/examples/<id>/), inlined into poster-docs.json. */

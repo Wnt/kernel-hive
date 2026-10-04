@@ -101,6 +101,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/atarist.md](guests/atarist.md) | Atari ST kiosk. |
 | [guests/bootos.md](guests/bootos.md) | bootOS — an OS in one 512-byte boot sector, on a 360K floppy of one-sector games; keyboard-only, floppy-as-qcow2 golden. |
 | [guests/c64.md](guests/c64.md) | Commodore 64 (VICE) — the reference kiosk implementation. |
+| [guests/c64basic.md](guests/c64basic.md) | Commodore 64 (PAL breadbin) at BASIC V2 READY — host-native VICE x64sc, the c64 station's binary in its own asset dir; the C64 the type-in code editor types into. |
 | [guests/daybreak.md](guests/daybreak.md) | Xerox 6085 "Daybreak" running ViewPoint 2.0.5, via the Dwarf/Draco Mesa emulator in a bare-X kiosk. |
 | [guests/debian22.md](guests/debian22.md) | Debian GNU/Linux 2.2 "potato" — GNOME 1.0 / XFree86 3.3.6, air-gapped like redstar2. |
 | [guests/domainos.md](guests/domainos.md) | Apollo DN3500 (1988) — host-native MAME `dn3500`, Domain/OS SR10.4.1 Display Manager driven by function keys; keyboard-only (pointer cause proven, unlock pending), checkpoint mechanism proven, capture pending. |

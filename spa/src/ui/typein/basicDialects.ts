@@ -27,6 +27,10 @@ export interface DialectSpec {
   readonly questionPrint: boolean;
   /** Magazine listings write control keys as `{CLR}`, `{DOWN}` (Commodore). */
   readonly braceTokens: boolean;
+  /** The direct command that wipes the program in memory. NEW in every
+   *  dialect here (Commodore, BBC, MSX, Locomotive, SuperBASIC, SAM, Oric,
+   *  Color BASIC, Applesoft), but a dialect field rather than a constant. */
+  readonly clearCommand: string;
 }
 
 const MS_CORE =
@@ -34,7 +38,9 @@ const MS_CORE =
   'POKE PRINT CONT LIST CLEAR NEW TAB TO FN SPC THEN NOT STEP AND OR SGN INT ABS USR FRE POS SQR RND LOG ' +
   'EXP COS SIN TAN ATN PEEK LEN STR$ VAL ASC CHR$ LEFT$ RIGHT$ MID$ GET';
 
-const WORDS: Record<BasicDialect, { name: string; words: string; crunched: boolean; apostrophe?: boolean; question?: boolean; braces?: boolean }> = {
+const WORDS: Record<BasicDialect, {
+  name: string; words: string; crunched: boolean; apostrophe?: boolean; question?: boolean; braces?: boolean; clear?: string;
+}> = {
   'cbm-basic': {
     name: 'Commodore BASIC',
     crunched: true, question: true, braces: true,
@@ -118,6 +124,19 @@ const WORDS: Record<BasicDialect, { name: string; words: string; crunched: boole
       'NORMAL NOTRACE ONERR PDL PLOT POP RECALL RESUME ROT SCALE SCRN SHLOAD SPEED STORE TEXT TRACE VLIN ' +
       'VTAB XDRAW',
   },
+  'kc-basic': {
+    name: 'HC-BASIC',
+    crunched: true,
+    // The KC 85/4's 8 KB BASIC ROM plus the graphics, sound and window words CAOS 4.2
+    // adds (both token tables read from the shipping ROMs). The machine
+    // accepts keywords in either case (measured on a rig, 2026-10-04).
+    words: 'END FOR NEXT DATA INPUT DIM READ LET GOTO RUN IF RESTORE GOSUB RETURN REM STOP OUT ON NULL WAIT DEF ' +
+      'POKE DOKE AUTO LINES CLS WIDTH BYE CALL PRINT CONT LIST CLEAR CLOAD CSAVE NEW TAB TO FN SPC THEN NOT ' +
+      'STEP AND OR SGN INT ABS USR FRE INP POS SQR RND LN EXP COS SIN TAN ATN PEEK DEEK PI LEN STR$ VAL ASC ' +
+      'CHR$ LEFT$ RIGHT$ MID$ LOAD TRON TROFF EDIT ELSE INKEY$ JOYST STRING$ INSTR RENUMBER DELETE PAUSE BEEP ' +
+      'WINDOW BORDER INK PAPER AT COLOR SOUND PSET PRESET BLOAD VPEEK VPOKE LOCATE KEYLIST KEY SWITCH PTEST ' +
+      'CLOSE OPEN RANDOMIZE VGET$ LINE CIRCLE CSRLIN',
+  },
 };
 
 const SPECS = new Map<BasicDialect, DialectSpec>();
@@ -136,6 +155,7 @@ export function dialectSpec(dialect: BasicDialect): DialectSpec {
       apostropheComment: !!w.apostrophe,
       questionPrint: !!w.question,
       braceTokens: !!w.braces,
+      clearCommand: w.clear ?? 'NEW',
     };
     SPECS.set(dialect, spec);
   }

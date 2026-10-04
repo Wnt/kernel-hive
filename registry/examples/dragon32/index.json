@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Rainbow",
+      "description": "Paints a rainbow, a strip of grass and the sun in PMODE 3, the Dragon's four-colour graphics mode, with CIRCLE arcs and PAINT; press any key to return to the text screen."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Is it a prime number?",
+      "description": "Asks for a whole number and either reports that it is prime or shows the smallest factor that divides it."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Road race",
+      "description": "Steer the V along a winding road with the left and right arrow keys; leaving the road ends the race and shows the distance. Space races again and BREAK stops."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "An Introduction to BASIC Programming Using the Dragon",
+      "url": "https://archive.org/details/dragon-32-basic-programming-manual",
+      "lang": "en",
+      "note": "The manual supplied with the Dragon 32 (Dragon Data, 1982); Internet Archive scan"
+    },
+    {
+      "title": "Dragon 32 Programmer's Reference Guide",
+      "url": "https://archive.worldofdragon.org/index.php?title=Dragon_32_Programmers_Reference_Guide",
+      "lang": "en",
+      "note": "BASIC reference book (Melbourne House, 1983); PDF on The Dragon Archive"
+    }
+  ]
+}

@@ -227,6 +227,19 @@ class NewLikeTest(unittest.TestCase):
             if name == package_name or name.startswith(package_name + "."):
                 del sys.modules[name]
 
+    def test_like_a_host_native_sibling_keeps_shared_aux_files_shared(self) -> None:
+        # vic20's aux list names the vice-native engine's SHARED keysym table
+        # beside its own fixture; only the fixture is the sibling's to copy.
+        result = _run(self.repo, "new", NEW_ID, "--like", "vic20", "--production", "--slot", "auto", "--tuple", TUPLE)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        station = self.repo / f"streamhost/stations/{NEW_ID}"
+        self.assertTrue((station / "station.env.fixture").is_file())
+        self.assertFalse((station / "us-layout.keysyms").exists())
+        row = json.loads((self.repo / f"registry/stations/{NEW_ID}.json").read_text())
+        self.assertIn("streamhost/stations/vice-native/us-layout.keysyms", row["runtime"]["x11"]["auxFiles"])
+        validate_result = _run(self.repo, "validate")
+        self.assertEqual(validate_result.returncode, 0, validate_result.stdout + validate_result.stderr)
+
     def test_like_refuses_to_inherit_the_siblings_hardware_tuple(self) -> None:
         refused = _run(self.repo, "new", NEW_ID, "--like", SIB_ID, "--production", "--slot", "auto")
         self.assertEqual(refused.returncode, 1, refused.stdout)

@@ -212,8 +212,9 @@ keyboard and is not one (`labctl` resumes automatically, raw QMP does not).
 ## Type-in editor and example programs
 
 `registry/examples/sinclairql/` has three SuperBASIC programs: Sunburst
-(draw), Mirror writer (input) and Guess my number (game). Each starts with
-`NEW` and was proven on a sandbox rig of this station on 2026-10-04: typed,
+(draw), Mirror writer (input) and Guess my number (game). The editor types
+`NEW` before each one (the files no longer carry it). Each was proven, with
+that leading `NEW`, on a sandbox rig of this station on 2026-10-04: typed,
 LISTed and RUN, with the result read off the framebuffer.
 
 **Shifted characters need the modifier lead, `SH_KEY_MOD_LEAD_MS=20`.** The

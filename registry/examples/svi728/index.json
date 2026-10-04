@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "String art",
+      "description": "Builds two curves out of straight lines in SCREEN 2, adds a yellow disc and writes on the picture through the GRP: device; press any key to return to BASIC."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Your name backwards",
+      "description": "Asks for your name, counts its letters and spells it backwards one character at a time with MID$."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Reaction test",
+      "description": "Wait for the screen to turn red, then press Space as quickly as you can; the TIME counter measures you, and Space starts the next round."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Spectravideo SVI-728 Personal Computer - User's Manual",
+      "url": "https://archive.org/details/spectravideo-svi-728-personal-computer-users-manual",
+      "lang": "en",
+      "note": "Owner's manual (Spectravideo International, 1984); Internet Archive scan"
+    },
+    {
+      "title": "Kaikkien MSX",
+      "url": "https://ftp.kameli.net/pub/misc/Kaikkien_MSX-Amersoft-ocr.pdf",
+      "lang": "fi",
+      "note": "Finnish introduction to MSX and MSX-BASIC (Amersoft, 1985), PDF scan, about 60 MB"
+    }
+  ]
+}

@@ -140,7 +140,14 @@ try {
 
   if (restore) {
     await page.click('button[aria-label="Controls"]');
+    // Wait for the host to ANSWER the reset before reloading: a reload while the
+    // POST is in flight sees the old stream still live, and the "restored"
+    // framebuffer is then taken before the relaunch happened.
+    const answered = page.waitForResponse(
+      (r) => r.url().includes(`/restore/${id}`) && r.request().method() === 'POST', { timeout: 180000 });
     await page.getByRole('button', { name: /Restore to golden/ }).click();
+    const reply = await answered;
+    console.log(`restore POST: HTTP ${reply.status()}`);
     const back = await openStation(page, base, id, { direct: true, waitMs: 60000 });
     console.log(`restore: ${back.ok ? 'stream live again' : back.why}`);
     fbShot('restored');

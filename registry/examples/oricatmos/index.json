@@ -1,0 +1,30 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Rainbow sunburst",
+      "description": "Spokes and rings in HIRES, coloured by writing an ink code at the start of each band of rows, because on the Oric colour lives in the screen bytes themselves."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Name in lights",
+      "description": "Type your name and the Atmos prints it forwards and backwards in each of its seven ink colours, with a PING for every line, then counts the letters."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Ski run",
+      "description": "Steer down the slope with Z and X and dodge the trees; SCRN reads the screen to spot a crash, EXPLODE marks it, and SPACE skis again."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "The Oric Atmos Manual",
+      "url": "https://www.defence-force.org/computing/oric/library/lib_manual_oric/files/manual_atmos.pdf",
+      "lang": "en",
+      "note": "Ian Adamson, 1984, the edition produced for Oric Products International to ship with the Atmos; Extended BASIC reference; PDF scan via Defence-Force"
+    }
+  ]
+}
