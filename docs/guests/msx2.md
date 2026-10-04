@@ -80,7 +80,11 @@ The MAME binary itself: 87 354 072 bytes, sha256
   however loaded the box is, and `reset-tile.sh` reports a Restore done only
   once that freeze has landed (`scene.state`). Proof: the real launcher on a
   sandbox copy, with the `input.bas` example typed the moment each restore
-  returned (the restore waited 15.7-15.9 s for the scene): 5 of 5 exact.
+  returned (the restore waited 15.7-15.9 s for the scene): 5 of 5 exact. Live,
+  through the real SPA (`typein-editor-probe.mjs --restore-first`): Restore
+  reported done after 27.6 s, the SPA reconnected straight to `Ok`, and the
+  editor typed `NEW` and all seven lines exact, twice (the second time on the
+  final launcher).
   Evidence: `/data/vms/streamhost/stations/msx2/evidence/restore-first-keys-2026-10-04/`.
 - Pointer/click/drag/wheel: N/A — keyboard-only exhibit.
 - **Keyboard proof: PROVEN on the production path**, 2026-09-20 (landing

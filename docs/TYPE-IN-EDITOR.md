@@ -339,8 +339,17 @@ over 90 s: a visitor watches those boots.
 Proof: the real launcher on a sandbox copy of each station. Each run is a
 cold relaunch followed by the scene wait, then edges typed the moment the
 restore returned, through the daemon's WebTransport path. msx2 typed its
-`input.bas` example exact in 5 of 5; svi738 typed its demo exact in 6 of 6.
-The restores took ~16 s and ~23 s to report.
+`input.bas` example exact in 5 of 5, svi738 its demo in 6 of 6, armeval its
+`input.bas` in 5 of 5, and bbcmicro its `input.bas` in 2 of 2. The restores
+took ~16 s, ~23 s, 44-48 s and 3 s to report. Live, through the real SPA with
+`typein-editor-probe.mjs --restore-first`, every station was exact: msx2 (Restore
+27.6 s), svi738's demo (35 s), and armeval's example (57 s), with zero ack
+timeouts or dropped keys in their daemons' counters. On armeval the module
+paces keys in emulated time, so at the ~0.5x of a loaded box the guest takes
+~40 s longer than the editor to absorb a 13-line listing. The keys queue in
+order and nothing is lost, but a framebuffer taken the moment the editor says
+"Typed" shows the listing still arriving. `labctl reset` waits for the scene
+too (armeval: 45.5 s).
 
 **Not the same bug: samcoupe** restores in process (`LOADST golden`, 0.4 s) to
 its menu, and loses the first line after `NEW` (below). A fresh restore only
@@ -659,7 +668,9 @@ banner or typed as an empty line, an ENTER is harmless. The demo listing
 carries the same ENTER as an empty line after its own `NEW`. Proof: the edges
 the editor sends, recorded from this branch's `typeListing()` and played
 through a sandbox daemon, typed `NEW` plus four shifted lines exact in 12 of 12
-runs (8 after a fresh golden restore and `B`, 4 after `LOADST golden`). Evidence:
+runs (8 after a fresh golden restore and `B`, 4 after `LOADST golden`). Live,
+through the real SPA after the visitor's Restore and `B`, the 12-line shifted
+listing typed in 106 s, and `LIST` showed lines 10-120 exact. Evidence:
 `/data/vms/streamhost/stations/samcoupe/evidence/restore-first-keys-2026-10-04/`.
 
 ### MPF-II, Dragon 32 and the MSX family: punctuation and the MPF-II scroll
