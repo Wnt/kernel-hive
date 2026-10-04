@@ -327,11 +327,11 @@ cell; two boots each, within 0.2 s of each other):
 | msx2 | `Ok`, drive LED off | 11.8 / 14.2 | 16 (was 8: **mid-boot**) |
 | svi738 | `A>` | 20.7 | 23 (was 25) |
 | armeval | ARM BASIC `>`, after the autoboot's `*LIB $` / `AB` | 20.9 | 23 (was 25 wall: mid-autoboot at the 0.3-0.5x a loaded box runs it) |
-| symbos | SymbOS desktop | 33.5 | measured; 36 to apply with its MAME-wave pass (still 75 wall: only ~34 emulated at the 0.45x measured under load) |
+| symbos | SymbOS desktop | 33.5 | 36 (was 75 wall: only ~34 emulated at the 0.45x measured under load) |
 
-armeval also sets `SH_IDLE_PAUSE_WARMUP_SECS=120`, and symbos needs the same.
-The daemon's own first pause counts wall seconds, and on a loaded box 60 of
-them is still mid-boot for these two, which is newsos's trap. palmos (~13% of real time) and
+armeval and symbos also set `SH_IDLE_PAUSE_WARMUP_SECS=120`. The daemon's own
+first pause counts wall seconds, and on a loaded box 60 of them is still
+mid-boot for these two, which is newsos's trap. palmos (~13% of real time) and
 newsos (~45%) keep their wall-clock delays (600 and 200). Their idle grace and
 warmup were tuned against those values, and a Restore does not wait on a delay
 over 90 s: a visitor watches those boots.

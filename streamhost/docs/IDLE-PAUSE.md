@@ -133,7 +133,7 @@ lands under a live session. The daemon's own first pause (zero sessions,
 `SH_IDLE_PAUSE_SECS` after it starts) counts wall seconds. A station whose
 scene can take longer than that on a loaded box sets
 `SH_IDLE_PAUSE_WARMUP_SECS` above it, so the launcher's freeze lands first
-(armeval, newsos). The per-station ready points are tabled in
+(armeval, symbos, newsos). The per-station ready points are tabled in
 [`docs/TYPE-IN-EDITOR.md`](../../docs/TYPE-IN-EDITOR.md#typing-right-after-a-restore).
 
 **The delay must end on the FINISHED scene.** Whatever frame is up at the
