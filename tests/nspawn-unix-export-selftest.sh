@@ -79,6 +79,44 @@ else bad "live process refusal"; fi
 mkdir "$NSPAWN_EXPORT_DIR/kh-c"
 if nspawn_export_clear kh-c 1 2>/dev/null; then ok "another machine's live process does not block"; else bad "cross-machine block"; fi
 
+# 6 orphan sweep: supervisor dies, its stub init (a child) survives -> swept.
+# The "supervisor" and "init" are both copies of the fake nspawn binary.
+# shellcheck disable=SC2016 # perl source, not shell
+FK="$NSPAWN_BIN" "$NSPAWN_BIN" -e 'if (fork == 0) { exec $ENV{FK}, "-e", "sleep 60" } sleep 60' &
+SUP=$!
+for _ in $(seq 1 40); do
+  [ -n "$(nspawn_init_pids "$SUP")" ] && break
+  sleep 0.1
+done
+INIT="$(nspawn_init_pids "$SUP")"
+kill -KILL "$SUP" 2>/dev/null
+wait "$SUP" 2>/dev/null
+if [ -n "$INIT" ] && kill -0 "$INIT" 2>/dev/null && nspawn_sweep_init "$INIT" && ! readlink "/proc/$INIT/exe" >/dev/null 2>&1; then
+  ok "orphaned stub init is swept after its supervisor died"
+else bad "orphan sweep"; fi
+# ...and a pid whose exe is NOT nspawn (a recycled pid) is never signalled
+sleep 30 &
+BYST=$!
+nspawn_sweep_init "$BYST"
+if kill -0 "$BYST" 2>/dev/null; then ok "non-nspawn pid is left alone"; else bad "sweep killed a bystander"; fi
+kill "$BYST" 2>/dev/null
+
+# 7 stop_container: kills the init, then the supervisor (this fake supervisor
+# does not exit by itself, so the bounded wait ends in SIGKILL of it)
+# shellcheck disable=SC2016 # perl source, not shell
+FK="$NSPAWN_BIN" "$NSPAWN_BIN" -e 'if (fork == 0) { exec $ENV{FK}, "-e", "sleep 60" } sleep 60' &
+SUP=$!
+for _ in $(seq 1 40); do
+  [ -n "$(nspawn_init_pids "$SUP")" ] && break
+  sleep 0.1
+done
+INIT="$(nspawn_init_pids "$SUP")"
+if [ -n "$INIT" ] && nspawn_stop_container "$SUP" 1 && ! readlink "/proc/$INIT/exe" >/dev/null 2>&1 &&
+  ! readlink "/proc/$SUP/exe" >/dev/null 2>&1; then
+  ok "stop_container removes the init and the supervisor"
+else bad "stop_container"; fi
+wait "$SUP" 2>/dev/null
+
 if [ "$FAILS" -eq 0 ]; then echo PASS; else
   echo "FAILED: $FAILS"
   exit 1

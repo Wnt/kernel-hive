@@ -347,17 +347,23 @@ two PERQemu instances" rule this wave already enforces operationally, but a
 real fix (matching within the launching nspawn's own pid namespace) is
 future work if `accent` and `perq` are ever meant to run concurrently.
 
-Teardown trap found and documented in the builder's own `--prove` teardown
-code: killing the nspawn supervisor's host pid with SIGKILL (rather than
-SIGTERM + a wait) does not tear down the whole container — `script`'s pty
-wrapper does not exit on its child's death (this launcher holds stdin open on
-a FIFO precisely so it never sees EOF) and can outlive the emulator as an
-orphan, and a mount point under
-`/run/systemd/nspawn/unix-export/kh-<tile>` can appear to "exist already" to
-the NEXT launch even though `ls` on it and `machinectl list` show nothing —
-it clears itself within a few seconds. `--prove`'s teardown now sends TERM,
-waits up to 5 s, then sweeps the nspawn stub's own children by
-`/proc/<pid>/exe` (never a cmdline grep, rule 5) before returning.
+Teardown trap (first found in the builder's `--prove` teardown, then in the
+2026-10-04 fleet rollout, where one `systemctl restart streamhost@perq` died on
+`Mount point '/run/systemd/nspawn/unix-export/kh-perq' exists already` and the
+rollout tool rolled a wave back): TERMing or SIGKILLing the nspawn *supervisor*
+does not end the container. Its init, the `script` pty wrapper (this launcher
+holds stdin open on a FIFO precisely so it never sees EOF), Xvfb and the
+emulator survive — one leaked instance per restart — and, because the
+supervisor is killed before it can clean up, `unix-export/kh-<tile>` stays
+mounted. Both are fixed in the shared helper `scripts/lib/nspawn-unix-export.sh`
+(see [VISION-WAVE.md §2](VISION-WAVE.md)): the launcher calls
+`nspawn_stop_container` (SIGKILL the init, nspawn exits and unmounts by itself),
+`nspawn_sweep_init` after its reap, and `nspawn_export_clear "$MACHINE"` before
+`systemd-nspawn`. Measured on a sandbox clone: the old launcher failed 7 of 15
+back-to-back relaunches with "exists already"; the new one 0 of 13, a restart
+~5 s, exactly one clone instance alive after each. `--prove`'s own teardown
+(TERM, wait 5 s, sweep the stub's children by `/proc/<pid>/exe`, never a
+cmdline grep, rule 5) is unchanged.
 
 ## §Publish
 

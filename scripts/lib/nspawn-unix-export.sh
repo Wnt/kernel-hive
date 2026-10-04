@@ -36,6 +36,21 @@
 # Machine names are load-bearing (something on the box reaps unrecognised kh-*
 # machines): this helper never renames or invents one.
 #
+# SECOND JOB — orphans (found 2026-10-04 in the perq restart proof). Killing or
+# TERMing the nspawn SUPERVISOR does not end the container: its direct child, the
+# stub init (PID 1 of the container's PID namespace), survives with the
+# `script` pty wrapper (held open on a FIFO, never sees EOF), Xvfb and any
+# emulator under it — one leaked ~25-40% CPU instance per restart, invisible to
+# a pidfile that now names the dead supervisor. So, around the launcher's own
+# reap:
+#   PREV_INIT="$(nspawn_init_pids "$(cat "$NSPAWN_PIDFILE" 2>/dev/null)")"   # BEFORE
+#   nspawn_stop_container "$(cat "$NSPAWN_PIDFILE" 2>/dev/null)" || true     # BEFORE
+#   reap_previous ...
+#   nspawn_sweep_init $PREV_INIT || exit 1                                   # AFTER
+# nspawn_sweep_init SIGKILLs a recorded stub init (only if its /proc exe is still
+# systemd-nspawn, so a recycled pid is never hit); the kernel then kills the
+# whole PID namespace. Returns 1 if one will not die.
+#
 # Test seams (tests/nspawn-unix-export-selftest.sh): NSPAWN_EXPORT_DIR,
 # NSPAWN_MACHINECTL, NSPAWN_BIN, NSPAWN_UMOUNT.
 
@@ -50,6 +65,65 @@ nspawn_live_pids() {
       printf '%s\n' "${p#/proc/}"
     fi
   done
+}
+
+# nspawn_init_pids <supervisor-pid> — the container init(s): its direct children.
+nspawn_init_pids() {
+  local sup="$1" want exe
+  case "$sup" in '' | *[!0-9]*) return 0 ;; esac
+  want="$(readlink -f "${NSPAWN_BIN:-$(command -v systemd-nspawn || echo /usr/bin/systemd-nspawn)}")"
+  exe="$(readlink "/proc/$sup/exe" 2>/dev/null)" || return 0
+  [ "${exe% (deleted)}" = "$want" ] || return 0
+  ps -o pid= --ppid "$sup" 2>/dev/null | tr -d ' ' || true
+}
+
+# nspawn_stop_container <supervisor-pid> [wait_seconds=10] — stop a previous
+# container the way nspawn can clean up after: SIGKILL its init (the kernel then
+# kills the whole PID namespace — script, Xvfb, emulator), and nspawn, seeing the
+# container end, exits on its OWN and unmounts unix-export. MEASURED 2026-10-04:
+# TERMing the supervisor instead leaves the container (script blocks on its FIFO)
+# running 10 s until the launcher's SIGKILL fallback — which skips nspawn's
+# cleanup, leaves the unix-export mount behind (every relaunch then paid the 10 s
+# wait AND the force-clear) and orphans init/script/Xvfb. Only ever call it with
+# THIS station's own recorded supervisor pid; it verifies the exe is systemd-nspawn.
+# Returns 0 once the supervisor is gone, 1 if it will not go.
+nspawn_stop_container() {
+  local sup="$1" wait_s="${2:-10}" want exe p i
+  case "$sup" in '' | *[!0-9]*) return 0 ;; esac
+  want="$(readlink -f "${NSPAWN_BIN:-$(command -v systemd-nspawn || echo /usr/bin/systemd-nspawn)}")"
+  exe="$(readlink "/proc/$sup/exe" 2>/dev/null)" || return 0
+  [ "${exe% (deleted)}" = "$want" ] || return 0
+  for p in $(nspawn_init_pids "$sup"); do kill -KILL "$p" 2>/dev/null || true; done
+  for ((i = 0; i < wait_s * 4; i++)); do
+    exe="$(readlink "/proc/$sup/exe" 2>/dev/null)" || return 0
+    [ "${exe% (deleted)}" = "$want" ] || return 0
+    sleep 0.25
+  done
+  kill -KILL "$sup" 2>/dev/null || true
+  sleep 0.25
+  ! readlink "/proc/$sup/exe" >/dev/null 2>&1
+}
+
+# nspawn_sweep_init <pid>... — SIGKILL leftover container inits, wait for them.
+nspawn_sweep_init() {
+  local want p exe i left=""
+  want="$(readlink -f "${NSPAWN_BIN:-$(command -v systemd-nspawn || echo /usr/bin/systemd-nspawn)}")"
+  for p in "$@"; do
+    exe="$(readlink "/proc/$p/exe" 2>/dev/null)" || continue
+    [ "${exe% (deleted)}" = "$want" ] || continue
+    kill -KILL "$p" 2>/dev/null || true
+  done
+  for ((i = 0; i < 20; i++)); do
+    left=""
+    for p in "$@"; do
+      exe="$(readlink "/proc/$p/exe" 2>/dev/null)" || continue
+      [ "${exe% (deleted)}" = "$want" ] && left="$left $p"
+    done
+    [ -z "$left" ] && return 0
+    sleep 0.25
+  done
+  echo "nspawn_sweep_init: container init(s) still alive after SIGKILL:$left" >&2
+  return 1
 }
 
 nspawn_export_clear() {

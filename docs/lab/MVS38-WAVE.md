@@ -25,8 +25,10 @@ silently disabling every `x3270.*` resource; x3270 finding a keymap only as an
 X resource; `XK_Pause` not being on the wire, so Clear had to ride Alt+C;
 `exec VAR=val cmd` not being a thing; and a stale
 `/run/systemd/nspawn/unix-export/<machine>` mount wedging every restart of a
-container that died untidily — **that last one is a fleet-wide risk for every
-nspawn station, not an mvs38 bug.**
+container that died untidily — **that last one was a fleet-wide risk for every
+nspawn station, not an mvs38 bug**, and is now fixed for all of them by the
+shared helper `scripts/lib/nspawn-unix-export.sh`
+([VISION-WAVE.md §2](VISION-WAVE.md)).
 
 ## Allocation (held by session `mvs38-work`)
 

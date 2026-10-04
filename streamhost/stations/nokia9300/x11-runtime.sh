@@ -166,6 +166,15 @@ reap_previous() {
   sleep 0.5
   ! station_nspawn_pid >/dev/null
 }
+# Stop the previous container cleanly (init SIGKILLed, nspawn then unmounts its own
+# unix-export), and record its init for the sweep below. scripts/lib/nspawn-unix-export.sh.
+# shellcheck source=/dev/null
+. /usr/local/lib/nspawn-unix-export.sh || {
+  echo "nokia9300[$TILE]: /usr/local/lib/nspawn-unix-export.sh missing — box-deploy --apply installs it" >&2
+  exit 1
+}
+PREV_INIT="$(nspawn_init_pids "$(cat "$NSPAWN_PIDFILE" 2>/dev/null || true)")"
+nspawn_stop_container "$(cat "$NSPAWN_PIDFILE" 2>/dev/null || true)" || true
 reap_previous || die "the previous sandbox is still alive after SIGKILL — refusing to start a second one"
 rm -f "$PIDFILE" "$XPIDFILE" "$NSPAWN_PIDFILE" "$WORK/placed"
 
@@ -223,13 +232,12 @@ case "${NOKIA_NET:-off}" in
   *) die "NOKIA_NET=${NOKIA_NET} — want retronet or off" ;;
 esac
 
-# Wait out nspawn's asynchronous unix-export teardown, force-clear a stale mount,
-# refuse if a live container holds the name (scripts/lib/nspawn-unix-export.sh).
-# shellcheck source=/dev/null
-. /usr/local/lib/nspawn-unix-export.sh || {
-  echo "nokia9300[$TILE]: /usr/local/lib/nspawn-unix-export.sh missing — box-deploy --apply installs it" >&2
-  exit 1
-}
+# Sweep any container init the reap above orphaned (a TERMed supervisor leaves its
+# stub init, `script` wrapper and Xvfb running), then wait out nspawn's
+# asynchronous unix-export teardown, force-clear a stale mount, and refuse if a
+# live container holds the name (scripts/lib/nspawn-unix-export.sh).
+# shellcheck disable=SC2086 # PREV_INIT is a pid list
+nspawn_sweep_init $PREV_INIT || exit 1
 nspawn_export_clear "$MACHINE" || exit 1
 
 nohup "${NET_PREFIX[@]}" systemd-nspawn --quiet --register=no --keep-unit --as-pid2 \
