@@ -104,12 +104,24 @@ Every corrupted line is VICE's **torn Shift latch**
 a `*` lost or a `:` arriving as `[`, plus one `@` and one `+` at 100/100.
 Nothing without a Shift edge was lost at 60/60, and slowing to 100/100 did not
 lower the rate, so the pace is not the cause and the station keeps 60/60. The
-C64 rate, about 1 such character in 20, is higher than the 1 in 50 measured on
-vic20, c128 and cbm8032. The fix is the `vicectl` Shift staging
-(`SH_KEY_MOD_LEAD_MS=40`, fork `a1cb4b5c8d`), which made the CBM stress
-listing exact on vic20, cbm8032 and c128. **This station does not have it
-yet:** it needs an x64sc built at that pin and the knob in its fixture, then
-the stress listing re-read on a rig.
+C64 rate, about 1 such character in 20, is the highest in the VICE family
+(vic20, c128 and cbm8032 tore about 1 in 50).
+
+**Fixed 2026-10-04: Shift is staged, `SH_KEY_MOD_LEAD_MS=40`, two frames.**
+The station runs an x64sc built at fork `a1cb4b5c8d`, whose `vicectl` puts the
+Shift level a key needs in front of the key and holds the press for two frames
+(PAL, 19 656 cycles a frame, so 40 ms), so a `:` typed with Shift held never
+touches the emulated SHIFT. Measured through the real daemon at the editor's
+pace (`NEW`, then the listing at `perCharMs` 170 with the 260/600 ms settles)
+on rigs of the station's golden, read back from a `SAVEST` snapshot: the
+14-line CBM stress listing tore 20 lines in 3 passes on the old binary
+and none on the new one, and the three examples below came out 9 of 9
+byte-exact. The golden restores pixel-identical under the new
+binary. The `c64` (GEOS) station got the same binary as its own copy. Live
+since 2026-10-04: the real editor typed Quick Draw on the live station, RUN
+turned the screen red, LIST was exact (line 40's `+` included), and Restore to
+golden brought READY back (`live-smoke-*.png`). Evidence:
+`/data/vms/streamhost/stations/c64basic/evidence/shift-lead-2026-10-04/`.
 
 - **`keyboard.letterCase: upper-only`** and **`typeIn.case: unshifted`**: a
   shifted letter in the power-on character set is a PETSCII graphics glyph.
@@ -125,7 +137,8 @@ the stress listing re-read on a rig.
 ## Examples and manuals
 
 `registry/examples/c64basic/` — three original listings, each ≤ 15 lines and
-≤ 500 characters, written to keep `:` and `*` few while the defect is open:
+≤ 500 characters. They were written to keep `:` and `*` few while the Shift
+defect was open; with the lead they need not, but they stay as they are:
 
 | File | Title | What it shows |
 |---|---|---|

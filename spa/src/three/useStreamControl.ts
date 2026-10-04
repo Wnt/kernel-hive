@@ -24,6 +24,7 @@ import type {
 } from './streamClient';
 import type { StreamInputClient } from './streamInputClient';
 import { isComposedChar, isMacPlatform } from './composeKey';
+import { capitalsAreBareLetters, isBareCapital } from './capitalsAsLetters';
 import {
   codeToScancode,
   keysymToScancode,
@@ -150,6 +151,7 @@ export function createStreamController(
 } {
   const { getResolution } = config;
   const quirks: GuestQuirks = quirksFor(config.osId);
+  const capsAsLetters = capitalsAreBareLetters(config.osId);
   const autoJitter = config.autoJitter !== false;
 
   const state: StreamControlState = {
@@ -287,7 +289,7 @@ export function createStreamController(
       return true;
     }
 
-    const s = asciiToScancode(e.key);
+    let s = asciiToScancode(e.key);
     if (!s) return false; // non-ASCII (ä/ö/å, dead-key composites): fall back to .code
 
     // AltGr layer (FI | \ @ $ { } …): the browser also delivers the raw Ctrl+Alt
@@ -299,6 +301,9 @@ export function createStreamController(
       }
     }
 
+    // Capitals-are-letters machine (capitalsAsLetters.ts): a capital with no
+    // PHYSICAL Shift is the bare letter key. Shift held keeps Shift (graphics).
+    if (capsAsLetters && isBareCapital(e.key) && !guestShiftDown() && !altGr) s = { code: s.code, shift: false };
     const needShift = s.shift;
     if (needShift === guestShiftDown() && !altGr) {
       // Shift already correct, nothing to strip → forward a real make/break so

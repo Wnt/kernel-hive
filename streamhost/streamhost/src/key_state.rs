@@ -48,7 +48,7 @@ use tokio::sync::{mpsc, Mutex};
 
 use crate::capture::{Capture, CONSOLE, I_KBD};
 use crate::config::Config;
-use crate::key_quirks::{key_gate, key_qnum, remap_key};
+use crate::key_quirks::{key_gate, key_qnum, pace_edge, remap_key, KeyPacing};
 use crate::realtime_input::InputRouter;
 
 /// One session's held-key set: values already resolved to whatever was
@@ -187,48 +187,30 @@ async fn send_key(conn: &zbus::Connection, code: u32, qnum: u32, down: bool) {
     crate::input_telemetry::key_sent(code, down);
 }
 
-/// The classic QEMU/dbus keyboard path (moved from `input.rs` verbatim,
-/// plus the held-key bookkeeping: recorded right after the value that was
-/// actually sent, on every exit -- gated or not -- so `held` always matches
-/// what the guest was last told).
+/// The classic QEMU/dbus keyboard path (moved from `input.rs`, plus the
+/// held-key bookkeeping: recorded right after the value that was actually
+/// sent, gated or not, so `held` always matches what the guest was last told).
+///
+/// The three knobs share ONE gate (`key_quirks::pace_edge`), so a whole pasted
+/// line is paced in arrival order: press -> (hold) -> release -> (gap) -> next
+/// press, and a key's press -> (lead) after the Shift/Ctrl/Alt edge in front of
+/// it. Events queue behind the mutex when the client types faster than the
+/// pacing allows; nothing is reordered and nothing is dropped.
 pub(crate) async fn key(cap: &Capture, code: u32, down: bool, cfg: &Config, keys: &SharedKeys) {
     let Some(conn) = cap.main_conn.as_ref() else {
         return;
     };
     let qnum = key_qnum(code, cfg.legacy_kbd);
-    if cfg.key_min_hold_ms == 0 && cfg.key_min_gap_ms == 0 {
+    let pacing = KeyPacing::from_ms(cfg.key_min_hold_ms, cfg.key_min_gap_ms, cfg.key_mod_lead_ms);
+    let send = async {
         send_key(conn, code, qnum, down).await;
         keys.lock().await.note_sent(qnum as u16, down);
-        return;
-    }
-    // Both knobs share ONE gate, so a whole pasted line is paced in arrival
-    // order: press -> (hold) -> release -> (gap) -> next press. Events queue
-    // behind the mutex when the client types faster than the pacing allows;
-    // nothing is reordered and nothing is dropped.
-    let min_hold = std::time::Duration::from_millis(cfg.key_min_hold_ms);
-    let min_gap = std::time::Duration::from_millis(cfg.key_min_gap_ms);
-    let mut gate = key_gate().lock().await;
-    if down {
-        let wait = gate.press_delay(std::time::Instant::now(), min_gap);
-        if !wait.is_zero() {
-            tokio::time::sleep(wait).await;
-        }
-        send_key(conn, code, qnum, true).await;
-        keys.lock().await.note_sent(qnum as u16, true);
-        gate.on_press(qnum, std::time::Instant::now());
-    } else {
-        let wait = gate.release_delay(qnum, std::time::Instant::now(), min_hold);
-        if !wait.is_zero() {
-            tokio::time::sleep(wait).await;
-        }
-        send_key(conn, code, qnum, false).await;
-        keys.lock().await.note_sent(qnum as u16, false);
-        gate.on_release(std::time::Instant::now());
-    }
+    };
+    pace_edge(key_gate(), pacing, qnum, down, send).await;
 }
 
 /// Send a bare Release straight to the guest keyboard, bypassing BOTH the
-/// `SH_KEY_MIN_HOLD_MS`/`SH_KEY_MIN_GAP_MS` pacing gate (there is no longer a
+/// `SH_KEY_MIN_HOLD_MS`/`_GAP_MS`/`SH_KEY_MOD_LEAD_MS` pacing gate (there is no longer a
 /// session to pace fairly against; nothing queues behind one that no longer
 /// exists) and the keyboard-lag CTLTRACE evidence chain
 /// (`input_telemetry::key_sent`, docs/lab/keyboard-lag-investigation): this

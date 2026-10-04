@@ -268,7 +268,10 @@ key. It looks up which keymap entry VICE will use through
 `keyboard_keysym_shift_flags()`, a read-only helper added to `keyboard.c`. Two
 frames is safe by construction: an event latches at most about a frame plus
 1,000 cycles after its push, so a whole frame always separates the two latches.
-Measurement and the per-station values:
+The module counts the lead in the machine's frames and rounds the milliseconds
+up at the rate it reads at start-up. That rate is 50 on every VICE machine in
+the lab, the 60 Hz PET 2001 included, so its two frames are 33 ms (40 would
+become three at 60). Measurement and the per-station values:
 [`../../TYPE-IN-EDITOR.md`](../../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead).
 
 The 8-slot `kbd_queue` in §1 cannot overflow from `vicectl` under

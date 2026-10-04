@@ -93,6 +93,48 @@ letters use Shift plus the letter; `"` uses Shift plus apostrophe; `Enter`
 reaches the CPC Return key. The certified proof types `PRINT "HELLO"`, Return,
 then `RUN`, and visibly renders `HELLO` in the CPC framebuffer.
 
+The daemon paces keys at `SH_KEY_MIN_HOLD_MS`/`SH_KEY_MIN_GAP_MS` 80/80 (40/40
+until 2026-10-04). Caprice32 runs inside the kiosk guest, and when labhost is
+loaded that guest stalls, so a press and its release, or a repeated key's
+release and re-press, can reach Caprice32 in one frame. At 40/40 that lost keys
+in every pass of a stress listing at load 25 to 60. At 80/80, 5 of 6 passes
+were exact at load 35 to 54. The modifier lead `SH_KEY_MOD_LEAD_MS` is 20 ms,
+one CPC frame. Caprice32 sets Shift and a shifted key in one matrix update, and
+a firmware scan that straddles it reads `"` as `2`. That happened once in about
+4,500 shifted keys at lead 0. Both values are measured in
+[`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead),
+and the evidence is in `evidence/daemon-mod-lead-2026-10-04/`.
+
+**OPEN (2026-10-04): the live station still drops keys under load.** Three
+runs of `draw.bas` through the real editor (`typein-editor-probe.mjs`) on the
+live station all failed RUN with a syntax error:
+
+| Run | Pacing | 1-min load | Lost |
+|---|---|---|---|
+| 1 | 80/80, no lead | 31–42 | 6 keys: `Y=I*20` as `Y=I*0`, `X,400` as `X,40`, line `80` as `8`, `640-X` as `640X` |
+| 2 | 80/80, lead 20 | 50–65 | 9 keys: `BORDE`, `IK`, `X,0C`, `0MOVE`, `64-X`, `640,:`, `NEX` |
+| 3 | 80/80, lead 20, probe Chrome at nice 19 | 55–80 | 4 keys: `40-Y`, `60MVE`, `MOVE640,40` |
+
+Every loss is a dropped key or a merged repeat, never a Shift. A sandbox clone
+at the same knobs was exact at load 59 to 64. The clone differs from live in
+three ways, none raced yet:
+
+- **cgroup.** The clone's QEMU ran from an ssh session in `user.slice`. The
+  live one runs in `system.slice/system-streamhost.slice/streamhost@amstradcpc.service`,
+  beside about 120 other stations. The top-level groups (`system.slice`,
+  `user.slice`, `lxc`, `walkin.slice`, `qemu.slice`) share the CPU at equal
+  weight, so under contention a rig gets far more than one station does. The
+  probe's own Chrome runs in `lxc`, which is why nicing it changed little.
+- **dbus poll.** The live launcher exports `SH_DBUS_UPDATE_MS=4`, which the
+  clone left at the default 30 ms poll. The one Shift tear seen (`"` as `2`)
+  came in a 4 ms arm.
+- **start.** The live QEMU starts with `-loadvm golden -S` and the daemon
+  resumes it when someone connects. The clone ran with no `-S`.
+
+A rig that stands in for a live kiosk must run in the station's slice
+(`systemd-run --slice=system-streamhost.slice`) with the station's
+environment.
+
 ## LIVE status (2026-07-27)
 - Production/enabled streamhost station, VMID 219, UDP 54119, slot 119.
 - Thin `overlay.qcow2` on the frozen bridge seed, with an internal `golden`

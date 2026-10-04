@@ -108,12 +108,33 @@ C64 and VIC-20 hit.
 
 ## Keyboard pacing
 
-`SH_KEY_MIN_HOLD_MS=80`, `SH_KEY_MIN_GAP_MS=80` — four PAL frames each way.
-**Carried over from the VIC-20's bisect rather than re-measured**: same
-emulator, same 50 Hz frame, same host, and the failure those numbers guard
-against is a host scheduling stall rather than a property of the emulated
-machine (see [`vic20.md`](vic20.md) for the measurements). Re-bisect with
-`scripts/dev/emu-key-pacing-bisect.py` if this station ever drops characters.
+The keys go host-native: browser key edges → the daemon's `vice_sock.rs` →
+the fork's `vicectl` module, which paces them in the machine's own frames.
+`SH_KEY_MIN_HOLD_MS=60`, `SH_KEY_MIN_GAP_MS=60` with `VICE_CTL_KEY_EXCL=1`,
+the VICE family's floor since 2026-08-17 (vic20's re-bisect with overlapping
+bursts: 40/40 corrupted 6 lines of 12, 60/60 none — see [`vic20.md`](vic20.md)).
+PAL TED, 35 568 cycles a frame, so 60 ms is three frames.
+
+**Shift is staged: `SH_KEY_MOD_LEAD_MS=40`, two frames (2026-10-04).** `:` `*`
+`+` `@` are Shift+key on a US keyboard but plain Plus/4 keys (the keymap's
+*deshift*), and `'` `[` `]` the reverse. VICE used to flip SHIFT and set the
+key in one latch of the matrix, which a KERNAL scan straddling it read torn.
+With the lead the module presents the Shift level the key needs two frames
+ahead of the key, and a key also waits two frames behind a C= edge, which only
+makes the profile's C= chords surer. Through the real daemon at the editor's
+pace, on rigs: the old binary tore 9 lines in 3 passes of the 14-line CBM
+stress listing, the new one none, and the three BASIC 3.5 examples typed 9 of
+9. The station cold-boots (no checkpoint), and the power-on frame is
+pixel-identical under both binaries. Method and the family's numbers:
+[`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead);
+evidence in
+`/data/vms/streamhost/stations/plus4/evidence/shift-lead-2026-10-04/`. Live
+since 2026-10-04: the real editor typed `draw.bas` on the live station, RUN
+ran it, LIST was exact, and Restore to golden brought the scene back
+(`live-smoke-*.png`).
+
+`typeIn.perCharMs` is **170**, above the worst shifted character's HOLD +
+max(GAP, LEAD) + LEAD = 160 ms.
 
 No `demoProgram`: the interaction here is the suite, not a BASIC type-in.
 
