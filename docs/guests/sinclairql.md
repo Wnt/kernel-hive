@@ -226,7 +226,12 @@ and every shifted symbol typed by the editor or the demo vanished
 emulated ms after the last Shift/Ctrl edge. The measured threshold is 2 ms (1 ms
 still loses 9 lines of 12), and a 12-line listing with 251 shifted characters
 types exactly through the real daemon path. The lead needs the `ql` binary built
-from `mame-ctlsock.patch` with the knob; an older binary ignores it. The table
+from `mame-ctlsock.patch` with the knob; an older binary ignores it. Later on
+2026-10-04 the live `ql` was rebuilt from the final patch, which also keeps the
+module's ordering barriers on whenever a lead is set (stations without
+`MAME_CTL_KEY_EXCL` needed that). The QL has EXCL, so nothing changes for it:
+the golden restores pixel-identical under the rebuild, and the savestate
+signature stays `111a0cc2` (1663 entries). The table
 and evidence are in
 [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead).
 

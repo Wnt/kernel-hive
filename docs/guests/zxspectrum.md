@@ -207,6 +207,31 @@ curl -ksS -X POST https://192.0.2.10:8443/restore/zxspectrum
 Guest memory with the kiosk up: **~320 MB MemAvailable of 708 MB** — the station
 runs on `-m 768`, the smallest of any kiosk.
 
+## Shifted characters: the modifier lead (2026-10-04)
+
+`SH_KEY_MOD_LEAD_MS=10` in the station fixture. The `ctlsock` module holds a
+key press until the CAPS SHIFT or SYMBOL SHIFT edge in front of it has been in
+the matrix for 10 emulated ms, so the ROM's scan sees the shift before the key
+it modifies. The 48K ROM reads the whole matrix in one pass per frame, and no
+chord was ever lost here on the old engine (0 in 60 in the 2026-10-04 survey).
+It gets the fleet's 10 ms anyway, five times the largest threshold measured on
+a MAME machine ([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead)).
+A chord costs at most 10 ms more, so `typeIn.perCharMs` and the demo went from
+400 to 410 ms (+2.5 %): the validator holds them to HOLD 200 + max(GAP 200,
+LEAD) + LEAD.
+
+**Proof (2026-10-04, a rig of this station's own binary and cold boot).** Keys
+went through a sandbox daemon, as the editor's own chord stream (`typeListing()`
+replayed by `key-burst-proof.mjs --edges`), with the rig at 1.00x real time.
+A 16-line listing dense in SYMBOL and CAPS SHIFT chords (`"A+B*C:D(E)$!";1+2*3`
+on every line) LISTed pixel-identical to a slow reference in 2 of 2 runs. All
+three examples typed exactly, twice each. The cold-boot screen is
+pixel-identical under the new binary, and the savestate signature is unchanged
+(`1706c707`, 905 entries; the station cold-boots, `MAME_NATIVE_CHECKPOINT=0`).
+Rollback: `assets/zxspectrum/mame-native/spectrum.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`. Evidence:
+`/data/vms/streamhost/stations/zxspectrum/evidence/shift-lead-2026-10-04/`.
+
 ## Rollback
 
 The checkpoint lives *inside* `overlay.qcow2`; never delete or recreate that file by
