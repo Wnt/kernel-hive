@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Rainbow",
+      "description": "A seven-colour rainbow wave painted on the 80-column screen with CHAR and COLOR; BASIC 7.0's line-drawing commands only reach the 40-column chip, which this exhibit does not show."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Prime Factors",
+      "description": "Type a whole number and a BASIC 7.0 DO WHILE loop breaks it into its prime factors; 0 stops."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Letter Hunt",
+      "description": "Ten letters appear one at a time in random places; type each as soon as you see it, against the clock."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Commodore 128 System Guide",
+      "url": "https://www.zimmers.net/anonftp/pub/cbm/manuals/c128/C128_System_Guide.pdf",
+      "lang": "en",
+      "note": "The user's guide that came with the machine, with the complete BASIC 7.0 reference. PDF scan."
+    },
+    {
+      "title": "Commodore 128 Programmer's Reference Guide (1986)",
+      "url": "https://archive.org/details/commodore-128-programmer-ref",
+      "lang": "en",
+      "note": "BASIC 7.0, the memory map, the VDC and machine code in depth. Scan at the Internet Archive."
+    }
+  ]
+}

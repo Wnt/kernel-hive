@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Colour Squares",
+      "description": "Eleven nested squares in the VIC-20's own colours, poked straight into screen memory at 7680 and colour memory at 38400; press any key to finish."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Binary Numbers",
+      "description": "Type a number from 0 to 255 and BASIC spells it out as the eight bits the machine actually stores; -1 stops."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Catch the Star",
+      "description": "Steer the basket with Z and M to catch the falling stars; the first one you miss ends the round."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Personal Computing on the VIC-20",
+      "url": "https://www.zimmers.net/anonftp/pub/cbm/manuals/vic20/VIC-20_Personal_Computing_Guide.pdf",
+      "lang": "en",
+      "note": "The user's guide that came in the box: setting up, the keyboard and BASIC. PDF scan."
+    },
+    {
+      "title": "VIC-20 Programmer's Reference Guide",
+      "url": "https://www.zimmers.net/anonftp/pub/cbm/manuals/vic20/VIC-20_Programmers_Reference_Guide_1st_Edition_6th_Printing.pdf",
+      "lang": "en",
+      "note": "Every BASIC keyword, the memory map, sound and machine code. PDF scan."
+    }
+  ]
+}

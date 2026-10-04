@@ -1,0 +1,30 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "House and Sun",
+      "description": "A small landscape drawn with BASIC 3.5's own graphics commands, BOX, CIRCLE, DRAW and PAINT; press any key to return to text."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Polygons",
+      "description": "Say how many sides, from 3 to 12, and BASIC 3.5's CIRCLE command draws that polygon by stepping round a circle; 0 stops."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Whack-a-Mole",
+      "description": "Fifteen moles pop up over the number keys 1 to 9; press the right number before each one ducks back down."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Commodore Plus/4 User's Manual",
+      "url": "https://www.zimmers.net/anonftp/pub/cbm/manuals/plus4/Plus_4_Users_Manual.pdf",
+      "lang": "en",
+      "note": "Setting up, the built-in 3-plus-1 software and the BASIC 3.5 encyclopedia. PDF scan."
+    }
+  ]
+}

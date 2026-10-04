@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Double Helix",
+      "description": "Two strands twist down the 80-column screen, drawn with nothing more than PRINT, TAB and a row of equals signs."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Day of the Week",
+      "description": "Type any date and the CBM 610 works out which day of the week it falls on, using Zeller's congruence; year 0 stops."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "The Last Match",
+      "description": "Take one, two or three matches in turn; whoever takes the last one loses, and the computer knows the trick."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Commodore B Series User's Guide",
+      "url": "https://www.zimmers.net/anonftp/pub/cbm/manuals/cbm2/B_Series_Users_Guide.pdf",
+      "lang": "en",
+      "note": "The user's guide for the CBM-II family, sold as the B series in North America, including Extended BASIC 4.0+. PDF scan."
+    },
+    {
+      "title": "Commodore 700 Reference Manual (1982)",
+      "url": "https://archive.org/details/commodore-700-reference-manual",
+      "lang": "en",
+      "note": "Reference manual for the CBM-II family, written for the 700 models; the 610 runs the same BASIC 4.0+. Scan at the Internet Archive."
+    }
+  ]
+}
