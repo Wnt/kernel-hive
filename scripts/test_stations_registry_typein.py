@@ -82,6 +82,22 @@ class TypeInPacingTest(unittest.TestCase):
         self.assertIn("0..60000", text)
         self.assertIn("never a letter", text)
 
+    def test_wrap_pause_shape(self) -> None:
+        base = {"dialect": "applesoft", "perCharMs": 70}
+        for good in ({"cols": 40, "ms": 0}, {"cols": 40, "ms": 250, "promptCols": 1}):
+            self.assertEqual(errors_for([station(type_in={**base, "wrapPause": good}, hold=32, gap=32)]), [], good)
+        for bad in (
+            {"cols": 0, "ms": 5},
+            {"cols": 40, "ms": -1},
+            {"cols": 40},
+            {"cols": 40, "ms": 5, "promptCols": 40},
+            {"cols": 40, "ms": 5, "extra": 1},
+            {"cols": "40", "ms": 5},
+            "40",
+        ):
+            errors = errors_for([station(type_in={**base, "wrapPause": bad}, hold=32, gap=32)])
+            self.assertTrue(any("wrapPause" in e for e in errors), bad)
+
     def test_refuses_a_station_that_does_not_stream(self) -> None:
         row = station(type_in={"dialect": "cbm-basic", "perCharMs": 170})
         row["stream"]["transport"] = "showcase"
