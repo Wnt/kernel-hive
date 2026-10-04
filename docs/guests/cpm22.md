@@ -66,7 +66,7 @@ Status: **production** (Tier 1, host-native MAME `kayproii`) — cpm22 wave, 202
 The boot disk is **KAYPRO CP/M 2.2 (GMv2.72)**, a German BIOS. MAME's
 Kaypro keyboard is a US one, and the BIOS reinterprets its keys the way a
 DIN keyboard is labelled. Measured key by key at `A>` (every US key bare and
-with Shift, slow, one rig pass — sandbox `shots/cpm22/keytable*`):
+with Shift, slow, one rig pass — `evidence/shift-lead-2026-10-04/physical-charmap/keytable*`):
 
 | US key | bare | Shift | | US key | bare | Shift |
 |---|---|---|---|---|---|---|

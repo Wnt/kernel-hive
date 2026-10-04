@@ -240,6 +240,26 @@ Two more in the same family:
   unchecked nil return produced an entire "the cache may serve stale frames"
   scare: the machine was never paused, so two "paused" snapshots differing by
   1.3 M pixels were just a guest booting between them.
+- **"Old" means the rollback copy, not the live path.** A rig that copies the
+  station's LIVE binary runs the NEW one as soon as the station is swapped, at
+  the live env's new lead or EXCL. In the 2026-10-04 MAME shift-lead rollout
+  this silently turned two batches of "old binary" passes and an old-vs-new
+  comparison into new-vs-new; a golden check made after a swap would have
+  compared a binary with itself. Pin the old arm to
+  `<binary>.pre-<change>` (and its saved env) by path, and timestamp every
+  run against the swap.
+- **A "cursor-sized" difference can be a changed character.** A comparator
+  that passes any small blob as a blinking cursor passed `$` -> `4` and
+  `*` -> `8` as EXACT. Call a blob a cursor only when one side is blank against
+  its local background, or one side is the exact inverse of the other (a block
+  cursor over a glyph); glyph ink on both sides is a changed character. Judge
+  "ink" against the blob's own surroundings: on a coloured bar every pixel
+  differs from the frame's background.
+- **Identical frames prove nothing unless the input landed.** A test whose
+  keys went to a read-only pad (domainos without `F1`), a loading splash
+  (atari800xl before The Last Word was ready) or a cleared command line (an
+  Enter at the end) matches its reference perfectly. Look at the reference
+  frame first: it must show the typed text.
 
 ## 14. Say which regime you are claiming
 
