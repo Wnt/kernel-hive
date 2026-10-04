@@ -69,6 +69,12 @@ visitor commits (Return, or a click elsewhere) could reach the asset media
 and outlive Restore. Their mtimes (2026-09-13) show nothing has been written
 so far. Opening them read-only (or from a copy per launch) would close it.
 
+**Live since 2026-10-04.** Through the real SPA keyboard, bare characters (so
+the SPA adds a synthetic Shift, the shape that failed): the selected disk's name
+became `A+B(D)E$!"1+2=3` exactly, uncommitted, and Restore to golden brought
+back Write/Paint. Both floppy images hashed identical before and after
+(`evidence/.../floppy-guard/`).
+
 Evidence: `/data/vms/streamhost/stations/macsys1/evidence/shift-lead-2026-10-04/`.
 Rollback: `assets/macsys1/mame-native/mac128.pre-shiftlead-20261004` and
 `station.env.pre-shiftlead-20261004`.

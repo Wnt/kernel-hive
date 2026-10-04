@@ -395,8 +395,9 @@ Shift's own release is another field that nothing held back, so it applied in
 the same pass and the key landed unshifted. The apple2e, which has no EXCL,
 typed `(` as `9` and `$` as `4` with the first build of the lead. Since
 2026-10-04 a lead above 0 turns the three rules on for every station. A
-station with EXCL behaves exactly as before, and lead 0 without EXCL is still
-the old engine, byte for byte.
+station with EXCL behaves exactly as before, and lead 0 without EXCL runs the
+old engine's code path. That is not the same as the old binary's behaviour: see
+the Oric measurement under "Every MAME keyboard station" below.
 
 **The Commodores, VICE `vicectl`: the scan tore the latch.** VICE resolves a
 keysym through the machine's `.vkm` keymap, and on a VIC-20 `:` `*` `+` `@`
@@ -512,20 +513,51 @@ launcher as `station.env.pre-shiftlead-20261004` and
 `x11-runtime.sh.pre-shiftlead-20261004`. Evidence is in
 `/data/vms/streamhost/stations/<id>/evidence/shift-lead-2026-10-04/`.
 
-**Which other stations are exposed.** Every MAME keyboard station applied
-Shift and the key in one drain pass before this, by construction. How much that
-costs depends on how the machine scans its keyboard. Each station was measured
-on a rig of its live binary, typing a 16-line listing with 176 shifted
-characters through its own editor rules (`survey` frames in the evidence):
+**Every MAME keyboard station, 2026-10-04.** Before this, every MAME keyboard
+station put Shift and its key into the machine in one drain pass, by
+construction. How much that cost depended on how the machine reads its
+keyboard. Each station was measured on a rig of its own binary and golden,
+through a sandbox daemon, with the editor's own edges and pace (or, without an
+editor, a line typed with `typeText()`'s back-to-back Shift). Stations with an
+editor typed a 16-line listing with `"A+B*C:D(E)$!";1+2*3` on every line,
+LISTed and compared glyph by glyph with a slow reference. A run counted only at
+the station's own speed: 0.98 of real time, or within 5 % of the live station
+for the CPU-bound `bbcb`, `dn3500` and `fmtownsftv`. On the new binary every
+example typed exactly twice, every golden restored pixel-identical with an
+unchanged savestate signature, and every station was smoked live through the
+real editor (or the real SPA keyboard where there is none). The rollback
+binaries are `<binary>.pre-shiftlead-20261004`; evidence is in
+`/data/vms/streamhost/stations/<id>/evidence/shift-lead-2026-10-04/`, and the
+detail is in each guest doc.
 
-| Station | Shifted characters lost on the old binary (lead 0) |
+| Station | Lead | Old binary | New binary | Pace | Also |
+|---|---|---|---|---|---|
+| sinclairql | 20 | every shifted character lost | exact (above) | | final patch: signature `111a0cc2` unchanged |
+| oricatmos | 20 | 1 pass in 6 lost a Shift | 0 of 9; lead 0 lost in 10 of 10, 1 ms in 3 of 3, 2 ms 0 of 7 | 160 -> 180 (+12.5 %) | |
+| macsys1 | 20 | every shifted character lost | exact; 1, 2 and 5 ms still lose | no editor | OPEN: a phantom `]` at any lead |
+| fmtowns | 20 + EXCL `:key` | most of a line lost (overlap and Shift) | exact; 2 and 5 ms still lose | no editor | its EXCL tag `:kbd_` (samcoupe's) never matched |
+| apple2e | 10 + EXCL `:X` | 0 lost; its keymap had no Shift row | exact | new editor, 120 | below |
+| cpm22 | 10 + EXCL `:KEYS` | overlapping keys reordered | exact | no editor | German CP/M, `keyboard.physical` (above) |
+| atari800xl | 10 + EXCL `:keyboard.` | overlapping keys lost | exact | no editor | |
+| zxspectrum, zx81 | 10 | 0 lost | exact | 400 -> 410 (+2.5 %) on zxspectrum | |
+| bbcmicro, armeval | 10 | 0 lost | exact | 160 -> 170 (+6 %) on armeval | live speed 0.91 and 0.49 |
+| mpf2 | 10 | 0 lost | exact | 70 -> 74 (+6 %), ENTER 800 ms | |
+| svi728, dragon32, kc854, svi328, msx2, svi328cpm | 10 | 0 lost | exact | | |
+| samcoupe | 10 | 0 lost | exact | | the first line can be lost right after a restore ([below](#typing-right-after-a-restore)) |
+| svi738 | 10 | 0 lost | exact | | the first keys of a CP/M line are lost, old and new |
+| riscos3, newsos, symbos | none | 0 lost (a typed line, 2 of 2) | not swapped | | measured clean |
+| domainos | none | Shift and order lost | not shipped | | hidden; runs were below its own speed |
+| apple2gs, palmos | none | no reachable text field; no keyboard | | | |
+
+Lead 0 on a new binary is the old key-module code, but on the Oric it lost a
+Shift far more often than the old binary did (10 of 10 passes against 1 of 6),
+which points at how the new build lines up with wall time, not at the engine.
+So no new binary should ship at lead 0.
+
+Other key paths, measured before this rollout:
+
+| Station | Shifted characters lost |
 |---|---|
-| sinclairql | all of them (fixed, 20 ms) |
-| oricatmos | 6 in 5 passes, e.g. `(` -> `9`, `$` -> `4`, `*` -> `8`; 0 in 6 with the new binary at 20 ms, not deployed |
-| apple2e | `PRINT 6502*2` arrived as `650282` (seen by the Acorn examples agent, not measured here) |
-| bbcmicro, dragon32, samcoupe, svi728, mpf2 | 0 in one pass |
-| msx2 | 0 in lines 2 to 16 of three passes (line 1 was the boot, [not Shift](#typing-right-after-a-restore)) |
-| zxspectrum, zx81 | 0 in 60 and 40 Symbol Shift / SHIFT chords |
 | amstradcpc | on the Caprice32 kiosk (daemon dbus pacer), 1 in about 4,500 (`"` as `2`), plus far more keys of every kind under host load (below). Host-native MAME since 2026-10-04: 0 at lead 0, 1, 2, 5 and 10 in one pass each; ships 20 ms |
 | freedos (daemon dbus pacer, PC BIOS) | 0 in three 95-character bursts sent with no pacing at all |
 | vax43bsd's xterm (daemon x11test sink) | 0 in three 307-character bursts at 40/40 |

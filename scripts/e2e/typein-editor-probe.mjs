@@ -86,10 +86,37 @@ const fbShot = (label) => {
   }
 };
 
+// `!click:X:Y` / `!dclick:X:Y` — the real SPA pointer at X,Y of the station's
+// PUBLISHED surface (the stream's own pixels), mapped through the <video>
+// element's letterboxed box. The double-click is two deliberate press/release
+// pairs (80 ms down, 150 ms apart): a zero-gap dblclick can arrive as one
+// click on a guest that samples its button.
+const pointer = async (page, spec) => {
+  const [verb, x, y] = spec.split(':');
+  const v = page.locator('video').first();
+  const box = await v.boundingBox();
+  const { vw, vh } = await v.evaluate((el) => ({ vw: el.videoWidth, vh: el.videoHeight }));
+  if (!box || !vw || !vh) throw new Error(`pointer ${spec}: no live video`);
+  const sc = Math.min(box.width / vw, box.height / vh);
+  const px = box.x + (box.width - vw * sc) / 2 + Number(x) * sc;
+  const py = box.y + (box.height - vh * sc) / 2 + Number(y) * sc;
+  await page.mouse.move(px, py, { steps: 10 });
+  await page.waitForTimeout(600);
+  const tap = async () => {
+    await page.mouse.down();
+    await page.waitForTimeout(80);
+    await page.mouse.up();
+  };
+  if (verb === 'click') await tap();
+  else if (verb === 'dclick') { await tap(); await page.waitForTimeout(150); await tap(); }
+  else throw new Error(`pointer ${spec}: verb must be click or dclick`);
+};
+
 const play = async (page, steps) => {
   for (const step of steps) {
     if (step.startsWith('@')) await page.waitForTimeout(Number(step.slice(1)));
     else if (step.startsWith('#')) fbShot(step.slice(1));
+    else if (step.startsWith('!')) await pointer(page, step.slice(1));
     else {
       const [key, times] = step.split('*');
       for (let i = 0; i < Number(times ?? 1); i += 1) {
