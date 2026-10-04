@@ -232,6 +232,10 @@ Xvfb, version-matched to the build root), shifted to 2621440.
   measured, a SIGTERM to nspawn never reached the inner script, and SIGKILLing
   nspawn itself orphaned the container and left
   `/run/systemd/nspawn/unix-export/<machine>` ("Mount point … exists already").
+  That init-kill, and the wait/force-clear of the mount, are now the shared
+  helper `scripts/lib/nspawn-unix-export.sh` (`nspawn_stop_container`,
+  `nspawn_export_clear`), used by every nspawn launcher; see
+  [VISION-WAVE.md §2](../lab/VISION-WAVE.md).
 - `nokia9300-inner.sh` is PID 2: Xvfb, then EKA2L1 in a supervised loop — a
   fresh golden copy per launch, relaunch whenever it exits (with
   `--kiosk-home` EKA2L1 itself restarts Desk when the last app exits, so this

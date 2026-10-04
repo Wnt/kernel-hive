@@ -59,15 +59,24 @@ CLEAR_COMMAND = "NEW"
 
 
 def drain_ms(row: dict[str, Any]) -> int:
-    """The daemon's per-character drain rate, or 0 when the station declares none."""
+    """The per-character drain rate, or 0 when the station declares none.
+
+    HOLD + GAP per key. A station with a modifier lead (SH_KEY_MOD_LEAD_MS: the
+    emulator's key module holds a press until the Shift level in front of it
+    has been visible that long) pays it on a shifted character, and again on
+    the key after one, so its worst character costs HOLD + max(GAP, LEAD) +
+    LEAD.
+    """
     env = (row.get("runtime") or {}).get("stationEnv", {})
-    total = 0
-    for key in ("SH_KEY_MIN_HOLD_MS", "SH_KEY_MIN_GAP_MS"):
-        try:
-            total += int(env.get(key, 0))
-        except (TypeError, ValueError):
-            return 0
-    return total
+    try:
+        hold = int(env.get("SH_KEY_MIN_HOLD_MS", 0))
+        gap = int(env.get("SH_KEY_MIN_GAP_MS", 0))
+        lead = int(env.get("SH_KEY_MOD_LEAD_MS", 0))
+    except (TypeError, ValueError):
+        return 0
+    if hold + gap == 0:
+        return 0
+    return hold + max(gap, lead) + lead
 
 
 def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
@@ -85,7 +94,7 @@ def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
                 errors,
                 row,
                 f"demoProgram.perCharMs={budget} is below the tile's typed drain rate "
-                f"({drain} ms/char = SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS); the typist "
+                f"({drain} ms/char = SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS, plus the modifier lead); the typist "
                 f"would out-run the guest and lose characters",
             )
 
@@ -132,7 +141,7 @@ def validate_type_in(rows: list[dict[str, Any]], errors: list[str]) -> None:
                 errors,
                 row,
                 f"typeIn.perCharMs={budget} is below the tile's typed drain rate ({drain} ms/char = "
-                f"SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS); the editor would out-run the guest",
+                f"SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS, plus the modifier lead); the editor would out-run the guest",
             )
 
 

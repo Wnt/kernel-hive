@@ -593,9 +593,18 @@ Mount point '/run/systemd/nspawn/unix-export/vision-vision' exists already, refu
 already there. Its teardown is **asynchronous**: it lands a beat after the
 container's pids are gone, so `reap_previous` returns true while the mount is
 still up, and the relaunch loses the race with the launch it just killed.
-`x11-runtime.sh` now waits up to 10 s for that path to disappear after reaping
-and then clears it by force (`umount` + `rmdir`), failing loudly if it will not
-go.
+
+This was fixed here first (wait up to 10 s, then clear by force, fail loudly)
+and is now the **shared helper `scripts/lib/nspawn-unix-export.sh`**
+(`nspawn_export_clear <machine>`, installed at
+`/usr/local/lib/nspawn-unix-export.sh`), called by every nspawn launcher —
+vision, perq, lisa, medley, mvs38, nokia9300, indyr4400, its, multics, vax43bsd
+— just before `systemd-nspawn`. It touches only that station's own
+`unix-export/<machine>` and refuses while a live container holds the name. The
+same helper stops the previous container by SIGKILLing its init
+(`nspawn_stop_container`), so nspawn unmounts the export itself and nothing is
+orphaned. Contract and proof: the header of the helper and
+`tests/nspawn-unix-export-selftest.sh`.
 
 **Do not rename `$MACHINE`.** A cosmetic rename of the nspawn machine from
 `vision-vision` to `kh-vision` was tried in the same pass and every container

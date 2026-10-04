@@ -163,7 +163,10 @@ command name: `PATH=...: No such file or directory`. Use `env`.
 A container that dies without its supervisor leaves
 `/run/systemd/nspawn/unix-export/kh-mvs38` mounted, and the next start refuses
 with `Mount point ... exists already`. From outside that is a permanently dead
-exhibit. The launcher's reap clears it once nothing of ours is alive.
+exhibit. The launcher calls the shared helper `scripts/lib/nspawn-unix-export.sh`
+(`nspawn_export_clear`) before `systemd-nspawn`: it waits out nspawn's
+asynchronous teardown, force-clears a stale mount, and refuses if a live
+container holds the name. See [VISION-WAVE.md §2](../lab/VISION-WAVE.md).
 
 ## Reset and standby
 
