@@ -175,6 +175,33 @@ A second run pressed Stop during line 2. The framebuffer right after Stop and
 Stop. The run ended with the visitor's Restore to golden, and the framebuffer
 returned to the clean READY screen.
 
+### Known defect: shifted punctuation on the VICE stations
+
+**Open as of 2026-10-04.** On the VICE machines, a character that needs Shift
+on a US keyboard but is an unshifted key on a Commodore (`:` and `*`) sometimes
+arrives with the Commodore Shift still applied, or not at all. `:` becomes `[`
+on the VIC-20 and C128 and `*` on the 8032, and a `*` occasionally vanishes.
+The rate is about 1 in 50, so most multi-statement listings meet one.
+
+It was measured on sandbox rigs of the stations' own binaries. Keys went
+through the `vicectl` module at the stations' 60/60 pacing, and each listing
+was read back byte for byte from a `SAVEST` snapshot, tokenised with VICE's
+`petcat`. The test was a 6-line stress listing with 11 such characters a line,
+typed three times on each rig:
+
+| Path | vic20 | c128 | cbm8032 |
+|---|---|---|---|
+| Shift_L press, then the shifted keysym (what the daemon forwards) | 3 of 198 | 5 of 198, plus one line lost whole | 3 of 198 |
+| The keysym alone, no Shift edge (control) | 0 of 198 | 0 of 198 | 0 of 198 |
+
+A module trace (`VICE_CTL_TRACE=1`) shows a failing `:` with exactly the same
+edge order and spacing as the good ones: Shift down, `:` down three frames
+later, `:` up, Shift up. The queue is not the cause. The fault is VICE's
+deshift of a held host Shift racing the KERNAL's matrix scan, so the fix
+belongs in the module or the sink, not the pacing. A visitor typing `:` on
+the physical keyboard holds Shift too, so this is not only the editor's
+problem.
+
 ## Analytics
 
 `spa/src/analytics/catalogue/typein.ts` (area `keyboard`):
