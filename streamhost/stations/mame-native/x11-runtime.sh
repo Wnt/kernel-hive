@@ -319,22 +319,42 @@ PY
 # resting station failed. The emulated-clock wait above returns from a PING the
 # module answers at a fixed point of its frame loop, so the stop landed
 # mid-publish in 5 of 7 stations (2026-10-04) where a wall-clock sleep had hit
-# it by chance. So: stop, wait for state T, read the sequence word (offset 24);
-# odd -> resume for 10 ms and try again.
+# it by chance. So: wait for an even sequence word (offset 24) while it runs,
+# stop, wait until EVERY thread is in state T, and check the word again.
 freeze_published() {
-  local p=$1 i _ seq
-  for i in $(seq 1 20); do
+  local p=$1 i _ t word all
+  for i in $(seq 1 40); do
+    # Stop just AFTER a publish: wait, running, for an even word. A process
+    # that was stopped mid-copy may not run again for a while on a loaded box,
+    # so a blind CONT-sleep-STOP retry can find it parked mid-copy every time
+    # (symbos, 2026-10-04: all 20 tries odd).
+    for _ in $(seq 1 200); do
+      word="$(od -An -t u8 -j 24 -N 8 "$SHM" 2>/dev/null | tr -d ' ')"
+      [ -n "$word" ] && [ $((word % 2)) = 0 ] && break
+      sleep 0.001
+    done
     kill -STOP "$p" 2>/dev/null || return 1
-    for _ in $(seq 1 50); do
-      [ "$(awk '{print $3}' "/proc/$p/stat" 2>/dev/null)" = T ] && break
+    # every thread stopped, not only the leader /proc/<pid>/stat reports on
+    for _ in $(seq 1 100); do
+      all=1
+      for t in /proc/"$p"/task/*/stat; do
+        [ "$(awk '{print $3}' "$t" 2>/dev/null)" = T ] || {
+          all=0
+          break
+        }
+      done
+      [ "$all" = 1 ] && break
       sleep 0.002
     done
-    seq="$(od -An -t u8 -j 24 -N 8 "$SHM" 2>/dev/null | tr -d ' ')"
-    [ -n "$seq" ] && [ $((seq % 2)) = 0 ] && return 0
+    word="$(od -An -t u8 -j 24 -N 8 "$SHM" 2>/dev/null | tr -d ' ')"
+    if [ "$all" = 1 ] && [ -n "$word" ] && [ $((word % 2)) = 0 ]; then
+      echo "mame-native[$TILE]: frozen between two publishes (try $i)"
+      return 0
+    fi
     kill -CONT "$p" 2>/dev/null || return 1
-    sleep 0.01
   done
-  kill -STOP "$p" 2>/dev/null # 20 unlucky tries: frozen anyway, as before
+  echo "mame-native[$TILE]: no clean publish boundary in 40 tries; frozen anyway"
+  kill -STOP "$p" 2>/dev/null
 }
 if [ -n "${SH_IDLE_PAUSE_PIDFILE:-}" ] && [ "${SH_IDLE_PAUSE_SECS:-60}" != 0 ]; then
   echo "booting $(cat "$PIDFILE")" >"$BASE/scene.state"
