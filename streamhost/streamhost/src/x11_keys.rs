@@ -42,10 +42,12 @@ use std::time::{Duration, Instant};
 
 use crate::vice_keymap::ViceKeyMap;
 
-/// Bound on queued-but-unpaced edges. Generous: at the default 40/40 pacing a
-/// full queue is ~5 s of typing backlog, and a visitor cannot produce that
-/// without pasting; beyond it the offer is rejected as Overflow like every
-/// other sink's bounded ordered queue.
+/// Bound on queued-but-unpaced edges: at the default 40/40 pacing a full queue
+/// is ~5 s of typing backlog. A paste produces more, and that is not a loss:
+/// the offer is refused as Overflow and `InputRouter::key` waits for the
+/// injection task to drain (`X11TestSink::room`) before re-offering, so the
+/// rest of the paste waits in the session's key stream rather than vanishing.
+/// Pointer-button edges have no such wait; they never come close.
 pub(crate) const PACER_CAPACITY: usize = 128;
 
 /// The generated US-layout table, embedded so the backend works with no

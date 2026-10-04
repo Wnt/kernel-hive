@@ -51,25 +51,18 @@ use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, TryLockError};
 use std::time::Duration;
 
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, Lines};
+use tokio::io::{AsyncBufReadExt, BufReader, Lines};
 use tokio::net::unix::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::UnixStream;
 use tokio::sync::Notify;
 use tokio::time::Instant;
 
 use crate::realtime_input::{AcceptedSeq, PointerAbs, RealtimeInputSink, Reject, SinkHealth};
+use crate::sink_feed::{parse_ack, write_verb, AckLedger, ORDERED_CAPACITY};
 
-const ORDERED_CAPACITY: usize = 64;
 const HEALTH_STARTING: u8 = 0;
 const HEALTH_HEALTHY: u8 = 1;
 const HEALTH_DOWN: u8 = 2;
-
-/// Ack deadline for the OLDEST unacked write. MOVEA acks on accept, so the
-/// base only has to cover the control object's window; a button edge may be
-/// deferred behind its target plus the edge pacer, hence the per-paced
-/// allowance.
-const ACK_BASE: Duration = Duration::from_secs(5);
-const ACK_PER_PACED: Duration = Duration::from_millis(200);
 
 /// `SH_RAMABS_TRACE=on|1`: per-event wire tracing — ingress, every tx line and
 /// every ack with its RTT. journald supplies the timestamps.
@@ -330,34 +323,13 @@ impl Drop for RamAbsSink {
     }
 }
 
-/// One in-flight seq-stamped write awaiting its OK/ERR ack.
-struct Sent {
-    seq: u64,
-    at: Instant,
-    paced: bool,
-}
-
-/// Deadline for the OLDEST unacked write. Removals keep the deque in send
-/// order, so the front is always the oldest.
-fn ack_deadline(outstanding: &VecDeque<Sent>) -> Option<Instant> {
-    let oldest = outstanding.front()?;
-    let paced = outstanding.iter().filter(|s| s.paced).count() as u32;
-    Some(oldest.at + ACK_BASE + ACK_PER_PACED * paced)
-}
-
 /// Route one control-object line. OK/ERR acks retire their outstanding entry;
 /// anything else (an unsolicited notice) is not an ack and is ignored.
-fn on_reply(line: &str, outstanding: &mut VecDeque<Sent>) {
-    let mut tok = line.splitn(3, ' ');
-    let (Some(seq), Some(kind)) = (tok.next(), tok.next()) else {
+fn on_reply(line: &str, outstanding: &mut AckLedger) {
+    let Some((seq, err)) = parse_ack(line) else {
         return;
     };
-    let Ok(seq) = seq.parse::<u64>() else { return };
-    if kind != "OK" && kind != "ERR" {
-        return;
-    }
-    if let Some(i) = outstanding.iter().position(|s| s.seq == seq) {
-        let sent = outstanding.remove(i).unwrap();
+    if let Some(sent) = outstanding.ack(seq) {
         let rtt_us = sent.at.elapsed().as_micros() as u64;
         if trace_on() {
             eprintln!("[ramabs-trace] ack {seq} rtt_us={rtt_us}");
@@ -367,7 +339,7 @@ fn on_reply(line: &str, outstanding: &mut VecDeque<Sent>) {
     // An ERR is an ack for liveness (the control object processed the verb)
     // but the verb did not apply; surface it, it should never happen on this
     // wire.
-    if kind == "ERR" {
+    if err {
         eprintln!("[ramabs] control object replied {line}");
     }
 }
@@ -376,19 +348,14 @@ async fn send_cmd(
     wr: &mut OwnedWriteHalf,
     seq: &mut u64,
     cmd: Cmd,
-    outstanding: &mut VecDeque<Sent>,
+    outstanding: &mut AckLedger,
 ) -> std::io::Result<()> {
     *seq += 1;
-    wr.write_all(format!("{} {}\n", *seq, cmd.line).as_bytes())
-        .await?;
+    write_verb(wr, *seq, &cmd.line).await?;
     if trace_on() {
         eprintln!("[ramabs-trace] tx {} {}", *seq, cmd.line);
     }
-    outstanding.push_back(Sent {
-        seq: *seq,
-        at: Instant::now(),
-        paced: cmd.paced,
-    });
+    outstanding.sent(*seq, cmd.paced, false);
     Ok(())
 }
 
@@ -475,7 +442,7 @@ async fn run_connection(
     // Resync preamble: releases first (a release of an already-released button
     // is a no-op on the guest), a fresh statement of the current target, then
     // re-press whatever the visitor is still holding.
-    let mut outstanding: VecDeque<Sent> = VecDeque::new();
+    let mut outstanding = AckLedger::default();
     let mut preamble = vec![
         Cmd::edge("UP1"),
         Cmd::edge("UP2"),
@@ -510,7 +477,7 @@ async fn run_connection(
         if shared.closed.load(Ordering::Acquire) {
             return;
         }
-        let deadline = ack_deadline(&outstanding);
+        let deadline = outstanding.deadline();
         tokio::select! {
             _ = shared.notify.notified() => {}
             line = lines.next_line() => match line {
@@ -539,6 +506,7 @@ async fn run_connection(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tokio::io::AsyncWriteExt;
     use tokio::net::UnixListener;
 
     const HELLO: &[u8] = b"HELLO ramabs/1 caps=movea,btn,sync,stat surf=1024x768\n";

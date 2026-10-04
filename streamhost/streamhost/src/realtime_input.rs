@@ -15,10 +15,10 @@ use tokio::net::UnixStream;
 use tokio::sync::Notify;
 
 use crate::config::{Config, InputBackend};
+use crate::sink_feed::ORDERED_CAPACITY;
 use crate::{mame_input, mame_sock, ptr_grid, vice_keymap, vice_sock};
 
 const RECORD_BYTES: usize = 16;
-const ORDERED_CAPACITY: usize = 64;
 const HEALTH_STARTING: u8 = 0;
 const HEALTH_HEALTHY: u8 = 1;
 const HEALTH_DOWN: u8 = 2;
@@ -79,7 +79,19 @@ pub trait RealtimeInputSink: Send + Sync {
     }
     fn health(&self) -> SinkHealth;
     fn backend_name(&self) -> &'static str;
+    /// Signalled when the sink's ordered queue has made room, so a key refused
+    /// as `Overflow` can be re-offered instead of dropped (`InputRouter::key`).
+    /// `None` = this sink never queues keys, so an Overflow is final.
+    fn room(&self) -> Option<&Notify> {
+        None
+    }
 }
+
+/// How long `InputRouter::key` keeps re-offering one edge to a full sink. A
+/// healthy writer drains its whole queue in microseconds and a dead module is
+/// detected (and the queue dropped, which also signals room) within
+/// `sink_feed::ACK_BASE`, so reaching this means the sink itself is wedged.
+const KEY_ROOM_WAIT: Duration = Duration::from_secs(15);
 
 // The concrete GalleryHid/Warpd sinks live in a sibling file purely for the
 // per-file line budget; `#[path]` keeps them a private child module with the
@@ -361,8 +373,15 @@ impl InputRouter {
         self.offer_pointer(&state, wheel_v, wheel_h, true)
     }
 
+    /// One key edge, synchronously offered: refused as `Overflow` when the
+    /// sink's queue is full. Typing goes through `key`, which waits instead.
+    ///
+    /// Takes the state lock BLOCKING, as its own doc says keys must: a
+    /// `try_lock` here lost the edge outright (and uncounted — `handle_key`
+    /// discarded the result) whenever a pointer move on another task held the
+    /// lock for its few field writes.
     pub fn try_key(&self, key: u16, down: bool, repeat: bool) -> Result<AcceptedSeq, Reject> {
-        let mut state = self.state.try_lock().map_err(|_| Reject::Busy)?;
+        let mut state = self.lock_state_ordered();
         if let Some(bit) = modifier_bit(key) {
             if down {
                 state.modifiers |= 1 << bit;
@@ -378,6 +397,35 @@ impl InputRouter {
             repeat,
             modifiers: state.modifiers,
         })
+    }
+
+    /// One key edge that must ARRIVE. A full queue is not a reason to drop a
+    /// keystroke: the sink's writer drains it to the module as fast as the
+    /// socket takes it, so wait for its `room` signal and offer the edge again.
+    /// That wait is also the backpressure: the session's key stream is not
+    /// read meanwhile, so a paste longer than the queue waits in the QUIC
+    /// stream instead of being cut short. Order holds — the caller is the one
+    /// task draining that stream, and it re-offers THIS edge before reading
+    /// the next. Anything but Overflow (BackendDown, Unsupported) returns at
+    /// once, as does a sink with no `room` to wait for.
+    pub async fn key(&self, key: u16, down: bool, repeat: bool) -> Result<AcceptedSeq, Reject> {
+        let Some(room) = self.sink.room() else {
+            return self.try_key(key, down, repeat);
+        };
+        let give_up = tokio::time::Instant::now() + KEY_ROOM_WAIT;
+        loop {
+            // Registered BEFORE the offer, so a drain that lands between the
+            // refusal and the wait still wakes it.
+            let notified = room.notified();
+            tokio::pin!(notified);
+            notified.as_mut().enable();
+            match self.try_key(key, down, repeat) {
+                Err(Reject::Overflow) if tokio::time::Instant::now() < give_up => {
+                    let _ = tokio::time::timeout_at(give_up, notified).await;
+                }
+                other => return other,
+            }
+        }
     }
 
     fn offer_pointer(

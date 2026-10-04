@@ -37,6 +37,9 @@ mod realtime_input;
 mod rel_bridge;
 mod session_ticket;
 mod signaling;
+mod sink_feed;
+#[cfg(test)]
+mod sink_mock;
 mod trace;
 mod trace_guest;
 mod trace_session;

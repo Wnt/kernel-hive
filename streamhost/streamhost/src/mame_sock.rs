@@ -17,14 +17,16 @@
 //! of themselves, so the restate-before-edge property survives the queueing.
 //!
 //! Ack liveness must not false-trip on the module's pacing: KEY acks apply
-//! hold/gap-paced (~150 ms per key in a burst) and edge acks can defer behind
-//! an in-flight MOVEA up to the chooser's give-up cap (~1.6 s), so the oldest
-//! unacked write is declared dead only after 5 s plus 200 ms per outstanding
-//! paced verb (keys + edges). MOVEA acks on ACCEPT and needs no allowance; a
-//! PAUSED machine services verbs from the frame drain (~40-50 ms), well inside
-//! the base. On breach or any read/write error: health Down, close, drop both
-//! queues — unacked motion is never replayed — and reconnect forever with
-//! 50 ms..1 s backoff. Each (re)connect verifies the HELLO banner, then
+//! hold/gap-paced (~60-150 ms per edge in a burst, and a pasted listing is
+//! hundreds of edges deep in the module's own unbounded queue) and edge acks
+//! can defer behind an in-flight MOVEA up to the chooser's give-up cap
+//! (~1.6 s). So the module is judged by PROGRESS — the head of the outstanding
+//! list gets 5 s (+200 ms if paced) from the moment it became the head, never
+//! a budget counted from when it was sent (`sink_feed` has the incident). MOVEA
+//! acks on ACCEPT; a PAUSED machine services verbs from the frame drain
+//! (~40-50 ms), well inside the base. On breach or any read/write error:
+//! health Down, close, drop both queues — unacked motion is never replayed —
+//! and reconnect forever with 50 ms..1 s backoff. Each (re)connect verifies the HELLO banner, then
 //! resynchronizes the guest from router truth: UP1..UP3 (the module coalesces
 //! redundant releases), a fresh MOVEA of the current target, then DOWNn for
 //! each held button.
@@ -51,7 +53,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, TryLockError};
 use std::time::Duration;
 
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, Lines};
+use tokio::io::{AsyncBufReadExt, BufReader, Lines};
 use tokio::net::unix::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::UnixStream;
 use tokio::sync::Notify;
@@ -62,17 +64,11 @@ use crate::ptr_grid::{GridReckon, GridStep, PtrGrid};
 use crate::realtime_input::{
     AcceptedSeq, KeyEvent, PointerAbs, RealtimeInputSink, Reject, SinkHealth,
 };
+use crate::sink_feed::{parse_ack, write_verb, AckLedger, ORDERED_CAPACITY};
 
-const ORDERED_CAPACITY: usize = 64;
 const HEALTH_STARTING: u8 = 0;
 const HEALTH_HEALTHY: u8 = 1;
 const HEALTH_DOWN: u8 = 2;
-/// Ack deadline for the oldest unacked write: base covers MOVEA (acks on
-/// accept) plus paused-machine frame-drain pickup; the per-paced allowance
-/// covers KEY hold/gap pacing (~150 ms/key) and edges deferred behind an
-/// in-flight MOVEA (give-up cap ~1.6 s).
-const ACK_BASE: Duration = Duration::from_secs(5);
-const ACK_PER_PACED: Duration = Duration::from_millis(200);
 
 /// SH_MAMESOCK_TRACE=on|1: per-event wire tracing for the #45 live pointer
 /// debugging campaign — browser-event ingress, every tx line, every ack with
@@ -93,6 +89,9 @@ struct Counters {
     accepted: AtomicU64,
     coalesced: AtomicU64,
     dropped: AtomicU64,
+    /// Offers refused because the hand-off queue was full. A pointer edge
+    /// refused here is lost (and counted in `dropped` too); a key is re-offered
+    /// by `InputRouter::key` once the writer signals `room`.
     overflow: AtomicU64,
     backend_down: AtomicU64,
     /// Key edges whose scancode has no keymap row. Counted AND logged per
@@ -194,7 +193,11 @@ struct Pending {
 
 struct Shared {
     pending: Mutex<Pending>,
+    /// Work for the writer task.
     notify: Notify,
+    /// The writer drained the ordered queue (or dropped it on a disconnect):
+    /// a key refused as Overflow may be re-offered (`InputRouter::key`).
+    room: Notify,
     health: AtomicU8,
     counters: Counters,
     closed: AtomicBool,
@@ -229,6 +232,7 @@ impl MameSockSink {
                 grid: GridReckon::default(),
             }),
             notify: Notify::new(),
+            room: Notify::new(),
             health: AtomicU8::new(HEALTH_STARTING),
             counters: Counters::default(),
             closed: AtomicBool::new(false),
@@ -404,7 +408,10 @@ impl RealtimeInputSink for MameSockSink {
             );
             return Err(Reject::Unsupported);
         };
-        let mut p = self.lock_pending()?;
+        // A key WAITS for the queue lock, like a button edge: the writer holds
+        // it for one pop, and a `try_lock` here was a silent `Busy` drop
+        // whenever the two collided on the multi-threaded runtime.
+        let mut p = self.lock_pending_ordered();
         if self.health() != SinkHealth::Healthy {
             self.shared
                 .counters
@@ -418,7 +425,6 @@ impl RealtimeInputSink for MameSockSink {
                 .counters
                 .overflow
                 .fetch_add(1, Ordering::Relaxed);
-            self.shared.counters.dropped.fetch_add(1, Ordering::Relaxed);
             return Err(Reject::Overflow);
         }
         if let Some((mx, my)) = p.latest_move.take() {
@@ -445,6 +451,10 @@ impl RealtimeInputSink for MameSockSink {
     fn backend_name(&self) -> &'static str {
         "mamesock"
     }
+
+    fn room(&self) -> Option<&Notify> {
+        Some(&self.shared.room)
+    }
 }
 
 impl Drop for MameSockSink {
@@ -454,44 +464,20 @@ impl Drop for MameSockSink {
     }
 }
 
-/// One in-flight seq-stamped write awaiting its OK/ERR ack.
-struct Sent {
-    seq: u64,
-    at: Instant,
-    paced: bool,
-    /// KEY verb: its ack closes a `[key-tel]` tx/ack pair (keyboard-lag chain).
-    key: bool,
-}
-
-/// Deadline for the OLDEST unacked write. Removals keep the deque in send
-/// order, so the front is always the oldest; the paced allowance is recomputed
-/// from the CURRENT outstanding set each loop iteration.
-fn ack_deadline(outstanding: &VecDeque<Sent>) -> Option<Instant> {
-    let oldest = outstanding.front()?;
-    let paced = outstanding.iter().filter(|s| s.paced).count() as u32;
-    Some(oldest.at + ACK_BASE + ACK_PER_PACED * paced)
-}
-
 /// Route one module line: OK/ERR acks retire their outstanding entry (the
 /// measured receipt->ack RTT feeds telemetry — the A2 evidence path); async
 /// `EV` lines (MOVEA convergence, STATS) are not acks and are ignored.
-fn on_reply(line: &str, outstanding: &mut VecDeque<Sent>) {
+fn on_reply(line: &str, outstanding: &mut AckLedger) {
     if line.starts_with("EV ") {
         if trace_on() {
             eprintln!("[mamesock-trace] {line}");
         }
         return;
     }
-    let mut tok = line.splitn(3, ' ');
-    let (Some(seq), Some(kind)) = (tok.next(), tok.next()) else {
+    let Some((seq, err)) = parse_ack(line) else {
         return;
     };
-    let Ok(seq) = seq.parse::<u64>() else { return };
-    if kind != "OK" && kind != "ERR" {
-        return;
-    }
-    if let Some(i) = outstanding.iter().position(|s| s.seq == seq) {
-        let sent = outstanding.remove(i).unwrap();
+    if let Some(sent) = outstanding.ack(seq) {
         let rtt_us = sent.at.elapsed().as_micros() as u64;
         if trace_on() {
             eprintln!("[mamesock-trace] ack {seq} rtt_us={rtt_us}");
@@ -505,7 +491,7 @@ fn on_reply(line: &str, outstanding: &mut VecDeque<Sent>) {
     }
     // An ERR is an ack for liveness (the module processed the verb) but the
     // verb did not apply; surface it, it should never happen on this wire.
-    if kind == "ERR" {
+    if err {
         eprintln!("[mamesock] module replied {line}");
     }
 }
@@ -514,11 +500,10 @@ async fn send_cmd(
     wr: &mut OwnedWriteHalf,
     seq: &mut u64,
     cmd: Cmd,
-    outstanding: &mut VecDeque<Sent>,
+    outstanding: &mut AckLedger,
 ) -> std::io::Result<()> {
     *seq += 1;
-    wr.write_all(format!("{} {}\n", *seq, cmd.line).as_bytes())
-        .await?;
+    write_verb(wr, *seq, &cmd.line).await?;
     if trace_on() {
         eprintln!("[mamesock-trace] tx {} {}", *seq, cmd.line);
     }
@@ -526,12 +511,7 @@ async fn send_cmd(
     if key {
         crate::input_telemetry::key_tx("mamesock", *seq, &cmd.line);
     }
-    outstanding.push_back(Sent {
-        seq: *seq,
-        at: Instant::now(),
-        paced: cmd.paced,
-        key,
-    });
+    outstanding.sent(*seq, cmd.paced, key);
     Ok(())
 }
 
@@ -583,6 +563,8 @@ async fn mamesock_task(path: String, shared: Arc<Shared>) {
             p.ordered.clear();
             p.latest_move = None;
         }
+        // A key waiting for room re-offers now and is refused as BackendDown.
+        shared.room.notify_waiters();
         tokio::time::sleep(Duration::from_millis(backoff_ms)).await;
         backoff_ms = (backoff_ms * 2).min(1000);
     }
@@ -612,7 +594,7 @@ async fn run_connection(
     // Resync preamble: releases first (the module coalesces a release of an
     // already-released button away), a fresh statement of the current target,
     // then re-press whatever the visitor is still holding.
-    let mut outstanding: VecDeque<Sent> = VecDeque::new();
+    let mut outstanding = AckLedger::default();
     let mut preamble = vec![
         Cmd::edge("UP1"),
         Cmd::edge("UP2"),
@@ -641,10 +623,11 @@ async fn run_connection(
                 return;
             }
         }
+        shared.room.notify_waiters();
         if shared.closed.load(Ordering::Acquire) {
             return;
         }
-        let deadline = ack_deadline(&outstanding);
+        let deadline = outstanding.deadline();
         tokio::select! {
             _ = shared.notify.notified() => {}
             line = lines.next_line() => match line {
@@ -671,349 +654,5 @@ async fn run_connection(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use tokio::net::UnixListener;
-
-    const HELLO: &[u8] = b"HELLO mamectl/1 test indy_4610 caps=natkbd,savest screen=1288x1024\n";
-
-    fn key(seq: u64, code: u16, down: bool) -> KeyEvent {
-        KeyEvent {
-            seq,
-            key: code,
-            down,
-            repeat: false,
-            modifiers: 0,
-        }
-    }
-
-    fn ev(seq: u64, x: u32, y: u32, buttons: u16) -> PointerAbs {
-        PointerAbs {
-            seq,
-            x,
-            y,
-            width: 1288,
-            height: 1024,
-            buttons,
-            wheel_v: 0,
-            wheel_h: 0,
-            ordered: false,
-        }
-    }
-
-    /// Mock ctlsock module: accept forever, banner each connection, log every
-    /// verb line (seq stripped) and ack it `<seq> OK`. `drop_after` drops the
-    /// FIRST connection after acking that many lines (the reconnect fixture);
-    /// later connections run until the peer goes away.
-    fn spawn_module(
-        listener: UnixListener,
-        log: Arc<Mutex<Vec<String>>>,
-        drop_after: Option<usize>,
-    ) {
-        tokio::spawn(async move {
-            let mut first = true;
-            loop {
-                let Ok((mut stream, _)) = listener.accept().await else {
-                    return;
-                };
-                let (rd, mut wr) = stream.split();
-                if wr.write_all(HELLO).await.is_err() {
-                    continue;
-                }
-                let mut lines = BufReader::new(rd).lines();
-                let mut n = 0usize;
-                while let Ok(Some(line)) = lines.next_line().await {
-                    let Some((seq, verb)) = line.split_once(' ') else {
-                        continue;
-                    };
-                    log.lock().unwrap().push(verb.to_string());
-                    if wr
-                        .write_all(format!("{seq} OK\n").as_bytes())
-                        .await
-                        .is_err()
-                    {
-                        break;
-                    }
-                    n += 1;
-                    if first && drop_after == Some(n) {
-                        break; // drop the connection: the sink must resync
-                    }
-                }
-                first = false;
-            }
-        });
-    }
-
-    async fn wait_until(what: &str, mut cond: impl FnMut() -> bool) {
-        for _ in 0..2500 {
-            if cond() {
-                return;
-            }
-            tokio::time::sleep(Duration::from_millis(2)).await;
-        }
-        panic!("timeout waiting for {what}");
-    }
-
-    fn bind(tag: &str) -> (std::path::PathBuf, UnixListener) {
-        let dir = std::env::temp_dir().join(format!("mamesock-{tag}-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let sock = dir.join("ctl.sock");
-        let _ = std::fs::remove_file(&sock);
-        let listener = UnixListener::bind(&sock).unwrap();
-        (dir, listener)
-    }
-
-    /// The full MameCmdSink abs-mode contract on the mamectl wire: the resync
-    /// preamble, clamped MOVEA targets, the deliberate restate-before-edge
-    /// duplicate for right/middle press+release, a wheel event restating the
-    /// target and emitting nothing else, the Shift+'-' and Ctrl-C matrix
-    /// chords — and never a MOVEP.
-    #[tokio::test]
-    async fn wire_contract_matches_mamecmd_abs_mode() {
-        let (dir, listener) = bind("wire");
-        let log: Arc<Mutex<Vec<String>>> = Arc::default();
-        spawn_module(listener, log.clone(), None);
-
-        let sink = MameSockSink::new(
-            dir.join("ctl.sock").to_str().unwrap().to_string(),
-            None,
-            None,
-        );
-        wait_until("healthy after HELLO", || {
-            sink.health() == SinkHealth::Healthy
-        })
-        .await;
-        wait_until("resync preamble", || log.lock().unwrap().len() >= 4).await;
-
-        // Clamps to the last addressable pixel of the 1288x1024 surface. Each
-        // step waits for the wire so the latest-wins slot is drained before the
-        // next offer — the transcript below is deterministic, not racy.
-        sink.try_pointer_abs(ev(1, 9999, 9999, 0)).unwrap();
-        wait_until("clamped move", || log.lock().unwrap().len() >= 5).await;
-        sink.try_pointer_abs(ev(2, 500, 500, 0)).unwrap();
-        wait_until("plain move", || log.lock().unwrap().len() >= 6).await;
-        sink.try_pointer_abs(ev(3, 500, 500, 0b100)).unwrap();
-        wait_until("right press", || log.lock().unwrap().len() >= 8).await;
-        sink.try_pointer_abs(ev(4, 500, 500, 0)).unwrap();
-        wait_until("right release", || log.lock().unwrap().len() >= 10).await;
-        sink.try_pointer_abs(ev(5, 500, 500, 0b010)).unwrap();
-        wait_until("middle press", || log.lock().unwrap().len() >= 12).await;
-        sink.try_pointer_abs(ev(6, 500, 500, 0)).unwrap();
-        wait_until("middle release", || log.lock().unwrap().len() >= 14).await;
-        // Wheel: ignored (no verb), but the ordered path still restates.
-        let mut wheel = ev(7, 500, 500, 0);
-        wheel.wheel_v = 3;
-        wheel.ordered = true;
-        sink.try_pointer_abs(wheel).unwrap();
-        wait_until("wheel restate", || log.lock().unwrap().len() >= 15).await;
-        // Shift+'-' => '_', then Ctrl-C: plain matrix edges, chords are the
-        // browser's own make/break stream.
-        for (code, down) in [
-            (0x2au16, true),
-            (0x0c, true),
-            (0x0c, false),
-            (0x2a, false),
-            (0x1d, true),
-            (0x2e, true),
-            (0x2e, false),
-            (0x1d, false),
-        ] {
-            sink.try_key(key(8, code, down)).unwrap();
-        }
-        wait_until("key chords", || log.lock().unwrap().len() >= 23).await;
-
-        let lines = log.lock().unwrap().clone();
-        assert_eq!(
-            lines,
-            vec![
-                "UP1",
-                "UP2",
-                "UP3",
-                "MOVEA 0 0", // preamble: no held buttons, initial target
-                "MOVEA 1287 1023",
-                "MOVEA 500 500",
-                "MOVEA 500 500",
-                "DOWN2",
-                "MOVEA 500 500",
-                "UP2",
-                "MOVEA 500 500",
-                "DOWN3",
-                "MOVEA 500 500",
-                "UP3",
-                "MOVEA 500 500", // wheel event: restate only, no wheel verb
-                "KEY 1 P1.7 Left Shift",
-                "KEY 1 P2.2 -",
-                "KEY 0 P2.2 -",
-                "KEY 0 P1.7 Left Shift",
-                "KEY 1 P1.1 Left Ctrl",
-                "KEY 1 P1.4 C",
-                "KEY 0 P1.4 C",
-                "KEY 0 P1.1 Left Ctrl",
-            ]
-        );
-        assert!(
-            lines.iter().all(|l| !l.starts_with("MOVEP")),
-            "MOVEP must never reach this wire"
-        );
-        // Unmapped scancode: rejected without touching the queue.
-        assert_eq!(
-            sink.try_key(key(99, 0xe011, true)),
-            Err(Reject::Unsupported)
-        );
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    /// The module drops the connection; the sink must go Down, reject (not
-    /// queue) offers while down, reconnect, and resync from CURRENT router
-    /// truth — never replaying motion that was queued or unacked at the drop.
-    /// Deterministic on the current-thread test runtime: between our health
-    /// poll and the offer no background task can run.
-    #[tokio::test]
-    async fn reconnect_resyncs_and_never_replays_motion() {
-        let (dir, listener) = bind("reconn");
-        let log: Arc<Mutex<Vec<String>>> = Arc::default();
-        // Drop connection 1 after the 4-line preamble + 1 move.
-        spawn_module(listener, log.clone(), Some(5));
-
-        let sink = MameSockSink::new(
-            dir.join("ctl.sock").to_str().unwrap().to_string(),
-            None,
-            None,
-        );
-        wait_until("healthy", || sink.health() == SinkHealth::Healthy).await;
-        sink.try_pointer_abs(ev(1, 100, 50, 0)).unwrap();
-        wait_until("first move on the wire", || log.lock().unwrap().len() >= 5).await;
-        wait_until("down after drop", || sink.health() == SinkHealth::Down).await;
-        // Down: rejected and NOT queued, but still updates the resync truth.
-        assert_eq!(
-            sink.try_pointer_abs(ev(2, 200, 80, 0)),
-            Err(Reject::BackendDown)
-        );
-        wait_until("reconnect preamble", || log.lock().unwrap().len() >= 9).await;
-        wait_until("healthy again", || sink.health() == SinkHealth::Healthy).await;
-        sink.try_pointer_abs(ev(3, 300, 300, 0)).unwrap();
-        wait_until("post-reconnect move", || log.lock().unwrap().len() >= 10).await;
-
-        let lines = log.lock().unwrap().clone();
-        assert_eq!(
-            lines,
-            vec![
-                "UP1",
-                "UP2",
-                "UP3",
-                "MOVEA 0 0",
-                "MOVEA 100 50",
-                // Connection 2: the preamble restates the target updated WHILE
-                // down; the dropped connection's motion is not replayed.
-                "UP1",
-                "UP2",
-                "UP3",
-                "MOVEA 200 80",
-                "MOVEA 300 300",
-            ]
-        );
-        assert_eq!(lines.iter().filter(|l| *l == "MOVEA 100 50").count(), 1);
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    /// Count-grid mode (`SH_MAMESOCK_PTR_GRID`): targets are stated in guest
-    /// mouse COUNTS, the first sample homes with a MOVEP slam and a restated
-    /// origin, plain motion still coalesces latest-wins, and entering a screen
-    /// edge carries a one-shot full-axis slam so a clamping guest and the
-    /// module's open-loop belief cannot drift apart.
-    #[tokio::test]
-    async fn count_grid_homes_states_counts_and_slams_each_edge_once() {
-        let (dir, listener) = bind("grid");
-        let log: Arc<Mutex<Vec<String>>> = Arc::default();
-        spawn_module(listener, log.clone(), None);
-
-        // The live Atari ST arm's measured map: surface x 134..891, y 63..692,
-        // on a 79 x 52 count grid.
-        let grid = PtrGrid::parse("134,63,891,692,79,52");
-        assert!(grid.is_some());
-        let sink = MameSockSink::new(
-            dir.join("ctl.sock").to_str().unwrap().to_string(),
-            grid,
-            None,
-        );
-        wait_until("healthy after HELLO", || {
-            sink.health() == SinkHealth::Healthy
-        })
-        .await;
-        wait_until("resync preamble", || log.lock().unwrap().len() >= 4).await;
-
-        // Mid-screen: homes, restates the origin, then the grid target.
-        sink.try_pointer_abs(ev(1, 502, 209, 0)).unwrap();
-        wait_until("home + target", || log.lock().unwrap().len() >= 7).await;
-        // A plain move states a count target and nothing else.
-        sink.try_pointer_abs(ev(2, 307, 209, 0)).unwrap();
-        wait_until("plain move", || log.lock().unwrap().len() >= 8).await;
-        // Into the left edge: target, then the one-shot slam.
-        sink.try_pointer_abs(ev(3, 0, 209, 0)).unwrap();
-        wait_until("edge entry", || log.lock().unwrap().len() >= 10).await;
-        // Parked on it: no second slam.
-        sink.try_pointer_abs(ev(4, 0, 260, 0)).unwrap();
-        wait_until("parked on edge", || log.lock().unwrap().len() >= 11).await;
-
-        let lines = log.lock().unwrap().clone();
-        assert_eq!(
-            lines,
-            vec![
-                "UP1",
-                "UP2",
-                "UP3",
-                "MOVEA 0 0", // preamble
-                "MOVEP -87 -60",
-                "MOVEA 0 0", // origin restated after the relative slam
-                "MOVEA 38 12",
-                "MOVEA 18 12",
-                "MOVEA 0 12",
-                "MOVEP -79 0",
-                "MOVEA 0 16",
-            ]
-        );
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    /// Edge verbs keep MameCmdSink's order and bit mapping (bit0=left -> 1,
-    /// bit2=right -> 2, bit1=middle -> 3), and all edges are ack-paced. The
-    /// (0, held) form is also the resync preamble's re-press builder.
-    #[test]
-    fn edge_cmds_keep_mamecmd_order_and_bits() {
-        let lines = |prev, next| {
-            let mut v = Vec::new();
-            edge_cmds(prev, next, &mut v);
-            assert!(v.iter().all(|c| c.paced));
-            v.into_iter().map(|c| c.line).collect::<Vec<_>>()
-        };
-        assert_eq!(lines(0, 0b111), vec!["DOWN1", "DOWN2", "DOWN3"]);
-        assert_eq!(lines(0b111, 0), vec!["UP1", "UP2", "UP3"]);
-        assert_eq!(lines(0b001, 0b101), vec!["DOWN2"]); // right press, left held
-        assert!(lines(0b010, 0b010).is_empty());
-    }
-
-    /// The paced allowance extends the oldest write's deadline per outstanding
-    /// KEY/edge; a lone MOVEA carries the 5 s base only.
-    #[test]
-    fn ack_deadline_extends_per_paced_outstanding() {
-        let at = Instant::now();
-        let mut q = VecDeque::new();
-        assert!(ack_deadline(&q).is_none());
-        q.push_back(Sent {
-            seq: 1,
-            at,
-            paced: false,
-            key: false,
-        });
-        assert_eq!(ack_deadline(&q), Some(at + ACK_BASE));
-        for seq in 2..=4 {
-            q.push_back(Sent {
-                seq,
-                at,
-                paced: true,
-                key: false,
-            });
-        }
-        assert_eq!(ack_deadline(&q), Some(at + ACK_BASE + ACK_PER_PACED * 3));
-    }
-}
+#[path = "mame_sock_tests.rs"]
+mod tests;

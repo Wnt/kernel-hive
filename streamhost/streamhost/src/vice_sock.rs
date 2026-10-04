@@ -34,7 +34,11 @@
 //! `VICE_CTL_KEY_HOLD`/`_GAP`, with `VICE_CTL_KEY_EXCL=1` serializing
 //! non-modifier presses (mandatory — the same 36-edge burst without it prints
 //! `N ''N`). The daemon's `SH_KEY_MIN_*` gate only runs on the QEMU/dbus path.
-//! The ack budget below is sized for that: ~8.5 keys/s is the guest's ceiling.
+//! So a pasted listing is the MODULE's backlog (its queue is unbounded and it
+//! reads its socket freely): this sink forwards every edge as it arrives, and
+//! judges the module alive by PROGRESS through that backlog, never by how long
+//! the oldest edge has waited in it — `sink_feed` has the incident that made
+//! that the rule, and why the hand-off queue is sized as it is.
 //!
 //! KEYBOARD ONLY. All seven VICE stations are `pointer: none` today; pointer
 //! records are rejected rather than silently invented. The `c64` GEOS pointer
@@ -47,10 +51,10 @@
 
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
-use std::sync::{Arc, Mutex, TryLockError};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, Lines};
+use tokio::io::{AsyncBufReadExt, BufReader, Lines};
 use tokio::net::unix::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::UnixStream;
 use tokio::sync::Notify;
@@ -59,18 +63,12 @@ use tokio::time::Instant;
 use crate::realtime_input::{
     AcceptedSeq, KeyEvent, PointerAbs, RealtimeInputSink, Reject, SinkHealth,
 };
+use crate::sink_feed::{parse_ack, write_verb, AckLedger, ORDERED_CAPACITY};
 use crate::vice_keymap::ViceKeyMap;
 
-const ORDERED_CAPACITY: usize = 64;
 const HEALTH_STARTING: u8 = 0;
 const HEALTH_HEALTHY: u8 = 1;
 const HEALTH_DOWN: u8 = 2;
-/// Ack deadline for the OLDEST unacked write. Every KEY is pace-delayed by the
-/// module (~120 ms per key at the 60/60 ms default, and a station may raise it),
-/// so the base covers connection setup and the per-paced allowance covers the
-/// queue standing in front of the oldest write.
-const ACK_BASE: Duration = Duration::from_secs(5);
-const ACK_PER_PACED: Duration = Duration::from_millis(200);
 
 /// Router modifier bits 0 (Left Shift) and 1 (Right Shift) — `modifier_bit()`
 /// in `realtime_input.rs`. Read from router truth rather than tracked here, so
@@ -90,6 +88,9 @@ fn trace_on() -> bool {
 struct Counters {
     accepted: AtomicU64,
     dropped: AtomicU64,
+    /// Offers refused because the hand-off queue was full. Not a loss on its
+    /// own: `InputRouter::key` waits for `room` and re-offers, and only an edge
+    /// it finally gives up on is lost (logged there).
     overflow: AtomicU64,
     backend_down: AtomicU64,
     /// Key edges whose scancode has no keymap row. Counted AND logged per edge:
@@ -152,7 +153,12 @@ struct Pending {
 
 struct Shared {
     pending: Mutex<Pending>,
+    /// Work for the writer task.
     notify: Notify,
+    /// The writer drained the hand-off queue (or dropped it on a disconnect):
+    /// a key refused as Overflow may be re-offered. `InputRouter::key` waits
+    /// on it.
+    room: Notify,
     health: AtomicU8,
     counters: Counters,
     closed: AtomicBool,
@@ -172,6 +178,7 @@ impl ViceSockSink {
         let shared = Arc::new(Shared {
             pending: Mutex::new(Pending::default()),
             notify: Notify::new(),
+            room: Notify::new(),
             health: AtomicU8::new(HEALTH_STARTING),
             counters: Counters::default(),
             closed: AtomicBool::new(false),
@@ -193,18 +200,16 @@ impl ViceSockSink {
         Arc::new(Self { shared })
     }
 
-    fn lock_pending(&self) -> Result<std::sync::MutexGuard<'_, Pending>, Reject> {
-        match self.shared.pending.try_lock() {
-            Ok(p) => Ok(p),
-            Err(TryLockError::WouldBlock) => {
-                self.shared.counters.dropped.fetch_add(1, Ordering::Relaxed);
-                Err(Reject::Busy)
-            }
-            Err(TryLockError::Poisoned(_)) => {
-                self.shared.counters.dropped.fetch_add(1, Ordering::Relaxed);
-                Err(Reject::BackendDown)
-            }
-        }
+    /// Block for the pending queue. A key is never thrown away because the
+    /// writer task happened to hold the lock: both holders keep it for a few
+    /// pushes or one pop and never across an await, so the wait is
+    /// microseconds (the `try_lock` this replaced turned that collision into a
+    /// silent `Busy` drop on a multi-threaded runtime).
+    fn lock_pending(&self) -> std::sync::MutexGuard<'_, Pending> {
+        self.shared
+            .pending
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 }
 
@@ -221,7 +226,7 @@ impl RealtimeInputSink for ViceSockSink {
 
     fn try_key(&self, event: KeyEvent) -> Result<AcceptedSeq, Reject> {
         let shifted = event.modifiers & SHIFT_MASK != 0;
-        let mut p = self.lock_pending()?;
+        let mut p = self.lock_pending();
         // A release repeats the keysym its press went out with; only a PRESS
         // resolves the shift level. Resolved before any health check so an
         // unmapped scancode is rejected identically whether or not the backend
@@ -258,7 +263,6 @@ impl RealtimeInputSink for ViceSockSink {
                 .counters
                 .overflow
                 .fetch_add(1, Ordering::Relaxed);
-            self.shared.counters.dropped.fetch_add(1, Ordering::Relaxed);
             return Err(Reject::Overflow);
         }
         p.held.retain(|(c, _)| *c != event.key);
@@ -292,6 +296,10 @@ impl RealtimeInputSink for ViceSockSink {
     fn backend_name(&self) -> &'static str {
         "vicesock"
     }
+
+    fn room(&self) -> Option<&Notify> {
+        Some(&self.shared.room)
+    }
 }
 
 impl Drop for ViceSockSink {
@@ -301,37 +309,14 @@ impl Drop for ViceSockSink {
     }
 }
 
-/// One in-flight seq-stamped write awaiting its OK/ERR ack.
-struct Sent {
-    seq: u64,
-    at: Instant,
-    paced: bool,
-    /// KEY verb: its ack closes a `[key-tel]` tx/ack pair (keyboard-lag chain).
-    key: bool,
-}
-
-/// Deadline for the OLDEST unacked write; the paced allowance is recomputed from
-/// the CURRENT outstanding set each loop iteration.
-fn ack_deadline(outstanding: &VecDeque<Sent>) -> Option<Instant> {
-    let oldest = outstanding.front()?;
-    let paced = outstanding.iter().filter(|s| s.paced).count() as u32;
-    Some(oldest.at + ACK_BASE + ACK_PER_PACED * paced)
-}
-
 /// Route one module line. `OK`/`ERR` retire their outstanding entry (the
 /// measured receipt->ack RTT feeds telemetry); `DATA` rows (KEYDUMP) and `EV`
 /// broadcasts are not acks.
-fn on_reply(line: &str, outstanding: &mut VecDeque<Sent>) {
-    let mut tok = line.splitn(3, ' ');
-    let (Some(seq), Some(kind)) = (tok.next(), tok.next()) else {
+fn on_reply(line: &str, outstanding: &mut AckLedger) {
+    let Some((seq, err)) = parse_ack(line) else {
         return;
     };
-    let Ok(seq) = seq.parse::<u64>() else { return };
-    if kind != "OK" && kind != "ERR" {
-        return;
-    }
-    if let Some(i) = outstanding.iter().position(|s| s.seq == seq) {
-        let sent = outstanding.remove(i).unwrap();
+    if let Some(sent) = outstanding.ack(seq) {
         let rtt_us = sent.at.elapsed().as_micros() as u64;
         if trace_on() {
             eprintln!("[vicesock-trace] ack {seq} rtt_us={rtt_us}");
@@ -345,7 +330,7 @@ fn on_reply(line: &str, outstanding: &mut VecDeque<Sent>) {
     }
     // An ERR is an ack for liveness (the module processed the verb) but the verb
     // did not apply — a keysym the machine's .vkm does not name lands here.
-    if kind == "ERR" {
+    if err {
         eprintln!("[vicesock] module replied {line}");
     }
 }
@@ -354,11 +339,10 @@ async fn send_cmd(
     wr: &mut OwnedWriteHalf,
     seq: &mut u64,
     cmd: Cmd,
-    outstanding: &mut VecDeque<Sent>,
+    outstanding: &mut AckLedger,
 ) -> std::io::Result<()> {
     *seq += 1;
-    wr.write_all(format!("{} {}\n", *seq, cmd.line).as_bytes())
-        .await?;
+    write_verb(wr, *seq, &cmd.line).await?;
     if trace_on() {
         eprintln!("[vicesock-trace] tx {} {}", *seq, cmd.line);
     }
@@ -366,12 +350,7 @@ async fn send_cmd(
     if key {
         crate::input_telemetry::key_tx("vicesock", *seq, &cmd.line);
     }
-    outstanding.push_back(Sent {
-        seq: *seq,
-        at: Instant::now(),
-        paced: cmd.paced,
-        key,
-    });
+    outstanding.sent(*seq, cmd.paced, key);
     Ok(())
 }
 
@@ -428,6 +407,9 @@ async fn vicesock_task(path: String, shared: Arc<Shared>) {
             p.ordered.clear();
             p.held.clear();
         }
+        // A key waiting for room re-offers now and is refused as BackendDown,
+        // instead of waiting out its bound against a queue nobody will drain.
+        shared.room.notify_waiters();
         tokio::time::sleep(Duration::from_millis(backoff_ms)).await;
         backoff_ms = (backoff_ms * 2).min(1000);
     }
@@ -450,7 +432,7 @@ async fn run_connection(
     }
     shared.health.store(HEALTH_HEALTHY, Ordering::Release);
 
-    let mut outstanding: VecDeque<Sent> = VecDeque::new();
+    let mut outstanding = AckLedger::default();
     if let Err(e) = send_cmd(wr, seq, Cmd::keyclear(), &mut outstanding).await {
         eprintln!("[vicesock] resync write failed: {e}; reconnecting");
         return;
@@ -468,10 +450,11 @@ async fn run_connection(
                 return;
             }
         }
+        shared.room.notify_waiters();
         if shared.closed.load(Ordering::Acquire) {
             return;
         }
-        let deadline = ack_deadline(&outstanding);
+        let deadline = outstanding.deadline();
         tokio::select! {
             _ = shared.notify.notified() => {}
             line = lines.next_line() => match line {
@@ -498,228 +481,5 @@ async fn run_connection(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use tokio::net::UnixListener;
-
-    const BANNER: &[u8] = b"vicectl/1 machine=VIC20 rows=16 cols=8 keys=132\n";
-    /// Shift_L, '2', 'a', Return — enough to prove substitution and passthrough.
-    const MAP: &str = "0x002a\t0xffe1\t0xffe1\t# Shift_L\n\
-                       0x0003\t0x0032\t0x0040\t# 2 at\n\
-                       0x001e\t0x0061\t0x0041\t# a A\n\
-                       0x001c\t0xff0d\t0xff0d\t# Return\n";
-
-    fn key(seq: u64, code: u16, down: bool, modifiers: u16) -> KeyEvent {
-        KeyEvent {
-            seq,
-            key: code,
-            down,
-            repeat: false,
-            modifiers,
-        }
-    }
-
-    fn write_map(dir: &std::path::Path, text: &str) -> Arc<ViceKeyMap> {
-        let path = dir.join("us-layout.keysyms");
-        std::fs::write(&path, text).unwrap();
-        Arc::new(ViceKeyMap::load(path.to_str().unwrap()).unwrap())
-    }
-
-    /// Mock `vicectl` module: banner each connection, log every verb line (seq
-    /// stripped) and ack it `<seq> OK`. `drop_after` drops the FIRST connection
-    /// after acking that many lines (the reconnect fixture).
-    fn spawn_module(
-        listener: UnixListener,
-        log: Arc<Mutex<Vec<String>>>,
-        drop_after: Option<usize>,
-    ) {
-        tokio::spawn(async move {
-            let mut first = true;
-            loop {
-                let Ok((mut stream, _)) = listener.accept().await else {
-                    return;
-                };
-                let (rd, mut wr) = stream.split();
-                if wr.write_all(BANNER).await.is_err() {
-                    continue;
-                }
-                let mut lines = BufReader::new(rd).lines();
-                let mut n = 0usize;
-                while let Ok(Some(line)) = lines.next_line().await {
-                    let Some((seq, verb)) = line.split_once(' ') else {
-                        continue;
-                    };
-                    log.lock().unwrap().push(verb.to_string());
-                    if wr
-                        .write_all(format!("{seq} OK\n").as_bytes())
-                        .await
-                        .is_err()
-                    {
-                        break;
-                    }
-                    n += 1;
-                    if first && drop_after == Some(n) {
-                        break;
-                    }
-                }
-                first = false;
-            }
-        });
-    }
-
-    async fn wait_until(what: &str, mut cond: impl FnMut() -> bool) {
-        for _ in 0..2500 {
-            if cond() {
-                return;
-            }
-            tokio::time::sleep(Duration::from_millis(2)).await;
-        }
-        panic!("timeout waiting for {what}");
-    }
-
-    fn bind(tag: &str) -> (std::path::PathBuf, UnixListener) {
-        let dir = std::env::temp_dir().join(format!("vicesock-{tag}-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let sock = dir.join("ctl.sock");
-        let _ = std::fs::remove_file(&sock);
-        let listener = UnixListener::bind(&sock).unwrap();
-        (dir, listener)
-    }
-
-    /// The wire contract: a KEYCLEAR preamble, then one `KEY <0|1> <keysym>` per
-    /// edge — with the SHIFT LEVEL SUBSTITUTED (Shift+2 is keysym `at`, 0x40 =
-    /// 64, not `2` plus a shift the guest would have to resolve), Shift_L still
-    /// forwarded as itself, and the release repeating the pressed keysym even
-    /// though Shift was let go first.
-    #[tokio::test]
-    async fn substitutes_the_shift_level_and_releases_what_it_pressed() {
-        let (dir, listener) = bind("wire");
-        let log: Arc<Mutex<Vec<String>>> = Arc::default();
-        spawn_module(listener, log.clone(), None);
-        let map = write_map(&dir, MAP);
-
-        let sink = ViceSockSink::new(dir.join("ctl.sock").to_str().unwrap().to_string(), map);
-        wait_until("healthy after banner", || {
-            sink.health() == SinkHealth::Healthy
-        })
-        .await;
-        wait_until("KEYCLEAR preamble", || !log.lock().unwrap().is_empty()).await;
-
-        // Shift+2 -> '"' on a C64 (keysym `at` on the host layout), with the
-        // visitor releasing Shift BEFORE the digit.
-        sink.try_key(key(1, 0x2a, true, 0b01)).unwrap();
-        sink.try_key(key(2, 0x03, true, 0b01)).unwrap();
-        sink.try_key(key(3, 0x2a, false, 0b00)).unwrap();
-        sink.try_key(key(4, 0x03, false, 0b00)).unwrap();
-        // A plain letter, then Return.
-        sink.try_key(key(5, 0x1e, true, 0)).unwrap();
-        sink.try_key(key(6, 0x1e, false, 0)).unwrap();
-        sink.try_key(key(7, 0x1c, true, 0)).unwrap();
-        sink.try_key(key(8, 0x1c, false, 0)).unwrap();
-        wait_until("all edges on the wire", || log.lock().unwrap().len() >= 9).await;
-
-        assert_eq!(
-            log.lock().unwrap().clone(),
-            vec![
-                "KEYCLEAR",
-                "KEY 1 65505", // Shift_L 0xffe1, forwarded as itself
-                "KEY 1 64",    // '@' — the SHIFTED keysym for scancode 0x03
-                "KEY 0 65505",
-                "KEY 0 64", // ...and the release repeats it, Shift long gone
-                "KEY 1 97", // 'a'
-                "KEY 0 97",
-                "KEY 1 65293", // Return
-                "KEY 0 65293",
-            ]
-        );
-        // A scancode the table does not carry is rejected, never folded onto a
-        // neighbour.
-        assert_eq!(
-            sink.try_key(key(99, 0xe011, true, 0)),
-            Err(Reject::Unsupported)
-        );
-        // Keyboard-only: pointer records are refused.
-        assert_eq!(
-            sink.try_pointer_abs(PointerAbs {
-                seq: 100,
-                x: 10,
-                y: 10,
-                width: 768,
-                height: 544,
-                buttons: 0,
-                wheel_v: 0,
-                wheel_h: 0,
-                ordered: false,
-            }),
-            Err(Reject::Unsupported)
-        );
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    /// The module drops the connection: the sink goes Down, REJECTS offers while
-    /// down rather than queueing them, reconnects, and re-preambles with a
-    /// KEYCLEAR — never re-pressing a key that was held at the drop.
-    #[tokio::test]
-    async fn reconnect_clears_and_never_replays_a_held_key() {
-        let (dir, listener) = bind("reconn");
-        let log: Arc<Mutex<Vec<String>>> = Arc::default();
-        spawn_module(listener, log.clone(), Some(2)); // KEYCLEAR + one KEY
-        let map = write_map(&dir, MAP);
-
-        let sink = ViceSockSink::new(dir.join("ctl.sock").to_str().unwrap().to_string(), map);
-        wait_until("healthy", || sink.health() == SinkHealth::Healthy).await;
-        sink.try_key(key(1, 0x1e, true, 0)).unwrap(); // 'a' pressed and HELD
-        wait_until("first key on the wire", || log.lock().unwrap().len() >= 2).await;
-        wait_until("down after drop", || sink.health() == SinkHealth::Down).await;
-        assert_eq!(
-            sink.try_key(key(2, 0x1c, true, 0)),
-            Err(Reject::BackendDown)
-        );
-        wait_until("reconnect preamble", || log.lock().unwrap().len() >= 3).await;
-        wait_until("healthy again", || sink.health() == SinkHealth::Healthy).await;
-        sink.try_key(key(3, 0x1c, true, 0)).unwrap();
-        wait_until("post-reconnect key", || log.lock().unwrap().len() >= 4).await;
-
-        assert_eq!(
-            log.lock().unwrap().clone(),
-            vec!["KEYCLEAR", "KEY 1 97", "KEYCLEAR", "KEY 1 65293"]
-        );
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    /// Only a `vicectl/1` peer is spoken to, with or without the HELLO prefix.
-    #[test]
-    fn banner_must_name_vicectl_1() {
-        assert!(banner_ok("vicectl/1 machine=C64SC rows=16 cols=8 keys=129"));
-        assert!(banner_ok("HELLO vicectl/1 machine=VIC20"));
-        assert!(banner_ok("vicectl/1"));
-        assert!(!banner_ok("HELLO mamectl/1 test indy_4610"));
-        assert!(!banner_ok("vicectl/2 machine=C64SC"));
-        assert!(!banner_ok("vicectl/10"));
-    }
-
-    /// The paced allowance extends the oldest write's deadline per outstanding
-    /// KEY; a lone KEYCLEAR carries the base only.
-    #[test]
-    fn ack_deadline_extends_per_paced_outstanding() {
-        let at = Instant::now();
-        let mut q = VecDeque::new();
-        assert!(ack_deadline(&q).is_none());
-        q.push_back(Sent {
-            seq: 1,
-            at,
-            paced: false,
-            key: false,
-        });
-        assert_eq!(ack_deadline(&q), Some(at + ACK_BASE));
-        for seq in 2..=4 {
-            q.push_back(Sent {
-                seq,
-                at,
-                paced: true,
-                key: false,
-            });
-        }
-        assert_eq!(ack_deadline(&q), Some(at + ACK_BASE + ACK_PER_PACED * 3));
-    }
-}
+#[path = "vice_sock_tests.rs"]
+mod tests;
