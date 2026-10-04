@@ -473,7 +473,7 @@ compared pixel for pixel against a reference typed with a 2 s pause.
 | 160 ms | 5 of 5 |
 | 200 ms | 5 of 5 |
 | 250 ms | 5 of 5 in the sandbox; 1 of 2 through the live editor (a lost `PA` at the last wrap) |
-| 500 ms (shipped) | see below |
+| 500 ms (shipped) | 3 of 3 through the live editor on /os/mpf2 (`LIST 100,160` frame-identical, all seven long lines intact); sandbox 1 of 1 |
 
 Pausing after the 40th typed character, not the 39th, loses a letter at each
 wrap: the prompt is column 0, so the wrap comes after 39 typed characters.
