@@ -13,7 +13,7 @@
 //
 //   INVITE=<code or path> GALLERY_URL=https://kernelhive.madekivi.fi \
 //     node typein-editor-probe.mjs <station> <listing.bas> [--run <cmd>] [--restore] [--fb-shot <dir>]
-//                                  [--stop-after <seconds>] [--inject-keys <seconds>]
+//                                  [--stop-after <seconds>] [--inject-keys <seconds>] [--then <steps>]
 //
 // The listing is pasted (a synthetic `paste` event, so the editor's own paste
 // cleaning runs). `--run` types its argument + RETURN through the real
@@ -27,7 +27,11 @@
 // `--inject-keys` holds the visitor's own Shift + Meta for 2 s (and taps S)
 // that many seconds into the run, as a screenshot shortcut would: the editor
 // pauses the physical keyboard while it types, so the listing must still arrive
-// byte-exact (docs/TYPE-IN-EDITOR.md). A signed-in session is required to see the stream at all
+// byte-exact (docs/TYPE-IN-EDITOR.md). `--then` plays the visitor's next keys
+// after `--run`, through the real keyboard: comma-separated steps, each a key
+// (`7`, `Enter`, `p`), `<key>*<n>` to press it n times, `@<ms>` to wait, or
+// `#<label>` for a framebuffer shot (an INPUT answer, a game's keys).
+// A signed-in session is required to see the stream at all
 // (station-open.mjs's signIn header), hence INVITE + the public origin.
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
@@ -49,6 +53,7 @@ const runCmd = flag('--run');
 const fbDir = flag('--fb-shot');
 const restore = args.includes('--restore');
 const stopAfter = Number(flag('--stop-after') ?? 0);
+const thenSteps = (flag('--then') ?? '').split(',').filter(Boolean);
 const injectAfter = Number(flag('--inject-keys') ?? 0);
 let injected = !injectAfter;
 const base = galleryUrl();
@@ -151,6 +156,18 @@ try {
     await page.waitForTimeout(4000);
     await page.screenshot({ path: `${OUT}/${tag}-run.png` });
     fbShot('run');
+  }
+
+  for (const step of thenSteps) {
+    if (step.startsWith('@')) await page.waitForTimeout(Number(step.slice(1)));
+    else if (step.startsWith('#')) fbShot(step.slice(1));
+    else {
+      const [key, times] = step.split('*');
+      for (let i = 0; i < Number(times ?? 1); i += 1) {
+        await page.keyboard.press(key);
+        await page.waitForTimeout(250);
+      }
+    }
   }
 
   if (restore) {

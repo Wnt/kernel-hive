@@ -557,6 +557,21 @@ framebuffer read:
 | ZX81 `input.bas` Square and cube | `NUMBER?`; 7 gave `7 SQUARED IS 49`, `7 CUBED IS 343` |
 | ZX81 `game.bas` Letter dash | a random letter; pressing it printed `TIME` and drew the next |
 
+**Then live, through the real editor** (2026-10-04,
+`scripts/e2e/typein-editor-probe.mjs` signed in at the public origin; its
+`--then` steps pressed the visitor's next keys through the real SPA keyboard).
+All six examples went in byte-exact at the registry pace, NEW first, and each
+frame above was seen again on the live station: the colour web, `10 x 7 = 70`,
+the bat following P and O, the figure of eight, `7 CUBED IS 343`, and `TIME 447`
+after the shown letter was pressed. Each run ended with Restore to golden, and
+both stations were back at their power-on screens afterwards. The Spectrum's
+ASCII demo listing, typed from the stage menu, listed exactly and, after ENTER,
+cycled the border. A listing written to fail (`10 a=1`, a backtick, `LET
+b=PRINT`, a letter after `:` in a REM) was listed with all four problems in red,
+the Type button stayed off, and the framebuffer before and after was identical.
+Frames: `/data/vms/streamhost/stations/{zxspectrum,zx81}/evidence/keyword-transcoder-2026-10-04/`
+(`typein-*` live, `untypable-*`, `demo-*`, and the rig frames).
+
 ## Analytics
 
 `spa/src/analytics/catalogue/typein.ts` (area `keyboard`):
