@@ -150,7 +150,14 @@ The bound is 3x the delay plus 15 s, and a station whose delay is over 90 s is
 not waited on. So a visitor's Restore reconnects them to the prompt rather than
 to the boot, and the freeze can no longer land under their session. The standby
 subshell is bound to its own pid, so a subshell that outlived its launch never
-freezes the next emulator.
+freezes the next emulator. It also freezes BETWEEN two frame publishes: it
+stops the process, waits for state `T`, and reads the mapping's sequence word,
+which is odd mid-copy. If it is odd, the process gets 10 ms and another try. A
+station frozen mid-publish keeps an odd seqlock for as long as it sleeps, and
+no passive reader (`shmshot.py`, `fb-wait.py`, `labctl shot`) can take a frame
+from it. The emulated-clock wait made that the common case (5 of 7 stations on
+2026-10-04), because its last PING reply comes from a fixed point of the frame
+loop.
 
 ## Auto-reset — the next visitor gets the golden, not the last visitor's mess
 
