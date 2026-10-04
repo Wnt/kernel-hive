@@ -425,7 +425,10 @@ framebuffer or as bytes). Two of the three shapes cannot tear at all:
   therefore ships 80/80 with a 20 ms lead, and its `perCharMs` is 180
   (HOLD + max(GAP, LEAD) + LEAD). The real fix is the host-native conversion,
   where the key module paces in emulated time, which host load cannot
-  compress.
+  compress. Through the real editor on the live station, 80/80 with the lead
+  still dropped 4 to 9 keys in each of three runs at load 31 to 80. A clone
+  started from a shell gets more CPU than a station does
+  ([`guests/amstradcpc.md`](guests/amstradcpc.md), OPEN).
 
 Evidence: `/data/vms/streamhost/stations/{amstradcpc,freedos,vax43bsd}/evidence/daemon-mod-lead-2026-10-04/`.
 
