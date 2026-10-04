@@ -309,8 +309,32 @@ palmos) are not waited on. The SPA shows "Restoring tile…" until then, then
 reconnects to the prompt. The freeze can no longer land under the visitor's
 reconnected session either. `MAME_NATIVE_STANDBY_CLOCK=emulated` counts the
 station's delay in emulated seconds (ctlsock `PING`), so the freeze ends on the
-same frame of the boot however loaded the box is. msx2 is at 16 s, svi738 at
-23 s.
+same frame of the boot however loaded the box is. Every cold-boot MAME station
+now declares its own ready point that way, measured on rigs of its live binary
+(ctlsock `PING` beside the framebuffer; the last change bigger than a cursor
+cell; two boots each, within 0.2 s of each other):
+
+| Station | Rest scene | Reached at (emulated s) | `MAME_NATIVE_STANDBY_DELAY_S` |
+|---|---|---|---|
+| bbcmicro | `>` | 0.4 | 3 (was 8 wall) |
+| zx81 | `K` cursor | 0.5 | 3 (was 8) |
+| amstradcpc | `Ready` | 1.0 | 4 (was 8) |
+| zxspectrum | © 1982 screen | 1.7 | 4 (was 8) |
+| kc854 | CAOS 4.2 menu | 1.8 | 4 (was 8) |
+| svi328cpm | `A>` | 4.3 | 7 (was 12) |
+| svi328 | `Ok` | 4.9 | 7 (was 12) |
+| svi728 | `Ok` | 5.4 | 8 (was 8) |
+| msx2 | `Ok`, drive LED off | 11.8 / 14.2 | 16 (was 8: **mid-boot**) |
+| svi738 | `A>` | 20.7 | 23 (was 25) |
+| armeval | ARM BASIC `>`, after the autoboot's `*LIB $` / `AB` | 20.9 | 23 (was 25 wall: mid-autoboot at the 0.3-0.5x a loaded box runs it) |
+| symbos | SymbOS desktop | 33.5 | 36 (was 75 wall: ~34 emulated at the 0.45x measured under load) |
+
+armeval and symbos also set `SH_IDLE_PAUSE_WARMUP_SECS=120`. The daemon's own
+first pause counts wall seconds, and on a loaded box 60 of them is still
+mid-boot for these two, which is newsos's trap. palmos (~13% of real time) and
+newsos (~45%) keep their wall-clock delays (600 and 200). Their idle grace and
+warmup were tuned against those values, and a Restore does not wait on a delay
+over 90 s: a visitor watches those boots.
 
 Proof: the real launcher on a sandbox copy of each station. Each run is a
 cold relaunch followed by the scene wait, then edges typed the moment the

@@ -129,7 +129,12 @@ emulated seconds of a cold boot with `MAME_NATIVE_STANDBY_CLOCK=emulated`
 (ctlsock `PING` -> mtime; a MAME cold boot reaches its prompt at the same
 emulated instant every time, however loaded the box is). The daemon takes over
 from there: `session_started` CONTs it, and the reconciler resumes it if it
-lands under a live session.
+lands under a live session. The daemon's own first pause (zero sessions,
+`SH_IDLE_PAUSE_SECS` after it starts) counts wall seconds. A station whose
+scene can take longer than that on a loaded box sets
+`SH_IDLE_PAUSE_WARMUP_SECS` above it, so the launcher's freeze lands first
+(armeval, symbos, newsos). The per-station ready points are tabled in
+[`docs/TYPE-IN-EDITOR.md`](../../docs/TYPE-IN-EDITOR.md#typing-right-after-a-restore).
 
 **The delay must end on the FINISHED scene.** Whatever frame is up at the
 freeze is what the next visitor walks up to, and a guest frozen mid-boot
