@@ -178,6 +178,12 @@ export VICE_CTL_SOCK="$CTL"
 export VICE_CTL_KEY_EXCL=1
 [ -n "${SH_KEY_MIN_HOLD_MS:-}" ] && export VICE_CTL_KEY_HOLD="$SH_KEY_MIN_HOLD_MS"
 [ -n "${SH_KEY_MIN_GAP_MS:-}" ] && export VICE_CTL_KEY_GAP="$SH_KEY_MIN_GAP_MS"
+# Shift staging: the module presents the Shift level a key needs (deshift for
+# `:` `*` `+`, virtual shift for `'`) this long before the key, instead of in
+# the same matrix latch, where the KERNAL's scan could tear it. Measured per
+# station; unset keeps the module's 0 = no staging. A binary that predates the
+# knob ignores it.
+[ -n "${SH_KEY_MOD_LEAD_MS:-}" ] && export VICE_CTL_KEY_MOD_LEAD="$SH_KEY_MOD_LEAD_MS"
 unset DISPLAY
 
 # Restore-at-startup: VICE has no -loadsnapshot, so the checkpoint is replayed

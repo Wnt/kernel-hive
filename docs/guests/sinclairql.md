@@ -214,11 +214,20 @@ keyboard and is not one (`labctl` resumes automatically, raw QMP does not).
 `registry/examples/sinclairql/` has three SuperBASIC programs: Sunburst
 (draw), Mirror writer (input) and Guess my number (game). Each starts with
 `NEW` and was proven on a sandbox rig of this station on 2026-10-04: typed,
-LISTed and RUN, with the result read off the framebuffer. **Typed through
-`typeText()` today, every shifted character is lost.** The module applies
-Shift and the key in the same pass, and the 8049 never reports the key. The
-programs were proven with Shift leading by 100 ms. See
-[`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#known-defect-every-shifted-character-is-lost-on-the-ql).
+LISTed and RUN, with the result read off the framebuffer.
+
+**Shifted characters need the modifier lead, `SH_KEY_MOD_LEAD_MS=20`.** The
+QL's 8049 IPC never reports a key that goes down at the same emulated instant
+as Shift, and `typeText()` sends Shift and the key back to back. Before the
+lead, the `ctlsock` module applied both in one drain pass, so every capital
+and every shifted symbol typed by the editor or the demo vanished
+(`print 1+2` landed as `print 12`). The module now holds a key press 20
+emulated ms after the last Shift/Ctrl edge. The measured threshold is 2 ms (1 ms
+still loses 9 lines of 12), and a 12-line listing with 251 shifted characters
+types exactly through the real daemon path. The lead needs the `ql` binary built
+from `mame-ctlsock.patch` with the knob; an older binary ignores it. The table
+and evidence are in
+[`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead).
 
 ## Rollback
 

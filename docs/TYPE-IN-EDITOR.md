@@ -185,60 +185,91 @@ A second run pressed Stop during line 2. The framebuffer right after Stop and
 Stop. The run ended with the visitor's Restore to golden, and the framebuffer
 returned to the clean READY screen.
 
-### Known defect: shifted punctuation on the VICE stations
+### Shifted characters: the modifier lead
 
-**Open as of 2026-10-04.** On the VICE machines, a character that needs Shift
-on a US keyboard but is an unshifted key on a Commodore (`:` and `*`) sometimes
-arrives with the Commodore Shift still applied, or not at all. `:` becomes `[`
-on the VIC-20 and C128 and `*` on the 8032, and a `*` occasionally vanishes.
-The rate is about 1 in 50, so most multi-statement listings meet one.
+`typeText()` sends a shifted character as Shift down, key down, key up, Shift
+up, back to back, and the daemon forwards those edges unchanged. Until
+2026-10-04 both emulator key modules then put Shift and the key into the
+emulated keyboard **at the same instant**, which a person never does: their
+Shift goes down tens of milliseconds before the key. Two machines failed on
+that one shape in two different ways. Both modules now hold a key press until
+the Shift level in front of it has been visible to the machine for a
+**modifier lead**, declared per station as `SH_KEY_MOD_LEAD_MS` in the station
+env. The launchers pass it to the module as `MAME_CTL_KEY_MOD_LEAD` or
+`VICE_CTL_KEY_MOD_LEAD`; unset or 0 is the old engine, byte for byte. The
+validator counts the lead in the drain rate: a shifted character costs at most
+HOLD + max(GAP, LEAD) + LEAD, and `perCharMs` must cover that.
 
-It was measured on sandbox rigs of the stations' own binaries. Keys went
-through the `vicectl` module at the stations' 60/60 pacing, and each listing
-was read back byte for byte from a `SAVEST` snapshot, tokenised with VICE's
-`petcat`. The test was a 6-line stress listing with 11 such characters a line,
-typed three times on each rig:
+**The QL, MAME `ctlsock`: the key vanished.** The module applied Shift and the
+key in the same drain pass. A trace shows `:Y7|SHIFT=1` and `:Y3|=  +=1` both
+applied at emulated 53.894 s. The QL's 8049 IPC then never reports the key, so
+every capital and every shifted symbol was lost: `print 1+2` landed as
+`print 12`, `10 REMark Sunburst` as `10 ark unburst`. With the lead, a
+non-modifier press waits that many emulated milliseconds after the last
+applied Shift or Ctrl edge, press or release. The test was a 12-line
+SuperBASIC listing with 251 shifted characters, typed with the editor's edges
+at its 400 ms per character into a rig of the station's own binary, golden and
+40/40 pacing. It was then LISTed and compared pixel for pixel, line by line,
+with a reference typed with Shift held 150 ms ahead by hand:
 
-| Path | vic20 | c128 | cbm8032 |
-|---|---|---|---|
-| Shift_L press, then the shifted keysym (what the daemon forwards) | 3 of 198 | 5 of 198, plus one line lost whole | 3 of 198 |
-| The keysym alone, no Shift edge (control) | 0 of 198 | 0 of 198 | 0 of 198 |
-
-A module trace (`VICE_CTL_TRACE=1`) shows a failing `:` with exactly the same
-edge order and spacing as the good ones: Shift down, `:` down three frames
-later, `:` up, Shift up. The queue is not the cause. The fault is VICE's
-deshift of a held host Shift racing the KERNAL's matrix scan, so the fix
-belongs in the module or the sink, not the pacing. A visitor typing `:` on
-the physical keyboard holds Shift too, so this is not only the editor's
-problem.
-
-### Known defect: every shifted character is lost on the QL
-
-**Open as of 2026-10-04.** This was measured on a sandbox rig with
-sinclairql's live configuration: the same MAME 0.289 `ql` binary, the
-`ctlsock` module at the station's 40/40 hold/gap, and `MAME_CTL_KEY_EXCL=:Y`.
-Keys were sent with the edges `typeText()` produces: Left Shift down, key
-down, key up, Left Shift up, back to back. The daemon forwards them unchanged.
-The module applies Shift and the key in the **same drain pass**. The QL's 8049
-keyboard processor then never reports the key at all. Capitals and all shifted
-punctuation (`" : ( ) + * & $ !`) vanish, while unshifted keys land:
-
-| Edges sent | Result on the framebuffer |
+| Lead | Listing lines exact |
 |---|---|
-| `typeText()` style, `print 1+2` | `print 12` |
-| `typeText()` style, `PRINT "AB"` | nothing |
-| `typeText()` style, `10 REMark Sunburst` | `10 ark unburst` |
-| Shift released 120 ms late, pressed with the key | nothing |
-| Shift pressed 60 ms before the key | `PRINT "PRE"`, intact |
-| Shift 60 ms early, module's 40 ms key hold, a 195-character listing | 2 lost (one `*`, one ENTER) |
-| Shift 100 ms early, keys held 100 ms, about 1,000 characters | 0 lost |
+| 0, the old engine | 0 of 12: every line `bad line` |
+| 1 ms, one module tick | 3 of 12 |
+| 2, 5, 10 ms | 12 of 12 |
+| 20 ms | 12 of 12 in three runs |
+| 40, 60 ms | 12 of 12 (three runs at 40) |
 
-The QL needs Shift down at least one keyboard scan **before** the key. The fix
-belongs in the module or the sink, which should give a modifier press a lead
-before the next key press. Pacing is not the fix. It affects everything typed
-through `typeText()` on the QL, including its demo listing. The QL example
-programs were proven with the 100/100 timing. A visitor's physical typing is
-not affected, because a person presses Shift well before the letter.
+The threshold is between 1 and 2 ms, and sinclairql ships 20 ms, ten times
+that. The lead is emulated time, so host load cannot eat it. It costs a
+shifted character at most 40 ms against the editor's 400.
+
+**The Commodores, VICE `vicectl`: the scan tore the latch.** VICE resolves a
+keysym through the machine's `.vkm` keymap, and on a VIC-20 `:` `*` `+` `@`
+are Shift+key on a US keyboard but unshifted keys (the keymap's *deshift*),
+while `'` `[` `]` are the other way round (*virtual shift*). VICE applies each
+host key event at its own random point 1 to 2 frames later. A key whose keymap
+entry changes the emulated SHIFT therefore flips SHIFT and sets the key in ONE
+copy of the matrix. The KERNAL reads the matrix column by column over about
+1,000 cycles of its jiffy interrupt. When that copy lands mid-scan, the guest
+reads SHIFT from before it and the key from after it: `:` became `[` (VIC-20,
+C128) or `*` (8032), and on the C128 a `*` vanished outright. The trace of a
+failing `:` is indistinguishable from a good one, because the race is inside
+VICE.
+
+With a lead, the module **stages the Shift level**. The visitor's Shift edges
+set a level and are no longer passed to VICE directly. Before each press the
+module gives VICE the host Shift that key needs: none for a deshift key, Shift
+for a virtual-shift key, and the visitor's own level otherwise. It then holds
+the press until that level has been visible for the lead, and hands the
+visitor's level back once nothing is down. VICE's keymap then finds the level
+already in place, so nothing changes SHIFT in the key's own latch. The
+three barrier rules of `key_drain()` are unchanged, and the lead is one more
+dwell gate, cleared by time alone. A `:` typed with Shift held never touches
+VICE's Shift at all.
+
+The test was a 12-line stress listing with 122 level-changing characters a
+pass (`:` `*` `+` `'`, among `"` `( )` `$` `=`). It was typed with the
+editor's edges at 170 ms per character, then read back byte for byte from a
+`SAVEST` snapshot and tokenised with VICE's `petcat`:
+
+| Station | Old binary | New binary, lead 40 ms (2 frames) |
+|---|---|---|
+| vic20 | 4 bad lines in 3 passes | 0 in 3 (and 0 in 3 at 1 frame, 0 in 2 at 3 frames) |
+| cbm8032 | 5 bad lines in 3 passes | 0 in 3 |
+| c128 | 6 bad lines in 3 passes | 0 in 3 |
+
+Two frames is the shipped value because it is the smallest one that is safe by
+construction rather than by luck. VICE latches an event at most about a frame
+and 1,000 cycles after it is pushed, so with a two-frame lead a whole frame
+always separates the Shift latch from the key's latch. One jiffy scan cannot
+straddle both. A visitor typing `:` on a physical keyboard got the same
+`[`, and is fixed by the same change.
+
+VICE's own 8-slot `kbd_queue`, which drops silently when full, cannot overflow
+from this module. Under `VICE_CTL_KEY_EXCL=1`, which every VICE station runs,
+a frame's drain applies at most one press, one release and one edge per
+modifier key, and the queue empties within about a frame.
 
 ### SAM Coupé: what the typist cannot reach, and what NEW does
 
