@@ -187,6 +187,39 @@ a program is printing: the machine has no type-ahead buffer.
 The certified proof types `PTRON` (a valid BASIC function returning TRUE/-1),
 presses Return, and visibly renders the result in the MPF-II framebuffer.
 
+## Shifted characters: the modifier lead (2026-10-04)
+
+`SH_KEY_MOD_LEAD_MS=10` in the station fixture. The `ctlsock` module holds a
+key press until the Shift edge in front of it has been in the matrix for 10
+emulated ms, so the ROM's own matrix scan sees Shift before the key it
+modifies. This machine lost no shifted character on the old engine (0 in the
+2026-10-04 survey, 0 in a stress pass). It gets the fleet's 10 ms anyway, five
+times the largest threshold measured on a MAME machine
+([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead)).
+A shifted character costs at most 10 ms more, so `typeIn.perCharMs` went from
+70 to 74 (+6 %) and the demo now declares 74 instead of the SPA default 70:
+HOLD 32 + max(GAP 32, LEAD) + LEAD = 74. The wrap pause (`wrapPause`, 500 ms
+after the 39th typed character of a row) adds on top of that, unchanged.
+
+**ENTER needs 800 ms here (`typeIn.enterDelayMs`).** *Mystic rose*'s line
+`110 HPLOT X(I),Y(I) TO X(J),Y(J)` takes longer than the default 600 ms to
+tokenise and scroll off the bottom row. The first key of the next line was
+lost (`120` arrived as `20` and replaced `HGR`) in 4 of 4 runs, with the lead
+at 0 and at 10 ms alike. At 800 ms all three examples typed exactly in 2 of 2
+runs each. See [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md).
+
+**Proof (2026-10-04, a rig of this station's own binary and golden).** Keys
+went through a sandbox daemon, as the editor's own edges (`typeListing()`
+replayed by `key-burst-proof.mjs --edges`, wrap pause included), with the rig
+at 1.00x real time. A 16-line listing dense in shifted characters
+(`"A+B*C:D(E)$!";1+2*3` through the station's `charMap`) LISTed
+pixel-identical to a slow reference in 2 of 2 runs. All three examples typed
+exactly twice each at `enterDelayMs` 800. The golden is pixel-identical under
+the new binary, and the savestate signature is unchanged (`03532952`, 871
+entries). Rollback: `assets/mpf2/mame-native/mpf2.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`. Evidence:
+`/data/vms/streamhost/stations/mpf2/evidence/shift-lead-2026-10-04/`.
+
 ## Build status (2026-08-06)
 - Registered disabled candidate: VMID 220, UDP 54124, slot 124; SSH 5820 and
   web-port reservation 8120. Promote it only after the builder completes its
