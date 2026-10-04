@@ -963,12 +963,16 @@ disputes" reference dropped 7 characters of 40 — so
 `emu-key-pacing-bisect.py` reported every rung as corrupt against a reference
 that was itself broken. Look at the reference frame before believing a rung.
 
-**Raising the pacing obliges the typist to slow down too.** The UI waits
-`line.length * perCharMs` before submitting the next line; below the station's
-hold+gap drain rate a backlog builds and BASIC loses the characters that arrive
-while it is tokenising. Declare `demoProgram.perCharMs` in the registry when a
-station drains slower than the fleet default — `validate_demo_pacing` in
-`scripts/stations-registry.py` fails the build if the two disagree.
+**Raising the pacing slows the typist down too.** The UI waits
+`line.length * perCharMs` before submitting the next line, so the demo reads as
+typing at the guest's own rate and the ENTER settle (`DEMO_ENTER_DELAY_MS`)
+lands after its line has actually arrived rather than in the middle of it.
+Under-waiting no longer LOSES anything on the daemon's side — since 2026-10-04
+every key sink delivers a burst of any length, in order (`docs/guests/vic20.md`
+"Long input") — it only bunches the listing up. Declare
+`demoProgram.perCharMs` in the registry when a station drains slower than the
+fleet default — `validate_demo_pacing` in `scripts/stations-registry.py` fails
+the build if the two disagree.
 
 **One rejected line can impersonate a broken input plane — check the LISTING
 before you touch the pacing.** A BASIC that rejects a line may leave the
@@ -1011,12 +1015,15 @@ lands one key over. The fix is the registry-declared `spa.demoProgram.keyMap`
 give the exact unshifted/shifted pairing of every key in the matrix.
 
 **Wait in proportion to LINE LENGTH, not on a fixed tick.** `typeText()` returns
-immediately and streamhost drains the queue at the station's paced rate (~64 ms per
+immediately and the station drains the burst at its paced rate (~64 ms per
 character on mpf2), so a 25-character line is still arriving 1.6 s later.
-Submitting the next line on a fixed tick overruns the queue and loses characters
-— it shows up as the first character after each ENTER going missing, in a
-regular pattern. `DEMO_PER_CHAR_MS` in `typeDemoProgram.ts` is the per-character
-budget; keep the delay proportional.
+Submitting the next line on a fixed tick used to overrun the daemon's 64-edge
+hand-off queue and lose characters — the first character after each ENTER
+going missing, in a regular pattern. The daemon now waits for room instead of
+dropping (`streamhost/streamhost/src/sink_feed.rs`), so a fixed tick only
+bunches the lines together; `DEMO_PER_CHAR_MS` in `typeDemoProgram.ts` is the
+per-character budget, kept proportional so the ENTER settle still lands after
+its line.
 
 **`labctl type` is not a fair test of a guest's keyboard.** It drives QMP
 directly and therefore gets none of streamhost's pacing, so it drops characters

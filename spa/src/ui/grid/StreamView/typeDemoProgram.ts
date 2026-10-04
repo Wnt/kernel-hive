@@ -31,11 +31,14 @@ export const DEMO_LINE_DELAY_MS = 260;
  * streamhost paces keys per station (SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS) so an
  * emulator sampling its input ports once per emulated frame actually observes
  * every press -- on mpf2 that is 32 + 32, i.e. ~64 ms per character. typeText()
- * returns immediately and the daemon drains the queue at that rate, so a line
+ * returns immediately and the station drains the burst at that rate, so a line
  * of 25 characters is still arriving ~1.6 s later. Waiting a FIXED time between
- * lines therefore submits faster than the guest can consume, the backlog grows,
- * and characters are lost -- seen as the first digit of a line number going
- * missing partway down a listing. Scale the wait by line length instead.
+ * lines therefore submits faster than the guest can consume. That used to LOSE
+ * characters (the daemon dropped a deep backlog -- seen as the first digit of a
+ * line number going missing partway down a listing); since 2026-10-04 the
+ * daemon delivers a burst of any length whole, so under-waiting only bunches
+ * the lines up and lands DEMO_ENTER_DELAY_MS in the middle of a line still
+ * arriving. Scale the wait by line length.
  *
  * This is only the DEFAULT. A station whose drain rate exceeds it declares its own
  * `demoProgram.perCharMs` in the registry (vic20 paces 80+80, so 170), and

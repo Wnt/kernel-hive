@@ -173,6 +173,13 @@ its own before/after, not to zero.
 - `direct-stream-proof.mjs <signaling.json> <out-prefix> [hex-scancodes]` —
   catalog-free WebTransport decode, non-black framebuffer, and reliable-key
   proof for a throwaway tile that must not enter the live lineup.
+- `key-burst-proof.mjs <signaling.json> <text-file> [--pace-ms N]` — types a
+  whole text through the daemon's REAL key receive path (WebTransport,
+  `ICLASS_KEY` stream) with no pacing, the AutoHotkey-paste shape; judge the
+  result on the framebuffer (`fb-wait.py --shm … --out`). How the 2026-10-04
+  long-input fix was proven (`docs/guests/vic20.md` "Long input");
+  `key-replay.py` writes the emulator's socket directly and cannot see a
+  daemon-side loss.
 - `decoder-buffer-probe.mjs [Tile] [samples]` — headed Chrome probe that records
   each live `VideoDecoder.decode()` submit-to-output span and whether a later
   chunk was submitted first. A consistent one-frame DPB hold appears as roughly
