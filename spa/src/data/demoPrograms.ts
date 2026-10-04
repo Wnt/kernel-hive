@@ -267,7 +267,10 @@ const DEMO_PROGRAMS = {
       "70 PEN 15: PRINT AT 0,6;\"SAM COUPE 1989\""
     ],
     "runCommand": "RUN",
-    "perCharMs": 260
+    "perCharMs": 260,
+    "enterDelayMs": [
+      2000
+    ]
   },
   "sinclairql": {
     "label": "Draw a rose in SuperBASIC",
@@ -491,7 +494,11 @@ const TYPE_IN = {
   "samcoupe": {
     "dialect": "sam-basic",
     "perCharMs": 260,
-    "hint": "Press B on the boot menu for SAM BASIC first."
+    "hint": "Press B on the boot menu for SAM BASIC first.",
+    "settleAfter": {
+      "NEW": 2000
+    },
+    "unreachable": "<>?[]{}\\|"
   },
   "sinclairql": {
     "dialect": "superbasic",

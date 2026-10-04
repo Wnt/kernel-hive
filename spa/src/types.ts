@@ -208,6 +208,11 @@ export interface TypeInConfig {
   readonly maxLineChars?: number;
   /** One sentence shown above the Type button (a step the machine needs first). */
   readonly hint?: string;
+  /** Longer ENTER settles for named direct commands (whole line, upper case):
+   *  samcoupe's NEW redraws the MGT banner and eats the next key. */
+  readonly settleAfter?: Readonly<Record<string, number>>;
+  /** Printable ASCII the station's keymap cannot produce: flagged, never typed. */
+  readonly unreachable?: string;
 }
 
 /** One example program (registry/examples/<id>/), inlined into poster-docs.json. */

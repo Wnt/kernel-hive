@@ -122,7 +122,7 @@ export function TypeInEditor({ model, displayName, onClose }: {
   if (typing && progress) {
     status = <span>Typing line {Math.max(1, progress.line)} of {progress.lines}…</span>;
   } else if (run === 'done') {
-    status = <span className="ti-ok">Typed {plural(check.lines.length, 'line')}. Click the picture, type RUN and press RETURN.</span>;
+    status = <span className="ti-ok">Typed {plural(model.runLines, 'line')}. Click the picture, type RUN and press RETURN.</span>;
   } else if (run === 'stopped' && progress) {
     status = <span>Stopped at line {progress.line} of {progress.lines}. Nothing more was typed.</span>;
   } else if (run === 'disconnected') {
@@ -130,7 +130,7 @@ export function TypeInEditor({ model, displayName, onClose }: {
   } else if (run === 'error') {
     status = <span className="ti-err">Typing failed. Try again.</span>;
   } else if (check.lines.length) {
-    status = <span>{plural(check.lines.length, 'line')} · about {formatDuration(model.estimateMs)}</span>;
+    status = <span>{plural(model.runLines, 'line')} · about {formatDuration(model.estimateMs)}</span>;
   }
 
   return (
@@ -173,7 +173,7 @@ export function TypeInEditor({ model, displayName, onClose }: {
       <div className="ti-code">
         <pre ref={preRef} className="ti-hl" aria-hidden="true">
           {lines.map((line, i) => (
-            <span key={i}><Tokens tokens={markOverflow(highlightLine(line, spec), config.maxLineChars)} />{'\n'}</span>
+            <span key={i}><Tokens tokens={markOverflow(highlightLine(line, spec, config.unreachable), config.maxLineChars)} />{'\n'}</span>
           ))}
           {' '}
         </pre>
@@ -235,6 +235,15 @@ export function TypeInEditor({ model, displayName, onClose }: {
             </button>
           )}
         </div>
+        <label className="ti-check">
+          <input
+            type="checkbox"
+            checked={model.clearFirst}
+            disabled={typing}
+            onChange={(e) => model.setClearFirst(e.target.checked)}
+          />
+          Clear the machine's old program first ({spec.clearCommand})
+        </label>
         {!typing && model.blocked && model.blocked !== 'Nothing to type yet' && (
           <p className="ti-note">{model.blocked}.</p>
         )}

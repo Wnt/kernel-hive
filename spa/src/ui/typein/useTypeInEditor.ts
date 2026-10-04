@@ -9,7 +9,7 @@ import type { FlowHandle } from '../../analytics/flows';
 import type { Attrs } from '../../analytics/trace';
 import type { TypingProgress } from '../grid/StreamView/typeDemoProgram';
 import { dialectSpec, type DialectSpec } from './basicDialects';
-import { checkListing, cleanListing, estimateMs, type ListingCheck } from './listingText';
+import { checkListing, cleanListing, estimateMs, withClearFirst, type ListingCheck } from './listingText';
 import { paceFor, typeListing } from './typeInRun';
 
 // ---------------------------------------------------------------------------
@@ -42,6 +42,12 @@ export interface TypeInEditorModel {
   readonly demoLabel: string | null;
   readonly doc: TypeInDoc | undefined;
   readonly check: ListingCheck;
+  /** Type the dialect's NEW before the listing (default on; re-armed whenever
+   *  an example or file is opened). */
+  readonly clearFirst: boolean;
+  setClearFirst(on: boolean): void;
+  /** Lines the run will type, NEW included. */
+  readonly runLines: number;
   readonly estimateMs: number;
   readonly run: RunState;
   readonly progress: TypingProgress | null;
@@ -87,6 +93,7 @@ export function useTypeInEditor({
   const [sourceLabel, setSourceLabel] = useState<string | null>(() =>
     config && readDraft(osId) == null && demo ? demo.label : null);
   const [run, setRun] = useState<RunState>('idle');
+  const [clearFirst, setClearFirst] = useState(true);
   const [progress, setProgress] = useState<TypingProgress | null>(null);
 
   const textRef = useRef(text);
@@ -135,6 +142,7 @@ export function useTypeInEditor({
     setSourceLabel(label);
     writeDraft(osId, '');
     setRun('idle');
+    setClearFirst(true);
     return true;
   }, [baseline, osId]);
 
@@ -154,8 +162,8 @@ export function useTypeInEditor({
 
   const spec = useMemo(() => dialectSpec(config?.dialect ?? 'cbm-basic'), [config?.dialect]);
   const check = useMemo(() => checkListing(text, config ?? {}, spec), [text, config, spec]);
-  const pace = useMemo(() => (config ? paceFor(config) : null), [config]);
-  const estimate = pace ? estimateMs(check.lines, { ...pace, enterDelayMs: pace.enterMs }) : 0;
+  const runLines = useMemo(() => withClearFirst(check.lines, spec, clearFirst), [check.lines, spec, clearFirst]);
+  const estimate = config ? estimateMs(runLines, paceFor(config, runLines)) : 0;
 
   const typing = run === 'typing';
   const blocked = typing ? 'Typing…'
@@ -169,7 +177,7 @@ export function useTypeInEditor({
     const handle = controlRef.current;
     if (!config || abortRef.current || blocked) return;
     if (!handle || !handle.isConnected()) { setRun('disconnected'); return; }
-    const lines = checkListing(textRef.current, config, spec).lines;
+    const lines = withClearFirst(checkListing(textRef.current, config, spec).lines, spec, clearFirst);
     const abort = new AbortController();
     abortRef.current = abort;
     const flow = beginFlow('typein.run');
@@ -195,7 +203,7 @@ export function useTypeInEditor({
         abortRef.current = null;
         flowRef.current = null;
       });
-  }, [config, blocked, controlRef, spec, osId, stationAttrs]);
+  }, [config, blocked, controlRef, spec, osId, stationAttrs, clearFirst]);
 
   const stop = useCallback(() => {
     if (!abortRef.current) return;
@@ -217,7 +225,7 @@ export function useTypeInEditor({
     model: {
       osId, config, spec, text, setText, load, sourceLabel,
       demoText, demoLabel: demo?.label ?? null, doc, check,
-      estimateMs: estimate, run, progress, blocked, start, stop,
+      clearFirst, setClearFirst, runLines: runLines.length, estimateMs: estimate, run, progress, blocked, start, stop,
     },
   };
 }

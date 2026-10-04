@@ -283,10 +283,12 @@ the fork types the 9300 key that produces them.
   the daemon and xdotool resolve keycodes from the live map). `-ardelay 65000`
   is the `xset r off` (no xset in the root); EKA2L1 makes the Series 80 repeats
   itself.
-- Pacing 0/0 (agent K3): the daemon's x11test pacer orders edges per keycode
-  only, so any nonzero hold/gap reorders Shift edges and garbles text ("HElol
-  WOrld", "=A1+a2" at 40/40 and 150/150); with 0/0 edges go out in arrival
-  order and the fork's fixed event FIFO takes 30 ms/key exactly.
+- Pacing 0/0 (agent K3): the daemon's x11test pacer then ordered edges per
+  keycode only, so any nonzero hold/gap reordered Shift edges and garbled text
+  ("HElol WOrld", "=A1+a2" at 40/40 and 150/150). All keys are now one FIFO
+  (`x11_keys.rs`, 2026-10-04), so nonzero pacing keeps order, but this station
+  keeps 0/0: edges go out in arrival order and the fork's fixed event FIFO
+  takes 30 ms/key exactly.
 - PROVEN through the real SPA (Chrome on the shared desktop → `/os/nokia9300` →
   streamhost x11test → XTEST), frames read out of the SPA's own `<video>`: F7
   opened Messaging (Inbox/Outbox/Drafts/Sent; a one-time "Cannot find message

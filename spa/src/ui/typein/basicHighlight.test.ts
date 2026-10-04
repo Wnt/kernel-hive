@@ -53,6 +53,10 @@ describe('highlightLine', () => {
     expect(of(tokens, 'bad')).toEqual(['“', '”']);
   });
 
+  it('paints a station-unreachable ASCII symbol as bad', () => {
+    expect(of(highlightLine('10 IF a<b THEN STOP', dialectSpec('sam-basic'), '<>'), 'bad')).toEqual(['<']);
+  });
+
   it('keeps an emoji as ONE bad token so the overlay stays aligned', () => {
     expect(of(highlightLine('10 X=1 🙂', cbm), 'bad')).toEqual(['🙂']);
   });

@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "String art",
+      "description": "Eighty-four straight lines, twenty-one in each corner, in thirteen of MODE 0's sixteen inks, bend into curves the way thread does on a pinboard."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Roman numerals",
+      "description": "Type a number from 1 to 3999 and a WHILE and WEND loop spells it in Roman numerals; 1985, the year the CPC6128 came out, is MCMLXXXV."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Squash",
+      "description": "Keep the ball in play with Z and X; every return scores a point and a beep, and SPACE serves a new game after a miss."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Amstrad CPC6128 User Instructions",
+      "url": "https://archive.org/details/amstrad-cpc-6128-user-manual",
+      "lang": "en",
+      "note": "Amstrad, 1985, with the full Locomotive BASIC 1.1 reference; PDF scan"
+    },
+    {
+      "title": "Amstrad CPC 464 Käyttäjän opas",
+      "url": "https://archive.org/details/cpc-464-amstrad-kayttajan-opas-finacme",
+      "lang": "fi",
+      "note": "Finnish user guide for the 6128's older sibling (Toptronics, 1984): the same Locomotive BASIC, without the 6128's later additions such as FRAME; PDF scan"
+    }
+  ]
+}
