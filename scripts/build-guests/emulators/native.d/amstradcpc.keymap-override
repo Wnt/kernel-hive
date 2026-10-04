@@ -1,0 +1,15 @@
+# amstradcpc keymap overrides for scripts/dev/mame-keymap.py --override (rows: scancode<TAB>port<TAB>field).
+# Regenerate: mame-keymap.py <rig>/ctl.sock --tags :kbrow --override <this> --out streamhost/stations/amstradcpc/amstradcpc.keymap
+# --tags :kbrow keeps the Cheetah 125 joystick and the kbrow.9 joystick bits out of the match (they share
+# LCONTROL, LALT, SPACE and the arrows with real keys). MAME binds the CPC keys by position; these rows change
+# only where a PC key should mean something else on this machine:
+# Backspace is the CPC DEL (delete left), not CLR; PC Delete is CLR (delete under the cursor).
+0x0e	:kbrow.9	Del
+0xe053	:kbrow.2	Clr
+# MAME puts the CPC \ key on Right Ctrl and Esc on the backtick key as well as Esc. Here the backtick key
+# is the CPC \ key (the type-in charMap sends \ through it), Right Ctrl is CONTROL, Esc stays on Esc.
+0x29	:kbrow.2	\  `
+0xe01d	:kbrow.2	Control
+# keypad Enter is the small ENTER key; F10 is f0 (F1-F9 already reach f1-f9 by name, the keypad by position).
+0xe01c	:kbrow.0	Enter
+0x44	:kbrow.1	f0

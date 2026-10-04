@@ -430,7 +430,7 @@ characters through its own editor rules (`survey` frames in the evidence):
 | bbcmicro, dragon32, samcoupe, svi728, mpf2 | 0 in one pass |
 | msx2 | 0 in lines 2 to 16 of three passes (line 1: see below) |
 | zxspectrum, zx81 | 0 in 60 and 40 Symbol Shift / SHIFT chords |
-| amstradcpc (daemon dbus pacer, Caprice32 in a kiosk) | 1 in about 4,500 (`"` as `2`), plus `)` as `9` once in the examples run; it loses far more keys of every kind under host load (below). Lead 20 ms |
+| amstradcpc | on the Caprice32 kiosk (daemon dbus pacer), 1 in about 4,500 (`"` as `2`), plus far more keys of every kind under host load (below). Host-native MAME since 2026-10-04: 0 at lead 0, 1, 2, 5 and 10 in one pass each; ships 20 ms |
 | freedos (daemon dbus pacer, PC BIOS) | 0 in three 95-character bursts sent with no pacing at all |
 | vax43bsd's xterm (daemon x11test sink) | 0 in three 307-character bursts at 40/40 |
 
@@ -457,32 +457,25 @@ framebuffer or as bytes). Two of the three shapes cannot tear at all:
   own Shift state. There is no matrix to scan, so there is nothing to tear.
 - **x11test** feeds an X client (vax43bsd's xterm), which takes the modifier
   state from each KeyPress event.
-- **amstradcpc** can. It has a matrix, scanned by the CPC's firmware 50 times
-  a second, behind Caprice32 in a Debian kiosk guest. Caprice32 puts a shifted
-  key's Shift and the key into the matrix in one update, and a scan that
-  straddles that update reads the key unshifted. A 12-line listing with 196
-  shifted characters, read back from the LIST by a glyph matcher, showed it
-  once in about 4,500 shifted keys at lead 0 (`"` as `2`). That is too rare to
-  bisect, so the station's lead is set by construction at 20 ms, one CPC
-  frame: Shift and its key then reach Caprice32 in different polls unless the
-  guest stalls. Far more often, the station loses keys of every kind when
-  labhost is loaded. The kiosk guest needs about a
-  core, and when it stalls, one key's press and release (or a repeated key's
-  release and re-press) reach Caprice32 in the same frame. At its 40/40
-  pacing every one of 12 passes lost 1 to 11 keys at a 1-minute load of 25 to
-  60: `$$` as `$`, `110` as `10`, `print` as `prnt`. A lead of 20 or 40 ms
-  did not change those. One pass at lead 40 even read a `4` as `$`, with 80 ms
-  between Shift-up and the key, because a stall compresses host-side timing of
-  every kind, the lead included. Longer holds and gaps lose less: 60/60
-  with a 20 ms lead was exact in 2 of 4 passes below load 60, and 80/80 in
-  5 of 6 at load 35 to 54. Nothing survived load 70 and above. amstradcpc
-  therefore ships 80/80 with a 20 ms lead, and its `perCharMs` is 180
-  (HOLD + max(GAP, LEAD) + LEAD). The real fix is the host-native conversion,
-  where the key module paces in emulated time, which host load cannot
-  compress. Through the real editor on the live station, 80/80 with the lead
-  still dropped 4 to 9 keys in each of three runs at load 31 to 80. A clone
-  started from a shell gets more CPU than a station does
-  ([`guests/amstradcpc.md`](guests/amstradcpc.md), OPEN).
+- **amstradcpc** could, while it was a kiosk. It has a matrix, scanned by the
+  CPC's firmware 50 times a second, and it ran behind Caprice32 in a Debian
+  kiosk guest. Caprice32 puts a shifted key's Shift and the key into the
+  matrix in one update, and a scan that straddles that update reads the key
+  unshifted: once in about 4,500 shifted keys at lead 0 (`"` as `2`), so the
+  kiosk got a 20 ms lead by construction. Far more often, it lost keys of
+  every kind when labhost was loaded: when the kiosk guest stalled, one key's
+  press and release (or a repeated key's release and re-press) reached
+  Caprice32 in the same frame. At 40/40 every one of 12 passes lost 1 to 11
+  keys at a 1-minute load of 25 to 60 (`$$` as `$`, `110` as `10`); 80/80 with
+  the lead was exact in 5 of 6 at load 35 to 54 on a clone, nothing survived
+  load 70, and through the real editor on the live station it still dropped 4
+  to 9 keys a run. A stall compresses host-side timing of every kind, the lead
+  included, so no daemon pacing could fix it. **The station has been
+  host-native MAME since 2026-10-04**: the ctlsock module paces in emulated
+  time, 40/40 with a 20 ms lead, and the editor types at 120 ms per character.
+  Its 15-line stress listing and all three examples LIST byte-exact, and the
+  hold/gap floor is one 50 Hz scan (10/10 loses nearly everything, 20/20 is
+  exact). Measurements in [`guests/amstradcpc.md`](guests/amstradcpc.md).
 
 Evidence: `/data/vms/streamhost/stations/{amstradcpc,freedos,vax43bsd}/evidence/daemon-mod-lead-2026-10-04/`.
 

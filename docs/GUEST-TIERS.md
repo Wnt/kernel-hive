@@ -66,13 +66,13 @@ flowchart TD
     A1[One qemu-system process 26 KVM 3 TCG] --> A2[Guest OS itself winxp solaris haiku os2warp win11]
   end
 
-  subgraph T2[Tier 2 emulator bridge 10 stations]
+  subgraph T2[Tier 2 emulator bridge 9 stations]
     B1[QEMU KVM shared device set] --> B2[Debian bare X kiosk no window manager]
-    B2 --> B3[One full screen emulator hatari FS-UAE SIMH Caprice32 LinApple ContrAlto Darkstar Dwarf]
+    B2 --> B3[One full screen emulator hatari FS-UAE SIMH LinApple ContrAlto Darkstar Dwarf]
     B3 --> B4[Vintage machine Atari ST PDP-11 Amiga 1200 Alto Star]
   end
 
-  subgraph T3[Tier 3 host native 24 stations MAME VICE FS-UAE es40 Previous Iris]
+  subgraph T3[Tier 3 host native 29 stations MAME VICE FS-UAE es40 Previous Iris]
     C1[One emulator on the bare metal host CPU under a pinned Xvfb or an shm framebuffer] --> C2[Vintage machine SGI Indy Amiga 3000 AlphaServer ES40 NeXTstation C64 Apple Lisa]
   end
 
@@ -100,7 +100,6 @@ the schema but used by no station**.
 
 ## Membership
 
-- **Tier 1 (43)** — `aix432 alpine android aros aux beos bootos chokanji freedos
 - **Tier 1 (44)** — `aix432 alpine android aros aux beos bootos chokanji
   freebsd411 freedos
   haiku helenos hpuxvue kolibrios macos753 macos9 minix2 msdoswin1 ninefront
@@ -108,9 +107,9 @@ the schema but used by no station**.
   redstar3 rhapsody
   sailfishos sculpt serenityos solaris sunos414 suse64 templeos tinycore toaruos win11
   win2000 win311 win95 win98se winxp`
-- **Tier 2 (10)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
+- **Tier 2 (9)** — `alto amiga apple2 atarist daybreak decos gt40
   pdp11 star`
-- **Tier 3 (28)** — `a1000 amigaos35 amix apple2gs armeval bbcmicro c128 c64 c64basic cbm2 cbm8032
+- **Tier 3 (29)** — `a1000 amigaos35 amix amstradcpc apple2gs armeval bbcmicro c128 c64 c64basic cbm2 cbm8032
   dragon32 indyr4400 irix kc854 medley mpf2 newsos nextstep oricatmos pet2001
   plus4 sinclairql tru64 vic20 w2kalpha zx81 zxspectrum`
 - **Tier 4 (1)** — `openvms` · **Tier 5 (2)** — `macos riscos`
@@ -143,17 +142,20 @@ drifted.
 
 The inner emulators still inside a kiosk, from the registry build rows: **Open
 SIMH** (`pdp11`, `gt40` VT11, `decos`), **Hatari** (`atarist`), **LinApple**
-(`apple2`), **FS-UAE** (`amiga` A1200), **Caprice32** (`amstradcpc`),
+(`apple2`), **FS-UAE** (`amiga` A1200),
 **ContrAlto 2** on .NET (`alto`), **Darkstar** on mono (`star`) and
 **Dwarf/Draco** on OpenJDK (`daybreak`). Those three managed runtimes are why
 `alto`, `star` and `daybreak` are the hardest left to de-bridge: converting them
 means hosting .NET, mono or a JVM on labhost itself. **Iris** (`indyr4400`) used
 to be in this list and is not any more — it was native Rust, so it converted
-([`lab/IRIS-DEBRIDGE-BRIEF.md`](lab/IRIS-DEBRIDGE-BRIEF.md)).
+([`lab/IRIS-DEBRIDGE-BRIEF.md`](lab/IRIS-DEBRIDGE-BRIEF.md)). Nor is
+**Caprice32** (`amstradcpc`): the CPC moved to MAME's `cpc6128` on the host on
+2026-10-04, because the kiosk lost keys whenever labhost was busy
+([`guests/amstradcpc.md`](guests/amstradcpc.md)).
 
-**Tier 3 is where the emulators went.** Its 23 stations run **MAME** (`irix`
+**Tier 3 is where the emulators went.** Its stations run **MAME** (`irix`
 indy_4610, `newsos` nws3260, `bbcmicro`/`armeval` bbcb, `dragon32`, `oricatmos`,
-`kc854`, `sinclairql`, `zx81`, `zxspectrum`, `mpf2`), **VICE** (`c64` and `c64basic` x64sc,
+`kc854`, `sinclairql`, `zx81`, `zxspectrum`, `mpf2`, `amstradcpc` cpc6128), **VICE** (`c64` and `c64basic` x64sc,
 `c128` x128, `vic20` xvic, `plus4` xplus4, `pet2001` xpet, `cbm8032` xpet -model
 8032, `cbm2` xcbm2), **es40** (`tru64`, `w2kalpha`), **Previous** (`nextstep`),
 **FS-UAE** (`amigaos35` A4000/040, `amix` A3000, `a1000`, `a3000`), **LisaEm**
@@ -232,7 +234,7 @@ missing feature.
 | `amiga` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
 | `amigaos35` | 3 host-native | FS-UAE/host | `x11-xtest` | abs | — | off | 50 | — |
 | `amix` | 3 host-native | FS-UAE/host | `x11-xtest` | abs | — | off | 25 | — |
-| `amstradcpc` | 2 bridge | bookworm | `qemu-ps2-relative` | rel | — | on | 60 | ssh |
+| `amstradcpc` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `android` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | yes | on | 30 | — |
 | `apple2` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
 | `apple2gs` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |

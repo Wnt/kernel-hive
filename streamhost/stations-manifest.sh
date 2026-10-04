@@ -562,9 +562,10 @@ emit redstar3 \
 
 # amstradcpc (VMID 219) — cap32 (Caprice32) -> Amstrad CPC 6128 -> Locomotive BASIC Ready. ssh 5819.
 emit amstradcpc \
-  --tile amstradcpc --vmid 219 --udp 54119 --pointer rel --cursor-scale 1.0 \
-  --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 60 --launcher-file \
-  "$T/amstradcpc/qemu-streamhost.sh" --env-append-file \
+  --tile amstradcpc --udp 54119 --x11 --x11-display :59 --capture shm \
+  --pointer none --input-backend mamesock --audio on --fps 60 \
+  --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
+  "$T/amstradcpc/amstradcpc.keymap" --env-append-file \
   "$T/amstradcpc/station.env.fixture"
 
 # nt351 (VMID 83) — Windows NT Workstation 3.51 on the ISA-only machine.

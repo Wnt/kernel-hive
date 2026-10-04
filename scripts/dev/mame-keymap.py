@@ -142,7 +142,11 @@ XT_KEYS: list[tuple[int, list[str]]] = [
 
 # XT scancode -> MAME default-assignment token (tier 1). This is the mechanical
 # mirror of MAME's own KEYCODE_* naming: the ';' key is COLON, the '.' key is
-# STOP, the "'" key is QUOTE and the '`' key is TILDE. A field whose PORT_CODE
+# STOP, the "'" key is QUOTE and the '`' key is TILDE. The spellings are the
+# tokens KEYDUMP prints (src/emu/input.cpp's item names), NOT the C++ macro
+# names: the keypad is KEYCODE_7PAD and KEYCODE_ENTERPAD, never KEYCODE_7_PAD.
+# Until 2026-10-04 this table carried the macro spellings, so no keypad key
+# ever matched by token; the Amstrad CPC, whose f0-f9 ARE its keypad, found it. A field whose PORT_CODE
 # carries one of these tokens is bound to the XT code a PC keyboard sends from
 # that physical position — the same binding the bridge kiosk chain (PS/2 -> X
 # -> SDL -> MAME) produced, which is what the SPA charMaps were tuned against.
@@ -215,24 +219,24 @@ XT_TOKENS: dict[int, str] = {
     0x42: "KEYCODE_F8",
     0x43: "KEYCODE_F9",
     0x44: "KEYCODE_F10",
-    0x47: "KEYCODE_7_PAD",
-    0x48: "KEYCODE_8_PAD",
-    0x49: "KEYCODE_9_PAD",
-    0x4A: "KEYCODE_MINUS_PAD",
-    0x4B: "KEYCODE_4_PAD",
-    0x4C: "KEYCODE_5_PAD",
-    0x4D: "KEYCODE_6_PAD",
-    0x4E: "KEYCODE_PLUS_PAD",
-    0x4F: "KEYCODE_1_PAD",
-    0x50: "KEYCODE_2_PAD",
-    0x51: "KEYCODE_3_PAD",
-    0x52: "KEYCODE_0_PAD",
-    0x53: "KEYCODE_DEL_PAD",
+    0x47: "KEYCODE_7PAD",
+    0x48: "KEYCODE_8PAD",
+    0x49: "KEYCODE_9PAD",
+    0x4A: "KEYCODE_MINUSPAD",
+    0x4B: "KEYCODE_4PAD",
+    0x4C: "KEYCODE_5PAD",
+    0x4D: "KEYCODE_6PAD",
+    0x4E: "KEYCODE_PLUSPAD",
+    0x4F: "KEYCODE_1PAD",
+    0x50: "KEYCODE_2PAD",
+    0x51: "KEYCODE_3PAD",
+    0x52: "KEYCODE_0PAD",
+    0x53: "KEYCODE_DELPAD",
     0x57: "KEYCODE_F11",
     0x58: "KEYCODE_F12",
-    0xE01C: "KEYCODE_ENTER_PAD",
+    0xE01C: "KEYCODE_ENTERPAD",
     0xE01D: "KEYCODE_RCONTROL",
-    0xE035: "KEYCODE_SLASH_PAD",
+    0xE035: "KEYCODE_SLASHPAD",
     0xE038: "KEYCODE_RALT",
     0xE047: "KEYCODE_HOME",
     0xE048: "KEYCODE_UP",

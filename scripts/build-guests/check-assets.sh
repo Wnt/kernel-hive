@@ -103,6 +103,10 @@ ROWS=(
   # Debian non-free spectrum-roms; its usr/share/doc/spectrum-roms/copyright carries
   # Amstrad's 1999 emulator permission. zxspectrum.sh extracts 48.rom from it.
   "opt-file|zxspectrum|Sinclair ZX Spectrum 48K ROM, in Debian's spectrum-roms package (fetched by zxspectrum.sh from deb.debian.org if absent)|$ASSET_STAGING/zxspectrum/spectrum-roms_20081224-5_all.deb|sha256:8d25dd300a0c86b4459e152de3bc657dca894b167e6a6419eb195d9669bfe950|freely-fetchable-pinned"
+  # Amstrad CPC 6128 ROMs as Caprice32 bundles them (pinned commit 66a4a7af), under Amstrad's emulator
+  # permission; build-mame-native.sh amstradcpc stages them by SHA1 against the binary's -listxml.
+  "req-file|amstradcpc|Amstrad CPC 6128 OS + Locomotive BASIC 1.1 ROM (MAME cpc6128.rom)|$ASSET_STAGING/amstradcpc/cpc6128.rom|sha256:31c3668c67bea027dab698ece233c9434d9324f9ba7dac84db58f400b6689562|freely-fetchable-pinned"
+  "req-file|amstradcpc|Amstrad CPC AMSDOS ROM (MAME cpcados.rom)|$ASSET_STAGING/amstradcpc/amsdos.rom|sha256:ea65e0fb44ee93ede4b6c507509b7e5ddf497fb7155023bea91ef229469fa04d|freely-fetchable-pinned"
   "opt-file|ubuntu|Ubuntu 4.10 Warty Warthog live CD ISO (fetched by ubuntu.sh from old-releases.ubuntu.com if absent)|$ASSET_STAGING/ubuntu/warty-release-live-i386.iso|sha256:189746859b539c37d978b107589610aa49a7415f7c089d22667867a918591013|freely-fetchable-pinned"
   # -- repo-tracked assets ------------------------------------------------------
   # NOTE: cosmo.zip/jill.zip/Winamp tarball are no longer shipped in the repo

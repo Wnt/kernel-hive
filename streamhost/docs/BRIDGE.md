@@ -86,7 +86,7 @@ The base contains, ready to use:
   | Atari ST       | `hatari`        | Debian apt (`hatari`)                    |
   | Apple //e      | `linapple`      | source (github linappleii/linapple)      |
   | Amiga 500      | `fs-uae`        | Debian apt (`fs-uae`) — overlay-installed on the live `amiga` kiosk first, now baked into the current `bridge-base.sh` |
-  | Amstrad CPC    | `cap32`         | source (github ColinPitrat/caprice32) — **available in the base image, not deployed** as a tile |
+  | Amstrad CPC    | `cap32`         | source (github ColinPitrat/caprice32) — still in the base image; the `amstradcpc` kiosk that used it went host-native (MAME `cpc6128`) on 2026-10-04, its overlay kept as the rollback |
 - **A bare-X kiosk** (no window manager, no display manager): autologin on tty1 →
   `startx` → `~/.xinitrc` → a single per-tile launcher `/etc/bridge/launch.sh`
   full-screen.
@@ -202,8 +202,9 @@ Per-machine swaps for the other machines:
   `~/.linapple/linapple.conf` (LinApple bundles the //e ROM).
 - **Amiga 500 / Workbench**: `fs-uae` with a per-tile config — the deployed
   `amiga` tile; see `scripts/build-guests/tiles/amiga.sh` for the exact launcher.
-- **Amstrad CPC**: `cap32 -O fullscreen=true <disk.dsk>` (cap32 bundles CPC
-  ROMs). *Available in the base image, not deployed as a gallery tile.*
+- **Amstrad CPC**: `cap32 -O video.scr_green_mode=0 -O video.scr_scale=3` (cap32
+  bundles CPC ROMs). This was the `amstradcpc` kiosk until 2026-10-04; the station
+  is host-native MAME now (`docs/guests/amstradcpc.md`).
 
 ### 3c. The tile device set (MUST be byte-identical at golden-bake and boot)
 ```

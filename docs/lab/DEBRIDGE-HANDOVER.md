@@ -32,13 +32,18 @@ R4400 — [`IRIS-DEBRIDGE-BRIEF.md`](IRIS-DEBRIDGE-BRIEF.md)). Both wrote **zero
 streamhost code: the fork publishes IFB1 frames and speaks `mamectl/1`, and the
 station is env.
 
-**Ten stations still run a Debian bridge kiosk**, deliberately: each uses a
+**`amstradcpc` followed on 2026-10-04**, off Caprice32 and onto MAME's
+`cpc6128`, on the shared MAME launcher: its kiosk lost typed keys whenever
+labhost was busy, and the ctlsock module paces keys in emulated time
+([`../guests/amstradcpc.md`](../guests/amstradcpc.md)).
+
+**Nine stations still run a Debian bridge kiosk**, deliberately: each uses a
 different emulator, and the frame/input machinery is engine-specific.
 
 | Emulator | Stations |
 |---|---|
 | SIMH (3) | pdp11, gt40, decos |
-| one each | atarist (hatari), amstradcpc (Caprice32), apple2 (LinApple), amiga (FS-UAE), alto (ContrAlto), star (Darkstar), daybreak (Dove/Mesa) |
+| one each | atarist (hatari), apple2 (LinApple), amiga (FS-UAE), alto (ContrAlto), star (Darkstar), daybreak (Dove/Mesa) |
 
 Most of the ten are still on bookworm and are the last customers of the per-tile
 ABI chroots; converting or migrating them retires that dependency. `indyr4400`
