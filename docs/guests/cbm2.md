@@ -149,13 +149,17 @@ CBM-II keyboard is laid out like a US one, so almost no character changes the
 Shift level between host and machine, and the torn latch of the other VICE
 machines (`:` read as `[` when a KERNAL scan straddled a Shift change VICE
 made in the key's own latch) has little to tear here. Through the real daemon
-at the editor's pace, on rigs: the old binary lost nothing in 3 passes of
-the 14-line CBM stress listing, the new one nothing either, and the three
-examples typed 9 of 9. It ships the lead for one engine across the
-family; two frames is safe by construction. The golden restores
-pixel-identical under the new binary. Method and the family's numbers:
+at the editor's pace, on rigs: the old binary lost nothing in 3 passes of the
+14-line CBM stress listing, the new one nothing either, and the three examples
+typed 9 of 9. It ships the lead for one engine across the family; two frames
+is safe by construction. The golden restores pixel-identical under the new
+binary. Method and the family's numbers:
 [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead);
-evidence in `/data/vms/streamhost/stations/cbm2/evidence/shift-lead-2026-10-04/`.
+evidence in
+`/data/vms/streamhost/stations/cbm2/evidence/shift-lead-2026-10-04/`. Live
+since 2026-10-04: the real editor typed `draw.bas` on the live station, RUN
+ran it, LIST was exact, and Restore to golden brought the scene back
+(`live-smoke-*.png`).
 
 No `SH_KEY_MAP`: VICE's symbolic keymap already maps host ASCII onto the CBM-II
 matrix, and unlike the Plus/4 this machine needs no un-typeable key — the CBM-II

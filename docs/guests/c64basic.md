@@ -117,7 +117,10 @@ on rigs of the station's golden, read back from a `SAVEST` snapshot: the
 14-line CBM stress listing tore 20 lines in 3 passes on the old binary
 and none on the new one, and the three examples below came out 9 of 9
 byte-exact. The golden restores pixel-identical under the new
-binary. The `c64` (GEOS) station got the same binary as its own copy. Evidence:
+binary. The `c64` (GEOS) station got the same binary as its own copy. Live
+since 2026-10-04: the real editor typed Quick Draw on the live station, RUN
+turned the screen red, LIST was exact (line 40's `+` included), and Restore to
+golden brought READY back (`live-smoke-*.png`). Evidence:
 `/data/vms/streamhost/stations/c64basic/evidence/shift-lead-2026-10-04/`.
 
 - **`keyboard.letterCase: upper-only`** and **`typeIn.case: unshifted`**: a

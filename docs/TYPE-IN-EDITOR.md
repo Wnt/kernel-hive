@@ -387,16 +387,20 @@ were all byte-exact. vic20's three examples were typed exactly as the editor
 types them, `NEW` first, ten times each through the daemon at 40 ms: 30 of 30
 byte-exact, with `dropped=0 overflow=0` throughout.
 
-**Live since 2026-10-04 on sinclairql and vic20; the rest of the VICE family
-is proven on rigs (above) and goes live one station at a time.** On sinclairql
-and vic20 both goldens restore unchanged under the new binary: the frames are
-pixel-identical to the old binary's, and the QL's savestate signature is the
-same. The same holds on rigs for every other VICE station (pet2001 and plus4
-cold-boot, and their power-on frames are identical too). `typein-editor-probe.mjs`
-typed two lines dense in shifted characters through the real editor on each
-live station, and RUN printed exactly what the listing says. The old binaries
-are kept beside the new ones as `ql.pre-shiftlead-20261004` and
-`vice-native.pre-shiftlead-20261004`. Evidence is in
+**Live since 2026-10-04 on sinclairql and every VICE station.** sinclairql and
+vic20 went first as the canary; pet2001, cbm8032, c128, plus4, cbm2, c64 and
+c64basic followed the same day, one station at a time. Every golden restores
+unchanged under the new binary: the frames are pixel-identical to the old
+binary's (pet2001 and plus4 cold-boot, and their power-on frames are identical
+too), and the QL's savestate signature is the same. On each live station
+`typein-editor-probe.mjs` then typed an example through the real editor, RUN
+ran it, LIST was exact, and Restore to golden brought the scene back. On the
+GEOS `c64`, which has no editor, the real SPA keyboard sent C= W and C= M, and
+the rename field echoed `Ab:C*1+2@x` exactly; the rename was never committed.
+The old binaries are kept beside the new ones as `ql.pre-shiftlead-20261004`
+and `vice-native.pre-shiftlead-20261004`, and each station's previous env and
+launcher as `station.env.pre-shiftlead-20261004` and
+`x11-runtime.sh.pre-shiftlead-20261004`. Evidence is in
 `/data/vms/streamhost/stations/<id>/evidence/shift-lead-2026-10-04/`.
 
 **Which other stations are exposed.** Every MAME keyboard station applied
