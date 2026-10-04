@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Rainbow target",
+      "description": "Six coloured rings and a white crosshair, drawn with HC-BASIC's CIRCLE and LINE on the 320 by 256 screen."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Times table",
+      "description": "Type a number and the KC prints its ten-times table; type 0 to stop."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Stop the dot",
+      "description": "A dot races along the screen towards a caret marker; press any key to stop it, read how far off you were, then replay or press N to quit."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "KC 85/4 BASIC-Handbuch (1988)",
+      "url": "https://www.mpm-kc85.de/dokupack/D001_BASIC_HB.pdf",
+      "lang": "de",
+      "note": "VEB Mikroelektronik Mühlhausen's original BASIC manual, covering PSET, CIRCLE, LINE, LOCATE and INKEY$; PDF scan"
+    },
+    {
+      "title": "KC 85/4 Systemhandbuch (1988)",
+      "url": "https://www.kc85emu.de/Download/KC854-Systemhandbuch.pdf",
+      "lang": "de",
+      "note": "The original system manual for the machine and CAOS 4.2; PDF scan"
+    }
+  ]
+}

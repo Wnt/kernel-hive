@@ -140,6 +140,11 @@
     "accentColor": "#3FD8D0",
     "eraLabel": "1988 · KC 85/4 (CAOS 4.2)"
   },
+  "typeIn": {
+    "dialect": "kc-basic",
+    "perCharMs": 260,
+    "hint": "First type BASIC and press ENTER twice to wake HC-BASIC."
+  },
   "keyboard": {
     "charMap": {
       "W": "w",

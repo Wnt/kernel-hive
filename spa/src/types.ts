@@ -189,7 +189,7 @@ export interface GuestKeyboard {
  *  keyword lists in ui/typein/basicDialects.ts). */
 export type BasicDialect =
   | 'cbm-basic' | 'bbc-basic' | 'msx-basic' | 'locomotive-basic' | 'superbasic'
-  | 'sam-basic' | 'oric-basic' | 'color-basic' | 'applesoft';
+  | 'sam-basic' | 'oric-basic' | 'color-basic' | 'applesoft' | 'kc-basic';
 
 /** How letters become keystrokes (registry `typeIn.case`). */
 export type TypeInCase = 'as-typed' | 'unshifted' | 'code-upper' | 'code-lower';

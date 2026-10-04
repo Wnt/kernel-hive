@@ -461,6 +461,11 @@ const TYPE_IN = {
     "case": "unshifted",
     "unreachable": "[\\]^_`{|}~"
   },
+  "kc854": {
+    "dialect": "kc-basic",
+    "perCharMs": 260,
+    "hint": "First type BASIC and press ENTER twice to wake HC-BASIC."
+  },
   "mpf2": {
     "dialect": "applesoft",
     "perCharMs": 70,
