@@ -298,6 +298,14 @@ types them, `NEW` first, ten times each through the daemon at 40 ms: 30 of 30
 byte-exact, with `dropped=0 overflow=0` throughout. Evidence is in
 `/data/vms/streamhost/stations/{sinclairql,vic20}/evidence/shift-lead-2026-10-04/`.
 
+**Live since 2026-10-04 on sinclairql and vic20 only.** Both run the new
+binary with their lead, and both goldens restore unchanged under it: the
+frames are pixel-identical to the old binary's, and the QL's savestate
+signature is the same. `typein-editor-probe.mjs` then typed two lines dense in
+shifted characters through the real editor on each live station, and RUN
+printed exactly what the listing says. The old binaries are kept beside the
+new ones as `ql.pre-shiftlead-20261004` and `vice-native.pre-shiftlead-20261004`.
+
 **Which other stations are exposed.** Every MAME keyboard station applied
 Shift and the key in one drain pass before this, by construction. How much that
 costs depends on how the machine scans its keyboard. Each station was measured
