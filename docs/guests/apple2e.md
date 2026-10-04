@@ -138,10 +138,24 @@ had seen.
 **Modifier lead `SH_KEY_MOD_LEAD_MS=10`.** The //e's own encoder reads Shift
 when it latches a key, so it never lost one to timing on the old binary. It
 gets the fleet's 10 ms lead anyway (`../TYPE-IN-EDITOR.md`, "Shifted
-characters"). Because the //e has no `MAME_CTL_KEY_EXCL`, it needs the module
-from 2026-10-04 that keeps the ordering barriers on whenever a lead is set: with
-the first build of the lead, Shift's release overtook the deferred key and
-`(` landed as `9`.
+characters"). It needs the module from 2026-10-04 that keeps the ordering
+barriers on whenever a lead is set. With the first build of the lead, which
+kept them only under EXCL, Shift's release overtook the deferred key and `(`
+landed as `9`.
+
+**Exclusive scan after all: `MAME_CTL_KEY_EXCL=:X` (2026-10-04).** The
+type-in editor sends one character per `perCharMs`, but on the live station
+its keys reached the daemon in bunches whenever the browser's timer slipped:
+`[key-tel mamesock] recv` (`SH_INPUT_TELEMETRY=1`) put 7 of 482 presses within
+0 to 6 ms of the one before. Without EXCL the module then had two different
+keys down at once, and the //e's encoder reported them in its own scan order.
+The live editor typed `GUESS` as `UGESS`, `"Y" THEN` as `Y"T HEN`, and once
+`":` as `";`. On a rig, a listing with every second character sent together
+with the one before swapped every such pair without EXCL (2 of 2 runs) and
+typed exactly with `:X` (2 of 2). With EXCL the stress listing and all three
+examples typed exactly again, twice each. `:X` matches the encoder's matrix
+ports `:X0`..`:X8`; Shift, Control and the Apple keys live on `:keyb_special`
+and stay exempt.
 
 ## Type-in editor
 
@@ -155,8 +169,10 @@ Oric and the BBC).
 
 `registry/examples/apple2e/` holds three original Applesoft programs:
 *Hi-res starburst* (HGR, HCOLOR, HPLOT ... TO: 126 coloured lines from the
-centre), *Prime checker* (INPUT, then a trial division; 0 stops) and *Guess my
-letter* (GET: earlier or later in the alphabet until you hit it). The manuals
+centre; its closing text is `VTAB 22` first, because `HOME` homes the cursor
+to the top of the text page, which the hi-res picture covers), *Prime checker*
+(INPUT, then a trial division; 0 stops) and *Guess my letter* (GET: earlier or
+later in the alphabet until you hit it). The manuals
 are Apple's IIe Owner's Manual (1983) and the Applesoft BASIC Programmer's
 Reference Manual, volumes 1 and 2, for the //e, both on archive.org.
 
