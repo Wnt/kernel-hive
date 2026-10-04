@@ -51,13 +51,37 @@ The MAME binary itself: 87 354 072 bytes, sha256
 
 ## Golden, input, and rollback
 
-- Reset mode: `relaunch` (checkpoint/`MAME_NATIVE_CHECKPOINT=0` — the
-  `msx/msx2.cpp` driver's `MACHINE_SUPPORTS_SAVE` status is unconfirmed on
-  this build; cold boot every reset, OPEN for a future stream to measure).
+- Reset mode: `relaunch`, a cold boot every reset. `nms8250` reports
+  `savestate="unsupported"` (`-listxml`, MAME 0.289), so
+  `MAME_NATIVE_CHECKPOINT=0` stays.
 - Fixture (rest scene): MSX-BASIC's `Ok` prompt with the MSX-DOS 2 boot disk
-  present but NOT auto-booted. Real MSX hardware auto-boots a bootable
-  floppy on power-on; this build's `nms8250` diskrom does not, and the
-  cause was not chased further (see "MSX-DOS 2 — out of scope" below).
+  present but NOT booted. The disk ROM does try it: the cold boot shows ~7 s of
+  blank blue screen with the drive LED lit before BASIC comes up. Why it falls
+  back to BASIC was not chased (see "MSX-DOS 2 — out of scope" below).
+- **The cold boot, in emulated seconds** (ctlsock `PING`, three boots of three
+  identical): the MSX2 logo at 2.4-4.2 s, the blank blue disk-boot screen
+  5.6-11.8 s, the BASIC banner and `Ok` at 11.8 s, the drive LED off at
+  14.215 s.
+- **The standby freeze lands on `Ok`, and a Restore waits for it**
+  (2026-10-04). The fixture's old `MAME_NATIVE_STANDBY_DELAY_S=8` froze the
+  live station on the blank blue disk-boot screen, with the drive LED lit
+  (`/proc` state `T` since 19:47, frame read straight from `fb.shm`). The first
+  visitor then watched the last ~4 s of the boot, and their first keys went
+  into it. A Restore (a service restart) returned at once and reconnected the
+  visitor to the MSX2 logo. Typed through a sandbox daemon right after a cold
+  launch, an editor example's first line came out as
+  `N10 REM TIMES TE - PE A NUMBER` / `Syntax error` on the live binary, and as
+  `10 REM TIMESBLE -YPE A NUMBER` on the pre-shift-lead one. Typed at `Ok`,
+  it was exact. That is the "`10 PRINT` arrives as `10 NT`, old binary or new"
+  finding in [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#typing-right-after-a-restore):
+  the shift-lead rigs started typing after a 3 s framebuffer settle, which
+  fires inside that blank blue phase. Now `MAME_NATIVE_STANDBY_DELAY_S=16`
+  with `MAME_NATIVE_STANDBY_CLOCK=emulated` freezes the settled `Ok` screen
+  however loaded the box is, and `reset-tile.sh` reports a Restore done only
+  once that freeze has landed (`scene.state`). Proof: the real launcher on a
+  sandbox copy, with the `input.bas` example typed the moment each restore
+  returned (the restore waited 15.7-15.9 s for the scene): 5 of 5 exact.
+  Evidence: `/data/vms/streamhost/stations/msx2/evidence/restore-first-keys-2026-10-04/`.
 - Pointer/click/drag/wheel: N/A — keyboard-only exhibit.
 - **Keyboard proof: PROVEN on the production path**, 2026-09-20 (landing
   stream, dark-launch rig, real browser). Config: `SH_INPUT_BACKEND=mamesock`,

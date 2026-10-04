@@ -1197,7 +1197,20 @@ existing host copy, so do not assume an UI deploy has copied a changed map.
 
 For production, fill `reset` and `render.goldenOrder`. Use
 `resetMode: "restart"` with `snapshot: null` only when the launcher creates a
-fresh deterministic fixture. `mouse` and `keyboard` are evidence (`PASS`,
+fresh deterministic fixture.
+
+**A host-native MAME station without a savestate** (`-listxml` says
+`savestate="unsupported"`, so `MAME_NATIVE_CHECKPOINT=0`) resets by cold
+booting. Measure that boot in EMULATED seconds: poll the ctlsock's `PING` mtime
+beside the framebuffer until the last boot frame (drive LED off, prompt
+drawn). Then set `MAME_NATIVE_STANDBY_DELAY_S` a second or two past it, with
+`MAME_NATIVE_STANDBY_CLOCK=emulated`, and look at the frozen frame. The
+launcher's standby freeze is the station's rest scene, and `reset-tile.sh`
+waits for it before a Restore reports done. A delay that ends mid-boot parks
+the exhibit in its boot, and the first visitor's keys go into it (msx2,
+2026-10-04, [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#typing-right-after-a-restore)).
+Never prove such a station's typing after a framebuffer settle: a boot's quiet
+phase looks settled. `mouse` and `keyboard` are evidence (`PASS`,
 `SKIP`, or `UNVERIFIED`), not desired outcomes. Keep `reset.pointer` consistent
 with `stream.pointer.transport`.
 

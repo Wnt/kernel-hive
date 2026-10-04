@@ -239,9 +239,13 @@ export interface TypeInConfig {
   /** One sentence shown above the Type button (a step the machine needs first). */
   readonly hint?: string;
   /** Longer ENTER settles for named direct commands (whole line, upper case):
-   *  samcoupe's NEW redraws the MGT banner and eats the next key; the 48K
+   *  samcoupe's NEW brings up the MGT banner (see enterAfter); the 48K
    *  Spectrum's NEW re-tests its memory with the keyboard off. */
   readonly settleAfter?: Readonly<Record<string, number>>;
+  /** Direct commands (whole line, upper case) followed by a bare ENTER, after
+   *  their settle: samcoupe's NEW leaves the MGT banner up until a key, and
+   *  the key that dismisses it is lost about one time in six. */
+  readonly enterAfter?: readonly string[];
   /** Printable ASCII the station's keymap cannot produce: flagged, never typed. */
   readonly unreachable?: string;
 }

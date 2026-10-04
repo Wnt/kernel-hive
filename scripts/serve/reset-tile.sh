@@ -105,6 +105,54 @@ SOCK="$TDIR/qmp.sock"
 
 envval() { sed -n "s/^$1=//p" "$ENVF" 2>/dev/null | tail -1; }
 
+# scene_wait: after a COLD relaunch, block until the new emulator is at its
+# rest scene, and print how long that took (nothing when there is nothing to
+# wait on). A cold relaunch is a boot, not a restore: msx2 needs ~12 s to
+# reach "Ok", svi738 ~21 s to reach A>, and the caller's visitor reconnects
+# the moment this script exits. Before this wait they reconnected to a booting
+# machine, and the demo typist (or the visitor) typed into the boot:
+# svi738's `MBASIC` vanished into the MSX banner, msx2 lost the first keys of
+# its first line (2026-10-04). The mame-native launcher (stations/mame-native/
+# x11-runtime.sh) writes $TDIR/scene.state: `booting <pid>` at launch, `ready
+# <pid>` once the standby freeze has landed on the scene — which also means
+# the freeze can no longer land under the visitor's reconnected session.
+#   * no marker naming the NEW pid (a launcher older than the marker, or
+#     standby off) -> no wait, exactly the old behaviour;
+#   * a station whose scene takes longer than SCENE_WAIT_MAX_DELAY_S
+#     (newsos 200 s, palmos 600 s) -> no wait either: a visitor watches that
+#     boot rather than a "Restoring" tile, and the gallery endpoint gives this
+#     whole script 180 s;
+#   * otherwise poll up to 3x the delay + 15 s (an emulated-clock delay on a
+#     loaded box runs long), then report OK regardless: a reset that did happen
+#     is not a failure because its scene is late.
+SCENE_WAIT_MAX_DELAY_S="${SCENE_WAIT_MAX_DELAY_S:-90}"
+scene_wait() {
+  local pid st spid delay limit t0 now
+  pid="$(cat "$TDIR/mame.pid" 2>/dev/null || true)"
+  [ -n "$pid" ] || return 0
+  read -r st spid _ <"$TDIR/scene.state" 2>/dev/null || return 0
+  [ "$spid" = "$pid" ] || return 0
+  delay="$(envval MAME_NATIVE_STANDBY_DELAY_S)"
+  delay="${delay:-8}"
+  case "$delay" in '' | *[!0-9]*) return 0 ;; esac
+  [ "$delay" -le "$SCENE_WAIT_MAX_DELAY_S" ] || return 0
+  limit=$((3 * delay + 15))
+  t0="$(date +%s%N)"
+  while :; do
+    read -r st spid _ <"$TDIR/scene.state" 2>/dev/null || st=
+    now="$(date +%s%N)"
+    if [ "$st" = ready ] && [ "$spid" = "$pid" ]; then
+      echo "scene ready in $(((now - t0) / 1000000)) ms"
+      return 0
+    fi
+    if [ $(((now - t0) / 1000000000)) -ge "$limit" ]; then
+      echo "scene NOT ready after ${limit} s"
+      return 0
+    fi
+    sleep 0.2
+  done
+}
+
 # ctl_reset <sock> <verb> [proc-match] [mark]: the in-process reset described in the
 # header. Prints the one-line detail; non-zero on any failure (the caller falls
 # back). A SIGSTOPped emulator (idle-paused) would never answer, so it is
@@ -406,7 +454,8 @@ case "$RESETMODE" in
       echo "reset $OSID: FAIL (cold service restart)" >&2
       exit 5
     }
-    echo "reset $OSID: OK (cold service restart $TILEDIR)"
+    SCENE="$(scene_wait)"
+    echo "reset $OSID: OK (cold service restart $TILEDIR${SCENE:+; $SCENE})"
     exit 0
     ;;
   pve-rollback)
