@@ -136,13 +136,26 @@ the build fails and says to raise `MEM` to 1024 and recapture.
 
 ## Keyboard pacing
 
-`SH_KEY_MIN_HOLD_MS=80`, `SH_KEY_MIN_GAP_MS=80` — **four** PAL frames each way.
-Carried over from the VIC-20's bisect rather than re-measured: same emulator,
-same 50 Hz frame, same host, and the failure those numbers guard against is a
-host scheduling stall rather than a property of the emulated machine
-(`scripts/dev/emu-key-pacing-bisect.py`: 40/40 corrupted one line in 22, 80/80
-none in 22). **Two frames is a floor, not an answer.** Re-bisect if this station
-ever drops characters.
+The keys go host-native: browser key edges → the daemon's `vice_sock.rs` →
+the fork's `vicectl` module, which paces them in the machine's own frames.
+`SH_KEY_MIN_HOLD_MS=60`, `SH_KEY_MIN_GAP_MS=60` with `VICE_CTL_KEY_EXCL=1`,
+the VICE family's floor since 2026-08-17 (vic20's re-bisect with overlapping
+bursts: 40/40 corrupted 6 lines of 12, 60/60 none — see [`vic20.md`](vic20.md)).
+The 610's CRTC runs a 50 Hz frame (40 064 cycles at 2 MHz, measured), so
+60 ms is three frames.
+
+**Shift is staged: `SH_KEY_MOD_LEAD_MS=40`, two frames (2026-10-04).** The
+CBM-II keyboard is laid out like a US one, so almost no character changes the
+Shift level between host and machine, and the torn latch of the other VICE
+machines (`:` read as `[` when a KERNAL scan straddled a Shift change VICE
+made in the key's own latch) has little to tear here. Through the real daemon
+at the editor's pace, on rigs: the old binary lost nothing in 3 passes of
+the 14-line CBM stress listing, the new one nothing either, and the three
+examples typed 9 of 9. It ships the lead for one engine across the
+family; two frames is safe by construction. The golden restores
+pixel-identical under the new binary. Method and the family's numbers:
+[`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead);
+evidence in `/data/vms/streamhost/stations/cbm2/evidence/shift-lead-2026-10-04/`.
 
 No `SH_KEY_MAP`: VICE's symbolic keymap already maps host ASCII onto the CBM-II
 matrix, and unlike the Plus/4 this machine needs no un-typeable key — the CBM-II
