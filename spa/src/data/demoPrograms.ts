@@ -59,6 +59,18 @@ const DEMO_PROGRAMS = {
     "runCommand": "hello",
     "perCharMs": 80
   },
+  "c64basic": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 print chr$(147)",
+      "20 x=int(rnd(1)*1000)",
+      "30 poke 1024+x,81",
+      "40 poke 55296+x,int(rnd(1)*16)",
+      "50 goto 20"
+    ],
+    "runCommand": "run",
+    "perCharMs": 170
+  },
   "cbm8032": {
     "label": "Type in a demo program",
     "lines": [
@@ -443,6 +455,13 @@ const TYPE_IN = {
     "perCharMs": 170,
     "case": "unshifted",
     "maxLineChars": 160
+  },
+  "c64basic": {
+    "dialect": "cbm-basic",
+    "perCharMs": 170,
+    "case": "unshifted",
+    "maxLineChars": 80,
+    "unreachable": "{}"
   },
   "cbm2": {
     "dialect": "cbm-basic",

@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "id": "c64basic",
+  "era_year": 1982,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 94,
+        "prelude": "",
+        "value": {
+          "key": "c64basic",
+          "script": "tiles/c64basic.sh",
+          "outputDir": "native/c64basic",
+          "class": "retro",
+          "estimated": "~1m",
+          "automation": "full",
+          "produces": "assets/c64basic/vice-native (the c64 station's x64sc, byte for byte) + sta/golden.vsf (BASIC V2 READY)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/c64basic",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54226,
+      "notes": "HOST-NATIVE: VICE x64sc runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (IFB1), keys vicectl + the shared us-layout keysym table, audio -sounddev fifo -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/c64basic/sta/golden.vsf. Same x64sc as the c64 (GEOS) station, in its own asset dir. Keyboard-only: drive it with labctl type/key, read it with labctl shot."
+    }
+  },
+  "render": {
+    "signalOrder": 120,
+    "stationsManifestOrder": 99,
+    "stationsManifestPrelude": "\n# c64basic (VMID 226) — host-native VICE 3.10.0 x64sc (Commodore 64, PAL breadbin, 1982) -> BASIC V2 READY. The c64 station's binary; keyboard-only.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 127,
+    "bindingPrelude": "",
+    "goldenOrder": 99
+  },
+  "stationDir": "c64basic",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54226,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "vicesock"
+    },
+    "slot": 226
+  },
+  "guestDoc": "docs/guests/c64basic.md",
+  "credentialsRef": "guest/c64basic",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "c64basic",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "vicesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":126",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/c64basic/c64basic_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/c64basic/fb.shm",
+      "SH_PORT": "54226",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/c64basic/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/c64basic/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 226,
+    "bringUpOrder": 127,
+    "x11": {
+      "display": ":126",
+      "geometry": "768x544x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/vice-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "c64basic",
+        "--udp",
+        "54226",
+        "--x11",
+        "--x11-display",
+        ":126",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "vicesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/vice-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/vice-native/us-layout.keysyms",
+        "--env-append-file",
+        "$T/c64basic/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/vice-native/us-layout.keysyms",
+        "streamhost/stations/c64basic/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#6c5eb5",
+    "eraLabel": "1982 · C64 (BASIC V2)"
+  },
+  "keyboard": {
+    "letterCase": "upper-only"
+  },
+  "demoProgram": {
+    "label": "Type in a demo program",
+    "lines": [
+      "10 print chr$(147)",
+      "20 x=int(rnd(1)*1000)",
+      "30 poke 1024+x,81",
+      "40 poke 55296+x,int(rnd(1)*16)",
+      "50 goto 20"
+    ],
+    "runCommand": "run",
+    "perCharMs": 170
+  },
+  "typeIn": {
+    "dialect": "cbm-basic",
+    "perCharMs": 170,
+    "case": "unshifted",
+    "maxLineChars": 80,
+    "unreachable": "{}"
+  },
+  "museum": {
+    "id": "c64basic",
+    "displayName": "Commodore 64 BASIC",
+    "year": 1982,
+    "lineage": "Commodore 8-bit (MOS 6502)",
+    "arch": "MOS 6510 (6502), 1 MHz, 64 KB",
+    "ramMB": 0,
+    "ramKB": 64,
+    "era": "1980s",
+    "accent": "#6c5eb5",
+    "eraSoftware": [
+      "Commodore BASIC V2 in ROM",
+      "the 1541 disk drive and the Datasette",
+      "type-in listings from Compute!’s Gazette and the home-computer magazines",
+      "SID music",
+      "cartridge and cassette games"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "Commodore BASIC V2",
+      "POKE and PEEK",
+      "the SID chip",
+      "the 1541 disk drive"
+    ],
+    "blurb": "The best-selling single computer model of all time, as it greeted its owners: 38911 BASIC bytes free, a blinking cursor, and a language with no graphics or sound commands — so you POKEd the chips directly.",
+    "notes": "Live streamhost tile. The second Commodore 64 in the museum: the c64 station boots the GEOS desktop, this one stops where every C64 started, at the BASIC V2 READY prompt, so the type-in code editor has a C64 to type into. HOST-NATIVE: VICE 3.10.0's x64sc (the same binary as the c64 station) emulates a PAL breadbin (-model c64: 6569 VIC-II, 6581 SID) on the host, headless, and the exhibit is restored from an untouched cold-boot checkpoint. Keyboard-only exhibit (no pointer device). See docs/guests/c64basic.md."
+  },
+  "emulator": {
+    "family": "VICE",
+    "version": "3.10.0",
+    "source": "scripts/build-guests/emulators/build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)",
+    "driver": "x64sc"
+  },
+  "ui": "home-computer",
+  "reset": {
+    "stationDir": "c64basic",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "N/A",
+    "keyboard": "PASS",
+    "fixture": "Commodore 64 (PAL breadbin, -model c64) BASIC V2 READY prompt, HOST-NATIVE: VICE 3.10.0's x64sc, the same binary as the c64 station in its own asset dir, runs on the host, headless, and publishes the emulated screen straight into the shm mapping at 768x544 (-VICIIdsize). resetMode=relaunch: the launcher restarts x64sc and restores sta/golden.vsf through the monitor's own playback file (-moncommands + -initbreak ready). The checkpoint is an untouched cold boot captured with vicectl SAVEST and restore-proven in a fresh process by scripts/build-guests/tiles/c64basic.sh; nothing is typed after the restore. Keyboard-only exhibit (no mouse); SID sound -> FIFO."
+  }
+}

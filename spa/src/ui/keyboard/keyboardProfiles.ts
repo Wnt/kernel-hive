@@ -436,6 +436,9 @@ export const OS_FAMILY: Record<string, Family> = {
   fmtowns: 'generic',
   android: 'android',
   c64: 'c64',
+  // The same C64, stopped at BASIC instead of GEOS: same keyboard, same VICE
+  // bindings (RUN/STOP is Esc, RESTORE is PageUp, C= is Tab).
+  c64basic: 'c64',
   plus4: 'plus4',
   // Same keyboard as the c64 (Commodore reused the VIC-20's), and the same VICE
   // bindings drive it: RUN/STOP is Esc, RESTORE is PageUp, C= is Tab.

@@ -24,9 +24,9 @@ typing engine is `typeLines()` in
 The opt-in is DATA: a station gets the editor if its registry entry has a
 `typeIn` block, and for no other reason. There are no id checks in the SPA.
 
-| In (18) | Why |
+| In (19) | Why |
 |---|---|
-| vic20 pet2001 cbm8032 c128 plus4 cbm2 | Commodore BASIC at power-on |
+| vic20 c64basic pet2001 cbm8032 c128 plus4 cbm2 | Commodore BASIC at power-on (c64basic is the C64 that stops at READY; the GEOS `c64` stays out) |
 | bbcmicro armeval | BBC BASIC (armeval: ARM BASIC on the tube) |
 | msx2 svi728 svi328 | MSX-BASIC / SV BASIC at power-on |
 | amstradcpc | Locomotive BASIC |
@@ -40,7 +40,8 @@ The opt-in is DATA: a station gets the editor if its registry entry has a
 | zxspectrum, zx81 | **Keyword entry.** One key *is* a keyword (P gives PRINT), so ASCII typed letter by letter arrives as garbage. The demo listing types keystroke form (`10 b1`) for exactly this reason. Supporting them needs a keyword transcoder, which is a follow-up; its measured design is [below](#keyword-transcoder-for-zxspectrum-and-zx81-measured-not-built). |
 | svi328cpm, svi738 | Boot to CP/M; MBASIC has to be loaded first (their demo listings do that with a 20 s settle). |
 | atari800xl, apple2e | Boot to a menu or a DOS, not to an interpreter. |
-| c64, apple2, msxturbor | Boot to GEOS / MSX View desktops. |
+| c64 | Boots to the GEOS deskTop, not to BASIC. The C64 with the editor is its sibling [`c64basic`](guests/c64basic.md): the same x64sc binary, stopped at the BASIC V2 READY prompt. |
+| apple2, msxturbor | Boot to GEOS / MSX View desktops. |
 
 **A station without validated pacing never gets the editor.** The validator
 refuses a `typeIn` block on a station whose env does not declare
@@ -64,10 +65,10 @@ nothing to validate the editor's pace against.
 | `perCharMs` | **Required.** The wait after every typed character. Must be ≥ hold+gap (`scripts/stations_registry/validate_typein.py`). It is never defaulted: the demo may fall back to the SPA's 70 ms, but the editor may not. |
 | `lineDelayMs` / `enterDelayMs` | The pause before a line's ENTER and the settle after it, for BASIC to tokenise. They default to the demo typist's 260 / 600 ms. **These three numbers are the tuning surface for long listings.** Change them here, never in a component. |
 | `case` | How letters become keystrokes (below). |
-| `maxLineChars` | The machine's logical line length. The editor strikes through what the screen editor would cut off. Declared only where the number is certain (VIC-20 88, PET/8032 80, C128 160). |
+| `maxLineChars` | The machine's logical line length. The editor strikes through what the screen editor would cut off. Declared only where the number is certain (VIC-20 88, PET/8032 80, C64 80, C128 160). |
 | `hint` | One sentence above the Type button, for a step the machine needs first. |
 | `settleAfter` | A longer ENTER settle after a named direct command, keyed by the whole line in upper case. On samcoupe, `{"NEW": 2000}`: `NEW` redraws the MGT banner, and that eats the next key. With the default 600 ms, line 10 was lost in 4 of 7 runs; with 1.5 s it was lost in 1 of 7 (examples-sinclair rig, `tl-06…08.png`). The SAM demo listing waits 2 s after its own `NEW` (`demoProgram.enterDelayMs: [2000]`). |
-| `unreachable` | Printable ASCII that the station's keymap cannot produce. On samcoupe these are `< > ? [ ] { } \` and the vertical bar. The editor paints these red and blocks typing, exactly as it does for non-ASCII. The examples validator refuses them too. |
+| `unreachable` | Printable ASCII that the station's keymap cannot produce. On samcoupe these are `< > ? [ ] { } \` and the vertical bar; on c64basic `{ }` (VICE's C64 keymap has no braces, and they vanish). The editor paints these red and blocks typing, exactly as it does for non-ASCII. The examples validator refuses them too. |
 
 `stations-registry.py new --like` does **not** copy `typeIn`. The dialect and
 case rule are facts about the sibling's interpreter, so a new machine opts in
@@ -80,7 +81,7 @@ wrong on most of these machines:
 
 | `case` | What reaches the guest | Stations |
 |---|---|---|
-| `unshifted` | every letter goes down unshifted | vic20 pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos (CAPS LOCK on at reset: every letter arrives upper case whichever way it is sent, so unshifted is simply the demo listings' proven path; lower case inside a string is out of reach either way); dragon32 mpf2 (no lower case) |
+| `unshifted` | every letter goes down unshifted | vic20 c64basic pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos (CAPS LOCK on at reset: every letter arrives upper case whichever way it is sent, so unshifted is simply the demo listings' proven path; lower case inside a string is out of reach either way); dragon32 mpf2 (no lower case) |
 | `code-lower` | letters outside strings, REM and DATA go down unshifted; literals keep the visitor's case | cbm8032 cbm2 (business keyboard, text mode: unshifted is lower case, and BASIC wants it) |
 | `code-upper` | code is upper-cased, literals kept | msx2 svi728 svi328 (the proven demo path) |
 | `as-typed` (default) | unchanged | amstradcpc sinclairql samcoupe kc854 |
@@ -212,6 +213,22 @@ typed three times on each rig:
 |---|---|---|---|
 | Shift_L press, then the shifted keysym (what the daemon forwards) | 3 of 198 | 5 of 198, plus one line lost whole | 3 of 198 |
 | The keysym alone, no Shift edge (control) | 0 of 198 | 0 of 198 | 0 of 198 |
+
+The C64 is worse, and slowing down does not help (c64basic, 2026-10-04, rig
+of the station's own x64sc restored from its golden). The listing was a
+10-line stress test with 44 such characters per pass (25 `:`, 14 `*`, 4 `+`
+and one `@`), typed as a rollover burst at 6 keys/s and read back the same
+way:
+
+| Path | module hold/gap | corrupted lines |
+|---|---|---|
+| Shift_L press, then the shifted keysym | 60/60 | 12 of 60 (a `*` lost or a `:` turned `[`, about 1 such character in 20) |
+| Shift_L press, then the shifted keysym | 100/100 | 10 of 30 (also a lost `@` and a lost `+`) |
+| The keysym alone, no Shift edge (control) | 60/60 | 0 of 30 |
+
+So the station keeps the VICE floor of 60/60: no character without a Shift
+edge was lost at that pace, and the failure rate did not fall at 100/100. The
+c64basic examples keep `:` and `*` few for the same reason.
 
 A module trace (`VICE_CTL_TRACE=1`) shows a failing `:` with exactly the same
 edge order and spacing as the good ones: Shift down, `:` down three frames

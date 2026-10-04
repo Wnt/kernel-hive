@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (121 of the 123
+//    - transport   : how its LIVE framebuffer texture is obtained (122 of the 124
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -114,7 +114,7 @@ export interface OSBinding {
   resetKeepsStream?: boolean;
 }
 
-// One entry per OS. 121 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 122 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -254,6 +254,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   svi728:      { osId: 'svi728', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#56799b', eraLabel: '1984 · MSX BASIC 1.0' },
   svi738:      { osId: 'svi738', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#56799b', eraLabel: '1985 · CP/M-80 2.28' },
   symbos:      { osId: 'symbos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#376ca8', eraLabel: '2025 · SymbOS 4.0 — a modern desktop on an MSX2', pointerRel: false },
+  c64basic:    { osId: 'c64basic', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6c5eb5', eraLabel: '1982 · C64 (BASIC V2)' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

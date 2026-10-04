@@ -110,7 +110,7 @@ the schema but used by no station**.
   win2000 win311 win95 win98se winxp`
 - **Tier 2 (10)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
   pdp11 star`
-- **Tier 3 (27)** — `a1000 amigaos35 amix apple2gs armeval bbcmicro c128 c64 cbm2 cbm8032
+- **Tier 3 (28)** — `a1000 amigaos35 amix apple2gs armeval bbcmicro c128 c64 c64basic cbm2 cbm8032
   dragon32 indyr4400 irix kc854 medley mpf2 newsos nextstep oricatmos pet2001
   plus4 sinclairql tru64 vic20 w2kalpha zx81 zxspectrum`
 - **Tier 4 (1)** — `openvms` · **Tier 5 (2)** — `macos riscos`
@@ -153,7 +153,7 @@ to be in this list and is not any more — it was native Rust, so it converted
 
 **Tier 3 is where the emulators went.** Its 23 stations run **MAME** (`irix`
 indy_4610, `newsos` nws3260, `bbcmicro`/`armeval` bbcb, `dragon32`, `oricatmos`,
-`kc854`, `sinclairql`, `zx81`, `zxspectrum`, `mpf2`), **VICE** (`c64` x64sc,
+`kc854`, `sinclairql`, `zx81`, `zxspectrum`, `mpf2`), **VICE** (`c64` and `c64basic` x64sc,
 `c128` x128, `vic20` xvic, `plus4` xplus4, `pet2001` xpet, `cbm8032` xpet -model
 8032, `cbm2` xcbm2), **es40** (`tru64`, `w2kalpha`), **Previous** (`nextstep`),
 **FS-UAE** (`amigaos35` A4000/040, `amix` A3000, `a1000`, `a3000`), **LisaEm**
