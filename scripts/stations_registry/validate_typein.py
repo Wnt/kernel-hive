@@ -40,6 +40,7 @@ TYPEIN_KEYS = {
     "lineDelayMs",
     "enterDelayMs",
     "enterDelayPerLineMs",
+    "wrapPause",
     "case",
     "maxLineChars",
     "hint",
@@ -134,6 +135,7 @@ def validate_type_in(rows: list[dict[str, Any]], errors: list[str]) -> None:
         if isinstance(hint, str) and (len(hint) > HINT_MAX or "\n" in hint):
             fail(errors, row, f"typeIn.hint must be one line of at most {HINT_MAX} characters")
         _check_settle_and_reach(row, block, errors)
+        _check_wrap_pause(row, block, errors)
         if row.get("stream", {}).get("transport") != "streamhost":
             fail(errors, row, "typeIn on a station that does not stream -- there is no guest to type into")
         drain = drain_ms(row)
@@ -178,6 +180,24 @@ def validate_chord_pacing(row: dict[str, Any], block: dict[str, Any], drain: int
         )
     if "case" in block:
         fail(errors, row, "typeIn.case on a keyword-entry dialect: the keyword transcoder owns letter case")
+
+
+def _check_wrap_pause(row: dict[str, Any], block: dict[str, Any], errors: list[str]) -> None:
+    """`wrapPause`: {cols > 0, ms >= 0}, integers, nothing else."""
+    wrap = block.get("wrapPause")
+    if wrap is None:
+        return
+    if not isinstance(wrap, dict) or not {"cols", "ms"} <= set(wrap) <= {"cols", "ms", "promptCols"}:
+        fail(errors, row, "typeIn.wrapPause must be an object with 'cols' and 'ms' (and optionally 'promptCols')")
+        return
+    cols, ms, prompt = wrap["cols"], wrap["ms"], wrap.get("promptCols", 0)
+    if not isinstance(cols, int) or isinstance(cols, bool) or not 0 < cols <= 255:
+        fail(errors, row, f"typeIn.wrapPause.cols={cols!r} must be an integer 1..255 (the screen width)")
+    if not isinstance(ms, int) or isinstance(ms, bool) or not 0 <= ms <= 10000:
+        fail(errors, row, f"typeIn.wrapPause.ms={ms!r} must be an integer 0..10000")
+    limit = cols if isinstance(cols, int) else 1
+    if not isinstance(prompt, int) or isinstance(prompt, bool) or not 0 <= prompt < limit:
+        fail(errors, row, f"typeIn.wrapPause.promptCols={prompt!r} must be an integer 0..cols-1")
 
 
 def _check_settle_and_reach(row: dict[str, Any], block: dict[str, Any], errors: list[str]) -> None:
