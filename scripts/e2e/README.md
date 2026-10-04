@@ -62,6 +62,11 @@ control) and confirm `journalctl -u streamhost@<id>` logged a `SESSION_ACCEPTED`
 for the run. A probe that fails on a healthy station is a broken probe, and
 every reading it produces on a sick one is noise.
 
+- `typein-editor-probe.mjs <id> <listing.bas> [--run <cmd>] [--stop-after <s>] [--fb-shot <dir>] [--restore]`
+  — drives the BASIC machines' type-in code editor end to end (paste, Type into
+  machine, RUN, Stop, restore) and prints ms/char; the tool for tuning a
+  station's `typeIn` pace on long listings. See `docs/TYPE-IN-EDITOR.md`.
+
 - `open-check.mjs <id> [more…]` — did the visitor path OPEN the station, and
   nothing else. No input, no QMP, no guest state touched, so it is safe on a
   live or a sick station. Run it before any probe that claims to measure.
