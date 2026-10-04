@@ -174,11 +174,12 @@
       "90 hcolor=int(rnd(1)*8)",
       "100 goto 30"
     ],
-    "runCommand": "run"
+    "runCommand": "run",
+    "perCharMs": 74
   },
   "typeIn": {
     "dialect": "applesoft",
-    "perCharMs": 70,
+    "perCharMs": 74,
     "case": "unshifted",
     "unreachable": "[\\]_`{|}~"
   },

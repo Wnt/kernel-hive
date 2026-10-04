@@ -32,7 +32,7 @@ const DEMO_PROGRAMS = {
       "30 PRINT\"20000 LOOPS \";(TIME-T%)/100"
     ],
     "runCommand": "RUN",
-    "perCharMs": 160
+    "perCharMs": 170
   },
   "bbcmicro": {
     "label": "Type in a demo program",
@@ -178,7 +178,8 @@ const DEMO_PROGRAMS = {
       "90 hcolor=int(rnd(1)*8)",
       "100 goto 30"
     ],
-    "runCommand": "run"
+    "runCommand": "run",
+    "perCharMs": 74
   },
   "msx2": {
     "label": "Type in a demo program (MSX-BASIC)",
@@ -242,7 +243,7 @@ const DEMO_PROGRAMS = {
       "70 paper 7:ink 0"
     ],
     "runCommand": "run",
-    "perCharMs": 160
+    "perCharMs": 180
   },
   "pcbsd": {
     "label": "Ask the FreeBSD 6.3 kernel who it is, in Konsole",
@@ -427,7 +428,7 @@ const DEMO_PROGRAMS = {
       "50 GO TO 10"
     ],
     "runCommand": "RUN",
-    "perCharMs": 400
+    "perCharMs": 410
   }
 } as const satisfies Record<string, DemoProgram>;
 
@@ -440,9 +441,15 @@ const TYPE_IN = {
     "dialect": "locomotive-basic",
     "perCharMs": 90
   },
+  "apple2e": {
+    "dialect": "applesoft",
+    "perCharMs": 120,
+    "case": "unshifted",
+    "hint": "Press B on the boot menu for the Applesoft ] prompt first."
+  },
   "armeval": {
     "dialect": "bbc-basic",
-    "perCharMs": 160,
+    "perCharMs": 170,
     "case": "unshifted"
   },
   "bbcmicro": {
@@ -487,7 +494,7 @@ const TYPE_IN = {
   },
   "mpf2": {
     "dialect": "applesoft",
-    "perCharMs": 70,
+    "perCharMs": 74,
     "case": "unshifted",
     "unreachable": "[\\]_`{|}~"
   },
@@ -499,7 +506,7 @@ const TYPE_IN = {
   },
   "oricatmos": {
     "dialect": "oric-basic",
-    "perCharMs": 160,
+    "perCharMs": 180,
     "case": "unshifted"
   },
   "pet2001": {
@@ -552,7 +559,7 @@ const TYPE_IN = {
   },
   "zxspectrum": {
     "dialect": "sinclair-basic",
-    "perCharMs": 400,
+    "perCharMs": 410,
     "settleAfter": {
       "NEW": 3000
     }

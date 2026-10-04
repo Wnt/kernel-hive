@@ -24,7 +24,7 @@ typing engine is `typeLines()` in
 The opt-in is DATA: a station gets the editor if its registry entry has a
 `typeIn` block, and for no other reason. There are no id checks in the SPA.
 
-| In (21) | Why |
+| In (22) | Why |
 |---|---|
 | vic20 c64basic pet2001 cbm8032 c128 plus4 cbm2 | Commodore BASIC at power-on (c64basic is the C64 that stops at READY; the GEOS `c64` stays out) |
 | bbcmicro armeval | BBC BASIC (armeval: ARM BASIC on the tube) |
@@ -35,11 +35,12 @@ The opt-in is DATA: a station gets the editor if its registry entry has a
 | samcoupe | SAM BASIC, one keypress away (the `hint` tells the visitor to press B first) |
 | zxspectrum zx81 | Keyword entry (48K Sinclair BASIC, ZX81 BASIC), typed as key chords by the [keyword transcoder](#the-keyword-transcoder-zxspectrum-zx81) |
 | kc854 | HC-BASIC, one typed command away (the `hint` tells the visitor to type BASIC and press ENTER twice; [details below](#kc-854-getting-into-hc-basic-and-what-basic-does-twice)) |
+| apple2e | Applesoft BASIC, one keypress away: the ProDOS menu's `[B] BASIC prompt` (the `hint` tells the visitor to press B first; [details below](#apple-e-the-b-key-and-the-shift-key-it-never-had)) |
 
 | Out | Why |
 |---|---|
 | svi328cpm, svi738 | Boot to CP/M; MBASIC has to be loaded first (their demo listings do that with a 20 s settle). |
-| atari800xl, apple2e | Boot to a menu or a DOS, not to an interpreter. |
+| atari800xl | Boots to a menu (MyPicoDos), and its Atari BASIC exit does not reach READY. |
 | c64 | Boots to the GEOS deskTop, not to BASIC. The C64 with the editor is its sibling [`c64basic`](guests/c64basic.md): the same x64sc binary, stopped at the BASIC V2 READY prompt. |
 | apple2, msxturbor | Boot to GEOS / MSX View desktops. |
 
@@ -82,7 +83,7 @@ wrong on most of these machines:
 
 | `case` | What reaches the guest | Stations |
 |---|---|---|
-| `unshifted` | every letter goes down unshifted | vic20 c64basic pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos (CAPS LOCK on at reset: every letter arrives upper case whichever way it is sent, so unshifted is simply the demo listings' proven path; lower case inside a string is out of reach either way); dragon32 mpf2 (no lower case) |
+| `unshifted` | every letter goes down unshifted | vic20 c64basic pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos apple2e (CAPS LOCK on at reset: every letter arrives upper case whichever way it is sent, so unshifted is simply the demo listings' proven path; lower case inside a string is out of reach either way); dragon32 mpf2 (no lower case) |
 | `code-lower` | letters outside strings, REM and DATA go down unshifted; literals keep the visitor's case | cbm8032 cbm2 (business keyboard, text mode: unshifted is lower case, and BASIC wants it) |
 | `code-upper` | code is upper-cased, literals kept | msx2 svi728 svi328 (the proven demo path) |
 | `as-typed` (default) | unchanged | amstradcpc sinclairql samcoupe kc854 |

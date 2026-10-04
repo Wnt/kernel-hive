@@ -153,11 +153,11 @@
       "50 GO TO 10"
     ],
     "runCommand": "RUN",
-    "perCharMs": 400
+    "perCharMs": 410
   },
   "typeIn": {
     "dialect": "sinclair-basic",
-    "perCharMs": 400,
+    "perCharMs": 410,
     "settleAfter": {
       "NEW": 3000
     }

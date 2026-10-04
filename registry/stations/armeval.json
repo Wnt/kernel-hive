@@ -168,11 +168,11 @@
       "30 PRINT\"20000 LOOPS \";(TIME-T%)/100"
     ],
     "runCommand": "RUN",
-    "perCharMs": 160
+    "perCharMs": 170
   },
   "typeIn": {
     "dialect": "bbc-basic",
-    "perCharMs": 160,
+    "perCharMs": 170,
     "case": "unshifted"
   },
   "museum": {

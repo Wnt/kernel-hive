@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,3187 @@
+@@ -0,0 +1,3195 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -1609,13 +1609,21 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	// Neither is reproducible by a clean, slow, one-key-at-a-time test.
 +	//
 +	// Without MAME_CTL_KEY_EXCL (the irix tile) nothing changes: per-field
-+	// order only, every edge free to apply the pass it arrives.
++	// order only, every edge free to apply the pass it arrives -- UNLESS a
++	// modifier lead is set. The lead DEFERS a press behind its Shift, and
++	// without the barriers that Shift's own release (another field, not
++	// gated) overtakes the deferred press in the same pass, so the key lands
++	// unshifted: `(` -> `9`, `$` -> `4` on the apple2e, which has no EXCL
++	// (2026-10-04, through the real daemon path). So a lead turns the three
++	// ordering rules on for every station; lead 0 without EXCL is still the
++	// old engine, byte for byte.
 +	void drain_keys()
 +	{
 +		if (m_kq.empty())
 +			return;
 +		double const now = emu_now();
 +		bool const excl_mode = !m_key_excl.empty();
++		bool const ordered = excl_mode || m_mod_lead > 0;
 +		std::unordered_set<std::string> blocked;
 +		bool bar_press = false, bar_mod = false, bar_release = false;
 +		for (auto it = m_kq.begin(); it != m_kq.end(); )
@@ -1628,7 +1636,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			}
 +			bool const mod_key = field_is_modifier(e.field);
 +			// rules 1, 2 and 3 — a barrier defers, it never raises a barrier
-+			if (excl_mode
++			if (ordered
 +					&& (mod_key ? (bar_press || bar_mod || bar_release)
 +					            : (e.val == 1 ? (bar_press || bar_mod) : bar_mod)))
 +			{

@@ -152,11 +152,11 @@
       "70 paper 7:ink 0"
     ],
     "runCommand": "run",
-    "perCharMs": 160
+    "perCharMs": 180
   },
   "typeIn": {
     "dialect": "oric-basic",
-    "perCharMs": 160,
+    "perCharMs": 180,
     "case": "unshifted"
   },
   "museum": {

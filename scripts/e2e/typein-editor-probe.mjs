@@ -14,6 +14,7 @@
 //   INVITE=<code or path> GALLERY_URL=https://kernelhive.madekivi.fi \
 //     node typein-editor-probe.mjs <station> <listing.bas> [--run <cmd>] [--restore] [--fb-shot <dir>]
 //                                  [--stop-after <seconds>] [--inject-keys <seconds>] [--then <steps>]
+//                                  [--first <steps>]
 //
 // The listing is pasted (a synthetic `paste` event, so the editor's own paste
 // cleaning runs). `--run` types its argument + RETURN through the real
@@ -31,6 +32,9 @@
 // after `--run`, through the real keyboard: comma-separated steps, each a key
 // (`7`, `Enter`, `p`), `<key>*<n>` to press it n times, `@<ms>` to wait, or
 // `#<label>` for a framebuffer shot (an INPUT answer, a game's keys).
+// `--first` plays steps of the same form BEFORE the editor opens: the step a
+// station's `typeIn.hint` asks the visitor for (B at the SAM's and the //e's
+// boot menus, BASIC + RETURN twice on the KC 85/4).
 // A signed-in session is required to see the stream at all
 // (station-open.mjs's signIn header), hence INVITE + the public origin.
 import { chromium } from 'playwright';
@@ -54,6 +58,7 @@ const fbDir = flag('--fb-shot');
 const restore = args.includes('--restore');
 const stopAfter = Number(flag('--stop-after') ?? 0);
 const thenSteps = (flag('--then') ?? '').split(',').filter(Boolean);
+const firstSteps = (flag('--first') ?? '').split(',').filter(Boolean);
 const injectAfter = Number(flag('--inject-keys') ?? 0);
 let injected = !injectAfter;
 const base = galleryUrl();
@@ -69,6 +74,20 @@ const fbShot = (label) => {
     console.log(`framebuffer ${label}: ${path}`);
   } catch (e) {
     console.log(`framebuffer ${label}: FAILED (${String(e.message || e).slice(0, 120)})`);
+  }
+};
+
+const play = async (page, steps) => {
+  for (const step of steps) {
+    if (step.startsWith('@')) await page.waitForTimeout(Number(step.slice(1)));
+    else if (step.startsWith('#')) fbShot(step.slice(1));
+    else {
+      const [key, times] = step.split('*');
+      for (let i = 0; i < Number(times ?? 1); i += 1) {
+        await page.keyboard.press(key);
+        await page.waitForTimeout(250);
+      }
+    }
   }
 };
 
@@ -89,6 +108,11 @@ try {
   const opened = await openStation(page, base, id, { direct: true, log: (m) => console.log(m) });
   if (!opened.ok) throw new Error(`station did not open: ${opened.why}`);
   console.log(`stream live ${opened.video.w}x${opened.video.h}`);
+  if (firstSteps.length) {
+    const vbox = await page.locator('video').first().boundingBox();
+    if (vbox) await page.mouse.click(vbox.x + vbox.width / 2, vbox.y + vbox.height / 2);
+    await play(page, firstSteps);
+  }
 
   await page.click('button[aria-label="Controls"]');
   await page.getByRole('button', { name: /Code editor/ }).click();
@@ -158,17 +182,7 @@ try {
     fbShot('run');
   }
 
-  for (const step of thenSteps) {
-    if (step.startsWith('@')) await page.waitForTimeout(Number(step.slice(1)));
-    else if (step.startsWith('#')) fbShot(step.slice(1));
-    else {
-      const [key, times] = step.split('*');
-      for (let i = 0; i < Number(times ?? 1); i += 1) {
-        await page.keyboard.press(key);
-        await page.waitForTimeout(250);
-      }
-    }
-  }
+  await play(page, thenSteps);
 
   if (restore) {
     await page.click('button[aria-label="Controls"]');

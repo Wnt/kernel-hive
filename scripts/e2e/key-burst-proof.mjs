@@ -14,6 +14,7 @@
 //
 //   node key-burst-proof.mjs <signaling.json> <text-file> [--pace-ms N] [--hold-ms N]
 //        [--char-ms N [--line-ms N] [--enter-ms N]]
+//   node key-burst-proof.mjs <signaling.json> --edges <edges.json> [--hold-ms N]
 //
 // <text-file>: what to type; each '\n' is Enter. Letters are sent UNSHIFTED
 // (lower-case ASCII) and shifted punctuation gets real Shift_L edges round it,
@@ -28,6 +29,13 @@
 // what typeText() writes), then N ms; before each Enter --line-ms (default 260)
 // and after it --enter-ms (default 600), typeLines()'s settles. Give it the
 // station's typeIn.perCharMs to type at the editor's validated pace.
+//
+// --edges <edges.json> plays a RECORDED edge list instead of a text:
+// [[scancode, down, ms to wait after], ...]. Record it by running the SPA's
+// own typeListing() against a handle that logs typeText()/typeChord() edges and
+// sleep() waits, and the daemon receives exactly what the type-in editor would
+// send for that station: case rule, charMap, keyword-transcoder chords
+// (Right Shift, E-mode), NEW first, and every per-station settle.
 //
 // PASS/FAIL is the framebuffer's, not this script's: screenshot the station
 // (fb-wait.py --shm ... --out, or the module's SHOT verb) and compare.
@@ -48,9 +56,12 @@ const HOLD_MS = flag('--hold-ms', 5000);
 const CHAR_MS = flag('--char-ms', 0);
 const LINE_MS = flag('--line-ms', 260);
 const ENTER_MS = flag('--enter-ms', 600);
-const [signalPath, textPath] = args;
+const edgesAt = args.indexOf('--edges');
+const EDGES_PATH = edgesAt < 0 ? null : args.splice(edgesAt, 2)[1];
+const [signalPath, textArg] = args;
+const textPath = EDGES_PATH ?? textArg;
 if (!signalPath || !textPath) {
-  console.error('usage: key-burst-proof.mjs <signaling.json> <text-file> [--pace-ms N] [--hold-ms N]');
+  console.error('usage: key-burst-proof.mjs <signaling.json> (<text-file> | --edges <edges.json>) [--pace-ms N] [--hold-ms N]');
   process.exit(2);
 }
 
@@ -69,9 +80,9 @@ US[' '] = [0x39, false];
 US['\n'] = [0x1c, false];
 const SHIFT_L = 0x2a;
 
-const text = fs.readFileSync(textPath, 'utf8').replace(/\r/g, '');
+const text = EDGES_PATH ? '' : fs.readFileSync(textPath, 'utf8').replace(/\r/g, '');
 // [scancode, down, ms to wait after this edge]
-const edges = [];
+const edges = EDGES_PATH ? JSON.parse(fs.readFileSync(EDGES_PATH, 'utf8')) : [];
 for (const ch of text) {
   const k = US[ch];
   if (!k) {
