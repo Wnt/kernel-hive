@@ -184,11 +184,5 @@
   "notes": [
     "scaffolded from apple2 on 2026-09-08; TODO: media, museum, spa",
     "native stream (2026-09-08): pointer.transport is 'none' ON PURPOSE despite the Apple II Mouse Card being wired at the emulator layer (MAME_CTL_PTR_TAGS/_BTN_NAMES/_MOD in station.env.fixture, mame-ctlsock-ptr-tags.patch) -- InputBackend::MameSock::pointer_mode() in streamhost/streamhost/src/config/backends.rs hardcodes 'abs' for every mamesock station, and the mouse card has no absolute cursor readout (dead-reckoning relative only, unlike newsos's Newport VC2 registers), so this station cannot honestly claim an SPA pointer contract yet. Surfacing a relative mamesock pointer_mode is a daemon change outside this stream; report it to whoever owns spa/backends next."
-  ],
-  "typeIn": {
-    "dialect": "applesoft",
-    "perCharMs": 120,
-    "case": "unshifted",
-    "hint": "Press B on the boot menu for the Applesoft ] prompt first."
-  }
+  ]
 }
