@@ -173,7 +173,7 @@ export function TypeInEditor({ model, displayName, onClose }: {
       <div className="ti-code">
         <pre ref={preRef} className="ti-hl" aria-hidden="true">
           {lines.map((line, i) => (
-            <span key={i}><Tokens tokens={markOverflow(highlightLine(line, spec), config.maxLineChars)} />{'\n'}</span>
+            <span key={i}><Tokens tokens={markOverflow(highlightLine(line, spec, config.unreachable), config.maxLineChars)} />{'\n'}</span>
           ))}
           {' '}
         </pre>

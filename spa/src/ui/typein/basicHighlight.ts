@@ -36,11 +36,14 @@ export function isTypable(ch: string): boolean {
 class Line {
   readonly tokens: Token[] = [];
 
+  /** `blocked`: printable ASCII this station's keymap cannot produce. */
+  constructor(private readonly blocked = '') {}
+
   push(kind: TokenKind, text: string): void {
     if (!text) return;
     let run = '';
     for (const ch of text) {
-      if (isTypable(ch)) { run += ch; continue; }
+      if (isTypable(ch) && !this.blocked.includes(ch)) { run += ch; continue; }
       this.add(kind, run);
       run = '';
       this.add('bad', ch);
@@ -117,9 +120,10 @@ function readWord(line: string, at: number, spec: DialectSpec, out: Line): { end
   return { end, rem: false };
 }
 
-/** Tokens for one line of a listing, in order, covering every character. */
-export function highlightLine(line: string, spec: DialectSpec): Token[] {
-  const out = new Line();
+/** Tokens for one line of a listing, in order, covering every character.
+ *  `blocked` symbols (registry `typeIn.unreachable`) paint as `bad`. */
+export function highlightLine(line: string, spec: DialectSpec, blocked?: string): Token[] {
+  const out = new Line(blocked);
   const lead = /^(\s*)(\d+)/.exec(line);
   let i = 0;
   if (lead) {

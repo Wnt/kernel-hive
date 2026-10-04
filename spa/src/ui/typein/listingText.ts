@@ -67,7 +67,10 @@ export interface ListingCheck {
   readonly lines: readonly string[];
 }
 
-export function checkListing(text: string, config: Pick<TypeInConfig, 'maxLineChars'>, spec: DialectSpec): ListingCheck {
+export function checkListing(
+  text: string, config: Pick<TypeInConfig, 'maxLineChars' | 'unreachable'>, spec: DialectSpec,
+): ListingCheck {
+  const unreachable = config.unreachable ?? '';
   const bad: string[] = [];
   const badLines: number[] = [];
   const longLines: number[] = [];
@@ -75,7 +78,7 @@ export function checkListing(text: string, config: Pick<TypeInConfig, 'maxLineCh
   cleanListing(text).split('\n').forEach((line, index) => {
     let lineBad = false;
     for (const ch of line) {
-      if (isTypable(ch)) continue;
+      if (isTypable(ch) && !unreachable.includes(ch)) continue;
       lineBad = true;
       if (!bad.includes(ch)) bad.push(ch);
     }
@@ -125,8 +128,10 @@ export function applyCase(line: string, rule: TypeInCase | undefined, spec: Dial
 }
 
 /** How long typing `lines` takes at this pace, for the "about 2 min" estimate. */
-export function estimateMs(lines: readonly string[], pace: { perCharMs: number; lineDelayMs: number; enterDelayMs: number }): number {
-  return lines.reduce((ms, line) => ms + line.length * pace.perCharMs + pace.lineDelayMs + pace.enterDelayMs, 0);
+export function estimateMs(
+  lines: readonly string[], pace: { perCharMs: number; lineDelayMs: number; enterDelayMs: (index: number) => number },
+): number {
+  return lines.reduce((ms, line, i) => ms + line.length * pace.perCharMs + pace.lineDelayMs + pace.enterDelayMs(i), 0);
 }
 
 export function formatDuration(ms: number): string {

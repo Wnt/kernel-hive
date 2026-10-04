@@ -154,8 +154,7 @@ export function useTypeInEditor({
 
   const spec = useMemo(() => dialectSpec(config?.dialect ?? 'cbm-basic'), [config?.dialect]);
   const check = useMemo(() => checkListing(text, config ?? {}, spec), [text, config, spec]);
-  const pace = useMemo(() => (config ? paceFor(config) : null), [config]);
-  const estimate = pace ? estimateMs(check.lines, { ...pace, enterDelayMs: pace.enterMs }) : 0;
+  const estimate = config ? estimateMs(check.lines, paceFor(config, check.lines)) : 0;
 
   const typing = run === 'typing';
   const blocked = typing ? 'Typing…'

@@ -14,15 +14,16 @@ import { applyCase } from './listingText';
 
 export type RunOutcome = 'done' | 'stopped' | 'disconnected';
 
-/** The station's declared pace (registry `typeIn`), demo-typist defaults for
- *  the two optional settles. `enterMs` is the flat settle, for the estimate. */
-export function paceFor(config: TypeInConfig): TypingPace & { enterMs: number } {
+/** The station's declared pace (registry `typeIn`) for THESE lines: demo-typist
+ *  defaults for the two optional settles, and the longer `settleAfter` settle
+ *  after a named direct command (samcoupe: NEW redraws a banner that eats the
+ *  next key). */
+export function paceFor(config: TypeInConfig, lines: readonly string[]): TypingPace {
   const enterMs = config.enterDelayMs ?? DEMO_ENTER_DELAY_MS;
   return {
     perCharMs: config.perCharMs,
     lineDelayMs: config.lineDelayMs ?? DEMO_LINE_DELAY_MS,
-    enterDelayMs: () => enterMs,
-    enterMs,
+    enterDelayMs: (index) => Math.max(enterMs, config.settleAfter?.[(lines[index] ?? '').trim().toUpperCase()] ?? 0),
   };
 }
 
@@ -64,7 +65,7 @@ export async function typeListing({
     return false;
   };
   const done = await typeLines({
-    lines, handle, pace: paceFor(config), prepare: prepareFor(osId, config, spec), sleep, cancelled, onProgress,
+    lines, handle, pace: paceFor(config, lines), prepare: prepareFor(osId, config, spec), sleep, cancelled, onProgress,
   });
   return done ? 'done' : dropped ? 'disconnected' : 'stopped';
 }
