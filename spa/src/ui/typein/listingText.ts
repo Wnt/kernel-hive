@@ -96,6 +96,15 @@ export function checkListing(
   };
 }
 
+/** The run's lines with the dialect's clear command (NEW) in front, so a
+ *  listing never merges with whatever program was in memory — an example's
+ *  lines would otherwise keep the previous program's lines wherever their
+ *  numbers differ. Not doubled when the listing already starts with it. */
+export function withClearFirst(lines: readonly string[], spec: DialectSpec, on: boolean): string[] {
+  if (!on || !lines.length || lines[0].trim().toUpperCase() === spec.clearCommand) return [...lines];
+  return [spec.clearCommand, ...lines];
+}
+
 /** Fold the letters of BASIC CODE, leaving literals (strings, REM, DATA, `'`
  *  comments) in the visitor's case. */
 function foldCode(line: string, fold: (s: string) => string, spec: DialectSpec): string {

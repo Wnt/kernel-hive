@@ -80,7 +80,7 @@ wrong on most of these machines:
 
 | `case` | What reaches the guest | Stations |
 |---|---|---|
-| `unshifted` | every letter goes down unshifted | vic20 pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos (CAPS LOCK on at reset, so Shift+letter gives *lower* case and BBC BASIC answers `Mistake`); dragon32 mpf2 (no lower case) |
+| `unshifted` | every letter goes down unshifted | vic20 pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos (CAPS LOCK on at reset: every letter arrives upper case whichever way it is sent, so unshifted is simply the demo listings' proven path; lower case inside a string is out of reach either way); dragon32 mpf2 (no lower case) |
 | `code-lower` | letters outside strings, REM and DATA go down unshifted; literals keep the visitor's case | cbm8032 cbm2 (business keyboard, text mode: unshifted is lower case, and BASIC wants it) |
 | `code-upper` | code is upper-cased, literals kept | msx2 svi728 svi328 (the proven demo path) |
 | `as-typed` (default) | unchanged | amstradcpc sinclairql samcoupe |
@@ -109,19 +109,26 @@ pre-push gate) checks the following:
 - `kind` is one of `draw input game sound other`;
 - every listed file exists, and every `.bas`/`.txt` file in the folder is listed;
 - the files are printable ASCII and LF only, with no tabs, CRs or trailing spaces;
-- lines fit `maxLineChars`;
+- lines fit `maxLineChars` and use no `unreachable` symbol;
+- the first line is not `NEW` (see below);
 - manual URLs are `https://` and `lang` is a two-letter code.
 
 A station with no folder simply has no examples. That is never an error.
 
-The editor types exactly the file and sends nothing else, so `NEW` is part of
-the listing where a machine may already hold a program. The SAM Coupé must
-start with `NEW`: after B the boot menu's own program is still in memory, and
-its stray lines (85, 9000) would interleave with an example. The QL examples
-start with `NEW` too, so a second example does not inherit the first one's
-higher line numbers. Line 10 of those listings is a REM title on purpose. If a
-machine eats the first key after `NEW` (the SAM does, below), the worst case is
-a lost title, not a lost statement.
+**The editor clears the machine first.** A program typed over another keeps
+the old program's lines wherever the new one does not reuse their numbers.
+That happens to the second example a visitor opens, and to the SAM's boot-menu
+program (lines 85 and 9000 survive pressing B). So a run starts with the
+dialect's `NEW` (`clearCommand` in `basicDialects.ts`; it is `NEW` in all nine).
+The panel's "Clear the machine's old program first" checkbox controls it. It is
+on by default and turns back on whenever an example or a file is opened. A
+visitor adding lines to a program already in memory can untick it. A listing
+that already starts with `NEW` (the SAM and SV-328 demo listings) does not get
+a second one. Example files therefore never carry `NEW`, and the validator
+refuses one that does, so the editor is the one place it comes from.
+Line 10 of the SAM and QL examples is a REM title on purpose: if a machine
+still eats a key after `NEW`, the worst case is a lost title, not a lost
+statement.
 
 Examples and manuals are **runtime content**. They are rendered into
 `poster-docs.json` as a top-level `typeIn` key, a sibling of `posters`, and
@@ -245,7 +252,9 @@ not affected, because a person presses Shift well before the letter.
 ### SAM Coupé: what the typist cannot reach, and what NEW does
 
 **Keys a US typist cannot produce on the SAM.** `<` `>` `?` `[` `]` `{` `}`
-`\` `|` have no `charMap` entry. Typed anyway, `<` lands as `,`, `>` as `.`,
+`\` `|` have no `charMap` entry, so the station declares them in
+`typeIn.unreachable`. The editor paints them red and will not type a listing
+holding one, and the examples validator refuses them. Typed anyway, `<` lands as `,`, `>` as `.`,
 `?` toggles inverse video (the INV key), and `[` / `]` land as `=` / `"`. The
 SAM examples avoid them all and compare with `SGN`. Everything else in the
 `charMap`, including capitals, landed exactly through the `typeText()` path
@@ -260,9 +269,10 @@ that keypress is the `1` of line `10`. The SAM then rejects `0 REM …` with
 A frame-by-frame capture shows the banner up from 0.1 s to at least 0.5 s
 after the ENTER, and gone once the `1` arrives at 0.6 s. It happened in 4 of
 the 7 runs at 600 ms. Waiting 1.5 s or more after `NEW` avoided it in 6 of 7
-runs; the seventh is unexplained. A per-line settle after `NEW` (at least 2 s) is
-the fix, and it belongs in `typeIn`, not in the listings. The station's demo
-listing (`NEW`, then `10 MODE 4`) is exposed to the same loss.
+runs; the seventh is unexplained. **Fixed in `typeIn`, not in the listings:**
+`settleAfter: {"NEW": 2000}` makes the editor wait 2 s after the `NEW` it
+types, and the station's demo listing (`NEW`, then `10 MODE 4`) waits 2 s
+after its own `NEW` (`demoProgram.enterDelayMs: [2000]`).
 
 ### Keyword transcoder for zxspectrum and zx81 (measured, not built)
 

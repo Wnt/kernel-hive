@@ -53,6 +53,9 @@ EXAMPLE_KEYS = {"file", "kind", "title", "description"}
 MANUAL_KEYS = {"title", "url", "lang", "note"}
 EXAMPLE_FILE = re.compile(r"[a-z0-9][a-z0-9_-]*\.(bas|txt)")
 PRINTABLE = re.compile(r"[\x20-\x7e]*")
+# The direct command that wipes a BASIC program -- NEW in every editor dialect
+# (spa/src/ui/typein/basicDialects.ts `clearCommand`).
+CLEAR_COMMAND = "NEW"
 
 
 def drain_ms(row: dict[str, Any]) -> int:
@@ -207,6 +210,11 @@ def _example_errors(os_id: str, folder: Any, block: dict[str, Any], doc: Any) ->
         lines = text[:-1].split("\n") if text.endswith("\n") else text.split("\n")
         if not any(line.strip() for line in lines):
             problems.append(f"{where}/{name}: empty program")
+        elif lines[0].strip().upper() == CLEAR_COMMAND:
+            problems.append(
+                f"{where}/{name}:1: starts with NEW -- drop it: the editor types NEW before every run "
+                "(its 'clear the old program first' option), so a listing carries only its own lines"
+            )
         for number, line in enumerate(lines, start=1):
             if not PRINTABLE.fullmatch(line):
                 problems.append(f"{where}/{name}:{number}: only printable ASCII and LF line ends (no tabs, no CR)")

@@ -187,8 +187,10 @@ line (see §Traps).
 ## §Type-in examples
 `registry/examples/samcoupe/` has three SAM BASIC programs: Rainbow fan
 (draw), Circle maker (input) and Higher or lower (game). They are typed at the
-SAM BASIC prompt (B on the menu), start with `NEW` because the menu's program
-stays in memory, and avoid the keys a US typist cannot reach (`< > ? [ ] { } \ |`).
+SAM BASIC prompt (B on the menu). The editor types `NEW` before each run,
+because the menu's program stays in memory, and waits 2 s after it
+(`typeIn.settleAfter`). They avoid the keys a US typist cannot reach
+(`< > ? [ ] { } \ |`), which the station declares in `typeIn.unreachable`.
 All three were proven through the exact `typeText()` path on a sandbox rig on
 2026-10-04. `NEW` can redraw the MGT banner, which eats the next key, so line
 10 is always a REM title. See

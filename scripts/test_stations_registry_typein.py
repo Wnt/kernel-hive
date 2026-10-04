@@ -171,6 +171,15 @@ class ExamplesFolderTest(unittest.TestCase):
         _, errors = self.load()
         self.assertTrue(any("'<' has no key on this machine" in e for e in errors))
 
+    def test_an_example_may_not_start_with_new_the_editor_types_it(self) -> None:
+        self.write(
+            "vic20",
+            {"examples": [{"file": "a.bas", "kind": "game", "title": "A"}]},
+            {"a.bas": b"NEW\n10 PRINT 1\n"},
+        )
+        _, errors = self.load()
+        self.assertTrue(any("a.bas:1: starts with NEW" in e for e in errors))
+
     def test_a_missing_file_is_named(self) -> None:
         self.write("vic20", {"examples": [{"file": "gone.bas", "kind": "draw", "title": "G"}]}, {})
         _, errors = self.load()
