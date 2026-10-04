@@ -1,0 +1,42 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Mandelbrot set",
+      "description": "The ARM computes the top half of the Mandelbrot set and the BBC Micro plots every point twice, mirrored, in MODE 2 colours; the listing times itself, and it takes about two minutes."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Count the primes",
+      "description": "Type a number and the Sieve of Eratosthenes counts the primes below it and times itself: 10000 gives 1229, and 100000 gives 9592 in about half a minute."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Reaction timer",
+      "description": "Wait for the star, press SPACE as fast as you can, and the ARM reports your time in hundredths of a second and keeps your best; press too soon and it notices."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "ARM Evaluation System User Guide",
+      "url": "https://archive.org/details/acorn-arm-evaluation-system-user-guide-bbc-micro",
+      "lang": "en",
+      "note": "Acorn, July 1986: fitting and starting the ARM second processor; PDF scan"
+    },
+    {
+      "title": "ARM Evaluation System BBC BASIC Reference Manual",
+      "url": "https://chrisacorns.computinghistory.org.uk/docs/Acorn/OEM/AcornOEM_BBCBASICRM.pdf",
+      "lang": "en",
+      "note": "Acorn, August 1986: what ARM BBC BASIC adds to and changes from the BBC Micro's BASIC; PDF scan via Chris's Acorns"
+    },
+    {
+      "title": "BBC Microcomputer System User Guide",
+      "url": "https://archive.org/details/BBCUG",
+      "lang": "en",
+      "note": "the host machine, and the BBC BASIC language the ARM version builds on; PDF scan"
+    }
+  ]
+}

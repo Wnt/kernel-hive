@@ -67,7 +67,7 @@ describe('applyCase — the station case rule', () => {
 
 describe('estimate', () => {
   it('prices each line by the station pace', () => {
-    expect(estimateMs(['ab', 'c'], { perCharMs: 100, lineDelayMs: 10, enterDelayMs: 1 })).toBe(3 * 100 + 2 * 11);
+    expect(estimateMs(['ab', 'c'], { perCharMs: 100, lineDelayMs: 10, enterDelayMs: () => 1 })).toBe(3 * 100 + 2 * 11);
     expect(formatDuration(42_000)).toBe('42 s');
     expect(formatDuration(100_000)).toBe('1 min 40 s');
   });
@@ -169,13 +169,45 @@ describe('typeListing — the editor typist', () => {
   });
 });
 
+describe('station-specific traps (registry typeIn)', () => {
+  const sam = dialectSpec('sam-basic');
+
+  it('settles longer after a named direct command — SAM NEW redraws the banner and eats the next key', () => {
+    const config = typeInFor('samcoupe')!;
+    const pace = paceFor(config, ['NEW', '10 MODE 4', 'new']);
+    expect(pace.enterDelayMs(0)).toBeGreaterThanOrEqual(1500);
+    expect(pace.enterDelayMs(1)).toBe(config.enterDelayMs ?? DEMO_ENTER_DELAY_MS);
+    expect(pace.enterDelayMs(2)).toBe(pace.enterDelayMs(0)); // matched case-insensitively
+  });
+
+  it('the run actually waits that settle after NEW before the next line', async () => {
+    const r = recorder();
+    await typeListing({
+      osId: 'samcoupe', config: typeInFor('samcoupe')!, spec: sam, lines: ['NEW', '10 CLS'], handle: r.handle,
+      signal: new AbortController().signal, sleep: r.sleep,
+    });
+    const enter = r.keys.indexOf('\n');
+    expect(r.keys[enter + 1]).toBe('1');
+    expect(Math.max(...r.waits)).toBe(typeInFor('samcoupe')!.settleAfter!.NEW);
+  });
+
+  it('flags symbols the station keymap cannot reach, and never types them', () => {
+    const config = typeInFor('samcoupe')!;
+    expect(config.unreachable).toContain('<');
+    const check = checkListing('10 IF a<b THEN PRINT "[x]"', config, sam);
+    expect(check.bad).toEqual(['<', '[', ']']);
+    expect(check.foldable).toBe(0);
+    expect(checkListing('10 IF a<b THEN STOP', typeInFor('amstradcpc')!, sam).bad).toEqual([]);
+  });
+});
+
 describe('registry typeIn data', () => {
   it('gives every editor station a declared pace and a dialect', () => {
     for (const id of ['vic20', 'pet2001', 'cbm8032', 'c128', 'plus4', 'cbm2', 'bbcmicro', 'armeval', 'dragon32',
       'oricatmos', 'msx2', 'svi728', 'svi328', 'amstradcpc', 'mpf2', 'sinclairql', 'samcoupe']) {
       const config: TypeInConfig | undefined = typeInFor(id);
       expect(config, id).toBeDefined();
-      expect(paceFor(config!).perCharMs).toBe(config!.perCharMs);
+      expect(paceFor(config!, []).perCharMs).toBe(config!.perCharMs);
     }
   });
 

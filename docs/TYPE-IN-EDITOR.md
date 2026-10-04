@@ -66,6 +66,8 @@ nothing to validate the editor's pace against.
 | `case` | How letters become keystrokes (below). |
 | `maxLineChars` | The machine's logical line length. The editor strikes through what the screen editor would cut off. Declared only where the number is certain (VIC-20 88, PET/8032 80, C128 160). |
 | `hint` | One sentence above the Type button, for a step the machine needs first. |
+| `settleAfter` | A longer ENTER settle after a named direct command, keyed by the whole line in upper case. On samcoupe, `{"NEW": 2000}`: `NEW` redraws the MGT banner, and that eats the next key. With the default 600 ms, line 10 was lost in 4 of 7 runs; with 1.5 s it was lost in 1 of 7 (examples-sinclair rig, `tl-06…08.png`). The SAM demo listing waits 2 s after its own `NEW` (`demoProgram.enterDelayMs: [2000]`). |
+| `unreachable` | Printable ASCII that the station's keymap cannot produce. On samcoupe these are `< > ? [ ] { } \` and the vertical bar. The editor paints these red and blocks typing, exactly as it does for non-ASCII. The examples validator refuses them too. |
 
 `stations-registry.py new --like` does **not** copy `typeIn`. The dialect and
 case rule are facts about the sibling's interpreter, so a new machine opts in
