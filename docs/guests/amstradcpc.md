@@ -93,6 +93,16 @@ letters use Shift plus the letter; `"` uses Shift plus apostrophe; `Enter`
 reaches the CPC Return key. The certified proof types `PRINT "HELLO"`, Return,
 then `RUN`, and visibly renders `HELLO` in the CPC framebuffer.
 
+The daemon paces keys at `SH_KEY_MIN_HOLD_MS`/`SH_KEY_MIN_GAP_MS` 80/80 (40/40
+until 2026-10-04). Caprice32 runs inside the kiosk guest, and when labhost is
+loaded that guest stalls, so a press and its release, or a repeated key's
+release and re-press, can reach Caprice32 in one frame. At 40/40 that lost keys
+in every pass of a stress listing at load 25 to 60. At 80/80, 5 of 6 passes
+were exact at load 35 to 54. No modifier lead is set: no shifted key arrived
+unshifted in about 3,800 at lead 0. Both are measured in
+[`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead),
+and the evidence is in `evidence/daemon-mod-lead-2026-10-04/`.
+
 ## LIVE status (2026-07-27)
 - Production/enabled streamhost station, VMID 219, UDP 54119, slot 119.
 - Thin `overlay.qcow2` on the frozen bridge seed, with an internal `golden`
