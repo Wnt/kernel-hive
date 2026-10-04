@@ -7,7 +7,8 @@
   release can reach the emulator in the same frame: a doubled `$$` became `$`,
   line `110` became line `10`, and once `"` came out as `2`. The code editor
   now types a character every 180 ms instead of 90. Under heavy lab load it
-  still drops keys now and then; that is still open.
+  still dropped keys now and then, so the same evening the CPC left the guest
+  altogether and became a host-native MAME station (see `amstradcpc.md`).
 - **The stations whose keys go in through X11** keep a fast run of keys in
   order: `eex` can no longer arrive as `exe`. These are Lisa, PERQ, Medley,
   VisiOn, AMIX and the Nokia 9300, plus the terminal machines 4.3BSD on the
@@ -19,7 +20,7 @@
 can be held back until its Shift has reached the machine. It was measured on
 the three shapes of guest behind the daemon. PC guests decode scancodes in
 order and X clients read Shift from each event, so neither can lose it. The
-CPC lost it once in about 4,500 shifted keys, and it is the one station that
-turns the lead on, at 20 ms.
+CPC lost it once in about 4,500 shifted keys, and it was the one station that
+turned the lead on, at 20 ms, until it went host-native.
 
 Links: https://kernelhive.madekivi.fi/os/amstradcpc

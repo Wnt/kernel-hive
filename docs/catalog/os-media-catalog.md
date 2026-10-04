@@ -118,7 +118,7 @@ implementation (`/data/vms/streamhost/stations/c64/`, udp/54114, GEOS deskTop +
 non-silent SID confirmed 2026-07-08 — see `docs/guests/c64.md`). The
 shared base `/data/vms/bridge/bridge-base.qcow2` already ships VICE `x64sc` +
 `hatari` + `cap32` — **Atari ST and Apple II are now LIVE** on that same base
-(plus the `amiga` bridge tile); **Amstrad CPC remains the next drop-in**. One bridge build amortizes across the whole
+(plus the `amiga` bridge tile); the Amstrad CPC was a `cap32` kiosk too until it went host-native on MAME (2026-10-04). One bridge build amortizes across the whole
 8-bit wing plus the heritage-serial, CP/M-80, IRIX, mobile-SDK and TV/watch wings.
 
 > Note the "bridge" comes in weights: *lightweight* (run one x86 ELF binary
@@ -183,7 +183,7 @@ Ship these first; they reuse existing tile recipes and fill glaring gaps.
 - **Atari ST + GEM (EmuTOS)** — ✅ **LIVE** (`atarist` tile). 100% GPLv2, zero proprietary ROM; `hatari` in base.
 - **Apple IIe + GEOS** — ✅ **LIVE** (`apple2` tile, LinApple). Apple II GEOS is official freeware.
 - **Atari 8-bit + Atari BASIC (AltirraOS)** — trivial, no ROM, no disk; the iconic blue READY screen. **BUILT → `atari800xl`** (host-native MAME, not this bridge route).
-- **Amstrad CPC + Locomotive BASIC** — `cap32` in base; ROMs redistributable by permission.
+- **Amstrad CPC + Locomotive BASIC** — ROMs redistributable by permission. **BUILT → `amstradcpc`**, a `cap32` kiosk at first, host-native MAME `cpc6128` since 2026-10-04 (the kiosk lost typed keys under host load).
 
 **Heritage / serial (one SIMH/Hercules/dps8m/KLH10+x3270 bridge unlocks all seven — all MV 5):**
 - **2.11BSD** on SIMH pdp11 — ready RP06 kit, boots to login in one command (easiest). **BUILT → `pdp11`**.
@@ -397,14 +397,14 @@ Notable recipes / gotchas:
 | Apple IIe + ProDOS / Apple GEOS 2.1 | LinApple https://github.com/linappleii/linapple ; sa2 https://github.com/audetto/AppleWin ; media https://archive.org/details/apple-ii-disk-collection (✓) | emulators GPL; **Apple GEOS = official freeware (Aug 2003)** | .dsk/.woz/.po floppy | Apple //e ROM (bundled in LinApple/sa2; MAME `apple2e.zip`) | ~800 KB | small | needs-bridge | 5 |
 | Atari 800/XL + Atari BASIC | https://atari800.github.io/ + https://github.com/atari800/atari800/releases (✓) | atari800 GPLv2; **AltirraOS+BASIC bundled, free** | none (boots to BASIC) | **none** (AltirraOS built in) | ~2–5 MB emu | trivial | needs-bridge | 4 |
 | Atari 520/1040 ST + GEM (TOS) | Hatari https://www.hatari-emu.org/download.html (✓); EmuTOS https://github.com/emutos/emutos/releases (✓) | Hatari GPLv2; **EmuTOS GPLv2** | EmuTOS `etos1024k.img` (free) | none (EmuTOS replaces TOS) | ROM ~256 KB–1 MB | small | needs-bridge | 5 |
-| Amstrad CPC 6128 + Locomotive BASIC | Caprice32 https://github.com/ColinPitrat/caprice32 (✓) | Caprice32 GPLv2; **CPC ROMs redistributable by Amstrad permission** | CPC ROM set (bundled) | ~48 KB | small | needs-bridge | 4 |
+| Amstrad CPC 6128 + Locomotive BASIC | MAME `cpc6128` (host-native since 2026-10-04; was Caprice32 https://github.com/ColinPitrat/caprice32 in a kiosk) | MAME GPLv2+; **CPC ROMs redistributable by Amstrad permission** | CPC ROM set (the two ROMs Caprice32 bundles) | ~48 KB | small | host-native | 4 |
 
 **bridgeNeeded:** **ALL FIVE** — no QEMU machine for 6502/6510 (C64, Apple II,
 Atari 8-bit), Z80 (CPC), or the m68k **Atari ST** (QEMU has no ST machine, only
 q800/next-cube/virt). Native SDL emulator mandatory each time, full-screen in an
 x86-64 KVM Linux tile. Build the bridge ONCE (medium) → each is a small
 near-identical drop-in. **The bridge seed already ships VICE/hatari/cap32** — C64,
-Atari ST and Apple II are LIVE; CPC is the direct next drop.
+Atari ST and Apple II are LIVE; the CPC shipped the same way and has since moved to host-native MAME.
 
 Notable recipes / gotchas (inside the Linux tile; outer QEMU = `-device virtio-vga -display dbus,p2p=on`):
 - **C64** (LIVE reference): see `docs/guests/c64.md` for the hard-won VICE 3.9/3.10 SDL2 flags. **`-drive8truedrive` is REQUIRED** or the GEOS deskTop hangs; `-autostart-handle-tde` keeps true-drive on; use a **double-size window (`-VICIIdsize`)** not `-VICIIfull` (real fullscreen renders BLACK in the captured std-VGA fb); AC97 card must be present or VICE pops a modal sound-init dialog; don't redirect stdout (x64sc segfaults if stdout isn't a tty). Same VICE binary also yields C128/VIC20/PET/Plus4 for near-zero extra effort.

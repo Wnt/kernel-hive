@@ -15,7 +15,7 @@
           "class": "retro",
           "estimated": "~3-5m",
           "automation": "full",
-          "produces": "tiles/amstradcpc overlay + golden (cap32 → Locomotive BASIC)",
+          "produces": "ROLLBACK ONLY since 2026-10-04: tiles/amstradcpc overlay + golden (cap32 kiosk). The live station is host-native: build-mame-native.sh amstradcpc",
           "flags": []
         },
         "defaultOrder": {
@@ -28,18 +28,18 @@
   "operator": {
     "labctl": {
       "dir": "/data/vms/streamhost/stations/amstradcpc",
-      "qmp": "/data/vms/streamhost/stations/amstradcpc/qmp.sock",
-      "pointer_mode": "rel",
+      "qmp": null,
+      "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5819,
-      "exec_port": 5819,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54119,
-      "notes": "exec: labctl exec amstradcpc \"<cmd>\" (ssh root@:5819, key bridge_key)"
+      "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/amstradcpc/sta."
     }
   },
   "render": {
@@ -60,16 +60,17 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "method": "qemu-ps2-relative",
+      "transport": "none",
+      "method": "none",
       "absolute": false,
-      "present": true,
-      "device": "ps2-mouse",
+      "present": false,
+      "device": "ioport-keyboard",
       "scale": 1.0,
       "offset": [
         0,
         0
-      ]
+      ],
+      "backend": "mamesock"
     },
     "slot": 119
   },
@@ -94,114 +95,100 @@
       "110 goto 20"
     ],
     "runCommand": "run",
-    "perCharMs": 180
+    "perCharMs": 120
   },
   "typeIn": {
     "dialect": "locomotive-basic",
-    "perCharMs": 180
+    "perCharMs": 120,
+    "unreachable": "~"
   },
   "runtime": {
     "stationEnv": {
       "SH_STATION": "amstradcpc",
-      "SH_QMP": "/data/vms/streamhost/stations/amstradcpc/qmp.sock",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":59",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/amstradcpc/amstradcpc_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/amstradcpc/fb.shm",
       "SH_PORT": "54119",
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
-      "SH_POINTER": "rel",
-      "SH_CURSOR_SCALE": "1.0",
-      "SH_CURSOR_OFF_X": "0",
-      "SH_CURSOR_OFF_Y": "0",
-      "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/amstradcpc/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/amstradcpc/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 219,
-    "qemu": {
-      "mode": "verbatim",
+    "bringUpOrder": 30,
+    "x11": {
+      "display": ":59",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
       "emitArgs": [
         "--tile",
         "amstradcpc",
-        "--vmid",
-        "219",
         "--udp",
         "54119",
+        "--x11",
+        "--x11-display",
+        ":59",
+        "--capture",
+        "shm",
         "--pointer",
-        "rel",
-        "--cursor-scale",
-        "1.0",
-        "--cursor-off-x",
-        "0",
-        "--cursor-off-y",
-        "0",
+        "none",
+        "--input-backend",
+        "mamesock",
         "--audio",
         "on",
         "--fps",
         "60",
-        "--launcher-file",
-        "$T/amstradcpc/qemu-streamhost.sh",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/amstradcpc/amstradcpc.keymap",
         "--env-append-file",
         "$T/amstradcpc/station.env.fixture"
       ],
-      "deviceSetId": "amstradcpc-current",
-      "launcher": "streamhost/stations/amstradcpc/qemu-streamhost.sh",
-      "envFixture": "streamhost/stations/amstradcpc/station.env.fixture",
-      "binary": "qemu-system-x86_64",
-      "accel": "kvm",
-      "cpu": "host",
-      "memoryMB": 1536,
-      "smp": 2,
-      "vga": "std",
-      "deviceSetSummary": [
-        "-name streamhost-amstradcpc",
-        "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 2 -cpu host",
-        "-rtc base=localtime",
-        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
-        "-vga std",
-        "-display dbus,p2p=on,audiodev=snd0",
-        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-        "-usb",
-        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5819-:22 -device e1000,netdev=n0",
-        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
-        "-pidfile $BASE/qemu.pid"
-      ],
-      "sourceDeviceSet": {
-        "binary": "qemu-system-x86_64",
-        "machine": "pc-i440fx-11.0,vmport=off",
-        "accel": "kvm",
-        "cpu": "host",
-        "memoryMB": 1536,
-        "smp": 2,
-        "vga": "std",
-        "deviceSetSummary": [
-          "-name streamhost-amstradcpc",
-          "-enable-kvm -machine pc-i440fx-11.0,vmport=off -m 1536 -smp 2 -cpu host",
-          "-rtc base=localtime",
-          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
-          "-vga std",
-          "-display dbus,p2p=on,audiodev=snd0",
-          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-          "-usb",
-          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5819-:22 -device e1000,netdev=n0",
-          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
-          "-pidfile $BASE/qemu.pid"
-        ]
-      },
-      "machine": "pc-i440fx-11.0,vmport=off",
-      "launcherParity": {
-        "status": "semantic-identical",
-        "reason": "registry source pins pc-i440fx-11.0,vmport=off, matching the running/golden-compatible QEMU 11 machine"
-      }
-    },
-    "bringUpOrder": 30
+      "auxFiles": [
+        "streamhost/stations/amstradcpc/amstradcpc.keymap",
+        "streamhost/stations/amstradcpc/station.env.fixture"
+      ]
+    }
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#F0C000",
     "eraLabel": "1985 · CPC 6128 (Locomotive BASIC)"
+  },
+  "keyboard": {
+    "charMap": {
+      "&": "^",
+      "\"": "@",
+      "'": "&",
+      "(": "*",
+      ")": "(",
+      "_": ")",
+      "=": "_",
+      "^": "=",
+      "@": "[",
+      "|": "{",
+      "[": "]",
+      "{": "}",
+      "]": "\\",
+      "}": "|",
+      ":": ";",
+      "*": ":",
+      ";": "'",
+      "+": "\"",
+      "\\": "`",
+      "`": "~"
+    }
   },
   "museum": {
     "id": "amstradcpc",
@@ -228,26 +215,23 @@
       "The Advanced OCP Art Studio"
     ],
     "blurb": "The British 8-bit all-in-one — an integrated Z80 micro with monitor and disk drive that boots to the iconic yellow-on-blue Locomotive BASIC Ready prompt.",
-    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Caprice32 (cap32) in a verified scale-3 SDL/X11 window emulating an Amstrad CPC 6128 that boots Locomotive BASIC; streamhost captures the Linux framebuffer + AC97 audio (the CPC AY-3-8912 routed through ALSA) exactly like every other tile. archetype beige-tower-crt (ideal: a bespoke CPC 6128 + CTM monitor). See streamhost/docs/BRIDGE.md."
+    "notes": "Live streamhost station, HOST-NATIVE since 2026-10-04: MAME 0.289's cpc6128 driver runs on the host (drawshm frames, ctlsock keys through a generated keymap, AY-3-8912 sound through a FIFO), replacing the Caprice32 kiosk whose keys were lost whenever the lab was busy. Locomotive BASIC 1.1 and AMSDOS from the Amstrad ROMs (redistributable by Amstrad's permission; never committed). archetype beige-tower-crt (ideal: a bespoke CPC 6128 + CTM monitor). See docs/guests/amstradcpc.md."
   },
   "emulator": {
-    "family": "Caprice32",
-    "version": "4.6.0",
-    "source": "built from source in bridge-base.sh, unpinned (docs/guests/amstradcpc.md)",
-    "driver": "CPC 6128"
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/build-mame-native.sh (tag mame0289 @ f34f0250)",
+    "driver": "cpc6128"
   },
   "ui": "home-computer",
   "reset": {
     "stationDir": "amstradcpc",
     "pointer": "rel",
     "touch": false,
-    "resetMode": "loadvm",
-    "snapshot": "golden",
+    "resetMode": "relaunch",
+    "snapshot": null,
     "mouse": "N/A",
     "keyboard": "PASS",
-    "fixture": "Amstrad CPC 6128 Locomotive BASIC Ready prompt (yellow on blue) in Caprice32 (cap32); explicit key down/up path certified with PRINT \"HELLO\", RETURN, RUN, and framebuffer output on 2026-07-27; keyboard-only exhibit (no mouse); AY-3-8912 -> ALSA -> AC97."
-  },
-  "migrationExceptions": [
-    "spa-pointer-rel"
-  ]
+    "fixture": "Amstrad CPC 6128 power-on screen (Amstrad 128K Microcomputer (v3) / 1985 copyright lines / BASIC 1.1 / Ready and the block cursor, yellow on blue) drawn by MAME 0.289's cpc6128 running HOST-NATIVE (drawshm) on the published 1024x768 surface. Reset is a cold boot (MAME_NATIVE_CHECKPOINT=0: the driver has no MACHINE_SUPPORTS_SAVE), which reaches Ready in about 1.1 emulated seconds and is pixel-identical every time; nothing is curated and no keys are sent. Keyboard proved 2026-10-04 through a sandbox daemon with the type-in editor's own edges: a 15-line stress listing (251 shifted symbols, 110 capitals) and all three examples LISTed byte-exact, read back cell by cell against the ROM font, and RUN gave the right result. Keyboard-only exhibit (no mouse); AY-3-8912 -> FIFO."
+  }
 }
