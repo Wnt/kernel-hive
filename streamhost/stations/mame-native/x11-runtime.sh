@@ -311,6 +311,31 @@ while time.monotonic() < ceiling:
 print(f"emulated clock short of {want} s at the ceiling; freezing anyway")
 PY
 }
+# freeze_published <pid>: SIGSTOP the emulator BETWEEN two frame publishes. A
+# stop that lands while drawshm is copying a frame leaves the mapping's seqlock
+# odd for as long as the station sleeps, and no reader can take a frame from it
+# (shmshot, fb-wait, labctl shot: "could not read an untorn frame"). The daemon
+# CONTs before it reads, so a visitor never saw it, but every passive look at a
+# resting station failed. The emulated-clock wait above returns from a PING the
+# module answers at a fixed point of its frame loop, so the stop landed
+# mid-publish in 5 of 7 stations (2026-10-04) where a wall-clock sleep had hit
+# it by chance. So: stop, wait for state T, read the sequence word (offset 24);
+# odd -> resume for 10 ms and try again.
+freeze_published() {
+  local p=$1 i _ seq
+  for i in $(seq 1 20); do
+    kill -STOP "$p" 2>/dev/null || return 1
+    for _ in $(seq 1 50); do
+      [ "$(awk '{print $3}' "/proc/$p/stat" 2>/dev/null)" = T ] && break
+      sleep 0.002
+    done
+    seq="$(od -An -t u8 -j 24 -N 8 "$SHM" 2>/dev/null | tr -d ' ')"
+    [ -n "$seq" ] && [ $((seq % 2)) = 0 ] && return 0
+    kill -CONT "$p" 2>/dev/null || return 1
+    sleep 0.01
+  done
+  kill -STOP "$p" 2>/dev/null # 20 unlucky tries: frozen anyway, as before
+}
 if [ -n "${SH_IDLE_PAUSE_PIDFILE:-}" ] && [ "${SH_IDLE_PAUSE_SECS:-60}" != 0 ]; then
   echo "booting $(cat "$PIDFILE")" >"$BASE/scene.state"
   CLOCK=wall
@@ -332,7 +357,7 @@ if [ -n "${SH_IDLE_PAUSE_PIDFILE:-}" ] && [ "${SH_IDLE_PAUSE_SECS:-60}" != 0 ]; 
     p="$(cat "$PIDFILE" 2>/dev/null || true)"
     [ -n "$p" ] && [ "$p" = "$mine" ] || exit 0
     [ "$(readlink -f "/proc/$p/exe" 2>/dev/null)" = "$(readlink -f "$BIN")" ] || exit 0
-    kill -STOP "$p" 2>/dev/null &&
+    freeze_published "$p" &&
       echo "mame-native[$TILE]: standby — frozen at the scene (pid $p, ~0 CPU; first session wakes it)"
     echo "ready $p" >"$BASE/scene.state"
   ) &
