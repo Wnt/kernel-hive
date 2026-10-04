@@ -139,7 +139,7 @@
   },
   "museum": {
     "id": "svi728",
-    "displayName": "Spectravideo SVI-728",
+    "displayName": "Spectravideo SVI-728 \u2014 BASIC",
     "year": 1984,
     "lineage": "Spectravideo \u2192 MSX1",
     "arch": "Zilog Z80A, 3.58 MHz",
@@ -150,12 +150,12 @@
     "eraSoftware": [
       "MSX BASIC 1.0"
     ],
-    "periodBrowser": "none \u2014 pre-web 8-bit era",
+    "periodBrowser": "None \u2014 offline",
     "iconicApps": [
       "MSX BASIC"
     ],
-    "blurb": "Spectravideo joins the MSX standard: a 64 KiB home computer that starts straight in BASIC. Type a program, change its colours and play a tune.",
-    "notes": "Use the Controls menu to type the demo, then press Enter to run it. Reset clears your program."
+    "blurb": "Spectravideo joins the MSX standard: a home computer with BASIC, colour graphics and sound, sharing a software platform with other manufacturers.",
+    "notes": "MSX-BASIC 1.0 on the International SVI-728. Use the demo in Controls, then press Enter to run it. Reset clears your program."
   },
   "emulator": {
     "family": "MAME",
@@ -179,7 +179,7 @@
     "Spectravideo visitor-feedback wave, 2026-10-03."
   ],
   "demoProgram": {
-    "label": "Type a Spectravideo BASIC demo",
+    "label": "Type in a demo program (MSX-BASIC)",
     "lines": [
       "10 SCREEN 1",
       "20 COLOR 15,4,4",

@@ -152,12 +152,12 @@
       "MBASIC 5.21",
       "ED / ASM / LOAD"
     ],
-    "periodBrowser": "none \u2014 offline, before the web",
+    "periodBrowser": "None \u2014 offline",
     "iconicApps": [
       "MBASIC"
     ],
-    "blurb": "A keyboard, a disk prompt and 80 columns: turn the SV-328 into a small programming workstation.",
-    "notes": "Host-native MAME svi328 (PAL), v111 BIOS. Spectravideo CP/M-80 version 2.24 for SV-605B, A> on the SV-806 80-column display. Reset cold-boots from a pristine writable disk copy."
+    "blurb": "Disk drives and an 80-column display give the SV-328 a second role: a CP/M computer with BASIC and programming tools loaded from disk.",
+    "notes": "CP/M-80 2.24 on an expanded SV-328 with an SV-806 80-column display. MBASIC starts BASIC-80; SYSTEM returns to CP/M. Reset discards programs and files created during the visit."
   },
   "emulator": {
     "family": "MAME",
@@ -181,7 +181,7 @@
     "Offline, independently implemented from upstream driver and archived media. No RetroNet. Separate BASIC and expanded CP/M stations; cold relaunch reset."
   ],
   "demoProgram": {
-    "label": "Type in a demo program (CP/M MBASIC)",
+    "label": "Type in a demo program (BASIC-80)",
     "lines": [
       "mbasic",
       "NEW",

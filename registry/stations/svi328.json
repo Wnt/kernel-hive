@@ -139,7 +139,7 @@
   },
   "museum": {
     "id": "svi328",
-    "displayName": "Spectravideo SV-328",
+    "displayName": "Spectravideo SV-328 \u2014 BASIC",
     "year": 1983,
     "lineage": "Spectravideo SV-328: before the MSX standard",
     "arch": "Zilog Z80A, 3.58 MHz; TMS9929A PAL video",
@@ -150,12 +150,12 @@
     "eraSoftware": [
       "SV Extended BASIC 1.1"
     ],
-    "periodBrowser": "none \u2014 offline, before the web",
+    "periodBrowser": "None \u2014 offline",
     "iconicApps": [
       "SV BASIC"
     ],
-    "blurb": "BASIC starts as soon as the power comes on. Write a few lines, run them, and change the machine yourself.",
-    "notes": "Host-native MAME svi328 (PAL), v111 BIOS. SV extended BASIC version 1.1, Copyright 1983 Microsoft, Ok. Reset cold-boots to cleared BASIC memory."
+    "blurb": "BASIC at power-on, a full keyboard and room to expand: the SV-328 shows Spectravideo before it adopted the MSX standard.",
+    "notes": "SV Extended BASIC 1.1 on the PAL SV-328. Type a program at the Ok prompt or use the demo in Controls. Reset clears the program from memory."
   },
   "emulator": {
     "family": "MAME",

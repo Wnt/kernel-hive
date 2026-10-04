@@ -142,7 +142,7 @@
     "id": "symbos",
     "displayName": "SymbOS on MSX2",
     "year": 2025,
-    "lineage": "Prodatron / SymbiosiS \u2014 MSX port since 2006",
+    "lineage": "SymbOS \u2192 MSX port (2006) \u2192 SymbOS 4.0 (2025)",
     "arch": "Zilog Z80A, 3.58 MHz, Yamaha V9938 VDP (MSX2 video)",
     "ramMB": 0,
     "ramKB": 512,
@@ -155,15 +155,15 @@
       "Pocket Calculator",
       "Game of Life"
     ],
-    "periodBrowser": "none \u2014 offline desktop",
+    "periodBrowser": "None \u2014 offline",
     "iconicApps": [
       "SymCommander",
       "Notepad",
       "Pocket Calculator",
       "Task Manager"
     ],
-    "blurb": "A later enthusiast multitasking desktop for the Z80: windows, files and small applications on the MSX2 hardware family.",
-    "notes": "Philips NMS 8250 (1987) with an explicitly added 512 KiB mapper. SymbOS 4.0 is later software, released in 2025; the first MSX port arrived in 2006. One 720K floppy, no networking. Mouse in joystick port 1; reset discards visitor writes and cold boots a fresh private master copy."
+    "blurb": "Windows, files and multitasking on a Z80: SymbOS 4.0 brings later enthusiast software to an expanded Philips MSX2.",
+    "notes": "SymbOS 4.0 (2025) on a Philips NMS 8250 (1987) with a 512 KiB memory expansion. Open Notepad, Pocket Calculator or Game of Life from the desktop. Reset discards saved work."
   },
   "emulator": {
     "family": "MAME",

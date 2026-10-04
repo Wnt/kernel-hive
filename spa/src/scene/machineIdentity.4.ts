@@ -6,11 +6,11 @@ import type { ExhibitIdentity } from './machineIdentity';
 export const EXHIBIT_IDENTITIES_4 = {
   svi728: {
     caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
-    badge: 'SPECTRAVIDEO 728', spec: 'Z80 • 1984', kit: 'eightBit',
+    badge: 'SPECTRAVIDEO SVI-728', spec: 'Z80 • 1984', kit: 'eightBit',
   },
   svi738: {
     caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
-    badge: 'SPECTRAVIDEO 738', spec: 'Z80 • 1985', kit: 'eightBit',
+    badge: 'SPECTRAVIDEO SVI-738', spec: 'Z80 • 1985', kit: 'eightBit',
   },
   // SymbOS: Philips MSX2 hardware running explicitly later software.
   symbos: {

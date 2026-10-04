@@ -325,7 +325,7 @@ const DEMO_PROGRAMS = {
     "perCharMs": 500
   },
   "svi328cpm": {
-    "label": "Type in a demo program (CP/M MBASIC)",
+    "label": "Type in a demo program (BASIC-80)",
     "lines": [
       "mbasic",
       "NEW",
@@ -341,7 +341,7 @@ const DEMO_PROGRAMS = {
     ]
   },
   "svi728": {
-    "label": "Type a Spectravideo BASIC demo",
+    "label": "Type in a demo program (MSX-BASIC)",
     "lines": [
       "10 SCREEN 1",
       "20 COLOR 15,4,4",
@@ -355,7 +355,7 @@ const DEMO_PROGRAMS = {
     "perCharMs": 260
   },
   "svi738": {
-    "label": "Type a CP/M BASIC program",
+    "label": "Type in a demo program (BASIC-80)",
     "lines": [
       "MBASIC",
       "10 PRINT \"HELLO FROM SPECTRAVIDEO CP/M\"",
