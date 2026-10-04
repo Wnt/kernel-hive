@@ -268,7 +268,7 @@ describe('station-specific traps (registry typeIn)', () => {
 
 describe('registry typeIn data', () => {
   it('mpf2 pauses at the screen wrap, declared as data', () => {
-    expect(typeInFor('mpf2')!.wrapPause).toEqual({ cols: 40, ms: 250, promptCols: 1 });
+    expect(typeInFor('mpf2')!.wrapPause).toEqual({ cols: 40, ms: 500, promptCols: 1 });
     expect(typeInFor('vic20')!.wrapPause).toBeUndefined();
   });
 

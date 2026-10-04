@@ -490,7 +490,7 @@ const TYPE_IN = {
     "perCharMs": 70,
     "wrapPause": {
       "cols": 40,
-      "ms": 250,
+      "ms": 500,
       "promptCols": 1
     },
     "case": "unshifted",
