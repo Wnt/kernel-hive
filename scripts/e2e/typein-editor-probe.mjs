@@ -13,7 +13,7 @@
 //
 //   INVITE=<code or path> GALLERY_URL=https://kernelhive.madekivi.fi \
 //     node typein-editor-probe.mjs <station> <listing.bas> [--run <cmd>] [--restore] [--fb-shot <dir>]
-//                                  [--stop-after <seconds>]
+//                                  [--stop-after <seconds>] [--inject-keys <seconds>]
 //
 // The listing is pasted (a synthetic `paste` event, so the editor's own paste
 // cleaning runs). `--run` types its argument + RETURN through the real
@@ -24,7 +24,10 @@
 // with the visitor's own ☰ → Restore to golden, so a live station is left as
 // it was found. `--stop-after` presses Stop mid-run and takes the framebuffer
 // right after and again 3 s later: the two must match (no key after Stop). A
-// signed-in session is required to see the stream at all
+// `--inject-keys` holds the visitor's own Shift + Meta for 2 s (and taps S)
+// that many seconds into the run, as a screenshot shortcut would: the editor
+// pauses the physical keyboard while it types, so the listing must still arrive
+// byte-exact (docs/TYPE-IN-EDITOR.md). A signed-in session is required to see the stream at all
 // (station-open.mjs's signIn header), hence INVITE + the public origin.
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
@@ -46,6 +49,8 @@ const runCmd = flag('--run');
 const fbDir = flag('--fb-shot');
 const restore = args.includes('--restore');
 const stopAfter = Number(flag('--stop-after') ?? 0);
+const injectAfter = Number(flag('--inject-keys') ?? 0);
+let injected = !injectAfter;
 const base = galleryUrl();
 const OUT = shotDir();
 const TS = Date.now();
@@ -107,6 +112,16 @@ try {
     const text = (await status.innerText()).trim();
     if (text !== last) { console.log(`  +${((Date.now() - t0) / 1000).toFixed(1)}s ${text}`); last = text; }
     if (!(await page.locator('button.ti-stop').count())) break;
+    if (!injected && Date.now() - t0 > injectAfter * 1000) {
+      injected = true;
+      console.log(`  +${((Date.now() - t0) / 1000).toFixed(1)}s injecting physical Shift+Meta for 2 s`);
+      await page.keyboard.down('Shift');
+      await page.keyboard.down('Meta');
+      await page.keyboard.press('KeyS');
+      await page.waitForTimeout(2000);
+      await page.keyboard.up('Meta');
+      await page.keyboard.up('Shift');
+    }
     if (stopAfter && Date.now() - t0 > stopAfter * 1000) {
       await page.locator('button.ti-stop').click();
       console.log(`  +${((Date.now() - t0) / 1000).toFixed(1)}s pressed Stop`);

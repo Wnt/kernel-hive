@@ -36,6 +36,7 @@ import {
 // XK keysym table + keysymFromKeyboardEvent: split out to
 // streamClient/keysym.ts (ts-src 600-line hard cap).
 import { XK, keysymFromKeyboardEvent } from './streamClient/keysym';
+import { createKeyHold } from './keyHold';
 import { withSyntheticInput } from './usageStats';
 import { createSyntheticTyping } from './syntheticTyping';
 import type { KeyChord } from '../types';
@@ -97,6 +98,9 @@ export interface StreamControlHandle {
   /** Set1 scancodes pressed in order and released in reverse (syntheticTyping.ts). */
   typeChord(chord: KeyChord): void;
   releaseAllKeys(): void;
+  /** A typist is keying into the guest: the visitor's own keys are dropped
+   *  until the returned function is called (see keyHold.ts). Calls nest. */
+  holdKeyboard(): () => void;
   sendTouch(phase: TouchPhase, guestX: number, guestY: number): void;
   requestControl(): void;
   releaseControl(): void;
@@ -172,21 +176,17 @@ export function createStreamController(
 
   // Scancodes we believe are down (for release-all on blur / dispose).
   const downScancodes = new Set<number>();
+  const keyHold = createKeyHold(); // visitor's keys vs a typist
   // e.code keys we emitted as a self-contained tap (see sendCharEvent) — their
   // paired keyup must be swallowed so the guest sees exactly one make/break.
   const tappedCodes = new Set<string>();
   // AltGr-composing modifier keys (Right-Alt / Windows' synthetic Left-Ctrl) we
   // swallowed on keydown — their keyup must be swallowed too.
   const suppressedMods = new Set<string>();
-  // Physical e.code -> the scancode sendCharEvent actually PUT ON THE WIRE for
-  // its keydown, for keys forwarded as a real (non-tap) make. A key's release
-  // must send exactly that scancode back, never one re-resolved from e.key: the
-  // character path resolves from KeyboardEvent.key, which is the LAYOUT+MODIFIER
-  // RESOLVED glyph, and can already have changed by the time the keyup arrives —
-  // Shift releasing in the same tick as the symbol's own keyup (session
-  // 6a888f3d/clientlog.jsonl: Shift+/ on a Finnish layout resolved '?' on
-  // keydown and '=' on keyup) used to send a release for the WRONG key, leaving
-  // the real one stuck down in the guest forever. See docs/lab/INPUT-DEBUGGING.md.
+  // Physical e.code -> the scancode sendCharEvent PUT ON THE WIRE for its
+  // keydown (real, non-tap makes). The release must send exactly that, never
+  // one re-resolved from e.key: Shift releasing in the same tick turned '?' into
+  // '=' and left the real key stuck (session 6a888f3d; docs/lab/INPUT-DEBUGGING.md).
   const charScancodes = new Map<string, number>();
   let lastClipboard = '';
   let disposed = false;
@@ -196,24 +196,17 @@ export function createStreamController(
   const res = () => getResolution();
 
   // ---- input ----
-  // The client is GUEST-AGNOSTIC: it always emits correctly-scaled ABSOLUTE guest
-  // pixels (already mapped by grid letterbox.clientToGuest). There is NO
-  // client-side PS/2 "cursor correction"
-  // any more — the DAEMON owns the abs→device mapping per station.env SH_POINTER:
-  //   • abs stations  → Mouse.SetAbsPosition(x,y)
-  //   • rel stations  → last-position delta → rel_motion(dx,dy)  (win9x/os2/…)
-  // and any per-station calibration offset (e.g. tinycore's tablet hotspot) is a
-  // server-side affine in input.rs, so it benefits abs AND rel stations uniformly.
+  // The client is GUEST-AGNOSTIC: it emits correctly-scaled ABSOLUTE guest
+  // pixels; the DAEMON owns the abs→device mapping per station.env SH_POINTER
+  // and any per-station calibration offset (input.rs).
   const sendMouseMove = (x: number, y: number) => {
     if (disposed) return;
     client.sendMoveAbs(x, y);
   };
 
-  // RELATIVE motion for pointer-locked rel-pointer stations (qnx/freedos/msdoswin1):
-  // ship the raw movementX/Y delta as a type=4 DIRECT RelMotion datagram. The
-  // daemon (input.rs case 4) forwards it straight to Mouse.RelMotion — NO homing
-  // bridge — so QEMU's PS/2 mouse advances 1:1 with no clamped mega-delta, and the
-  // guest renders its own cursor. Absolute stations never call this (see StreamView).
+  // RELATIVE motion for pointer-locked rel-pointer stations: the raw movementX/Y
+  // delta as a type=4 DIRECT RelMotion datagram (input.rs case 4), 1:1, no homing
+  // bridge. Absolute stations never call this (see StreamView).
   const sendMouseMoveRel = (dx: number, dy: number) => {
     if (disposed) return;
     client.sendMoveRel(dx, dy);
@@ -257,7 +250,7 @@ export function createStreamController(
   };
 
   const sendKey = (keysym: number, down: boolean) => {
-    if (disposed || !keysym || keysym < 8) return;
+    if (disposed || !keysym || keysym < 8 || keyHold.dropKeysym(keysym, down)) return;
     const sc = keysymToScancode(keysym);
     if (sc == null) return;
     rawScancode(sc, down);
@@ -338,6 +331,7 @@ export function createStreamController(
     if (disposed) return ks;
 
     const code = e.code ?? e.key;
+    if (keyHold.dropEvent(code, down)) return ks;
     // Swallow the keyup half of a tap emitted on keydown by sendCharEvent.
     if (!down && tappedCodes.has(code)) { tappedCodes.delete(code); return ks; }
 
@@ -406,6 +400,7 @@ export function createStreamController(
   const { typeText, typeChord } = createSyntheticTyping((sc, down) => client.sendKeyScancode(sc, down), () => disposed);
 
   const releaseAllKeys = () => {
+    keyHold.reset();
     for (const sc of downScancodes) client.sendKeyScancode(sc, false);
     downScancodes.clear();
     // charScancodes values are a subset of downScancodes — clear it alongside,
@@ -413,6 +408,12 @@ export function createStreamController(
     // key it once named and mis-map the NEXT press of that physical key.
     charScancodes.clear();
   };
+
+  const holdKeyboard = () => keyHold.hold(() => {
+    releaseAllKeys();
+    tappedCodes.clear();
+    suppressedMods.clear();
+  });
 
   const sendTouch = (phase: TouchPhase, x: number, y: number) => {
     switch (phase) {
@@ -555,6 +556,7 @@ export function createStreamController(
     typeText,
     typeChord,
     releaseAllKeys,
+    holdKeyboard,
     sendTouch,
     requestControl,
     releaseControl,
@@ -574,11 +576,8 @@ export function createStreamController(
     dispose: () => {
       if (disposed) return;
       disposed = true;
-      // A session ending with keys still recorded down means at least one
-      // physical key never got its release forwarded — the same class of bug
-      // as station.key.orphanedRelease, seen from the other end. releaseAllKeys
-      // right below still cleans it up guest-side; this just counts that it
-      // was necessary.
+      // Keys still down at session end = a release never forwarded (the
+      // other end of station.key.orphanedRelease); released below, but counted.
       if (downScancodes.size) reach('station.key.stuckAtSessionEnd', 'auto');
       try { releaseAllKeys(); } catch { /* transport gone */ }
       clearInterval(statsTimer);

@@ -146,6 +146,31 @@ document the first time it opens. The manuals also appear at the end of the
 station's exhibit notes (ⓘ), so every machine links its manuals even when
 nobody opens the editor.
 
+## The visitor's keyboard is paused while the editor types
+
+A physical key that reaches the guest mid-run corrupts the listing. On
+2026-10-04 a macOS screenshot (Cmd+Shift+4) during the vic20 "Colour Squares"
+run put physical Shift and Cmd down between two typed characters. The guest saw
+Shift held, so `UB 100` arrived as graphics glyphs (shifted letters on a
+VIC-20) until the typist's next `:` released it, and line 50 failed with
+`?UNDEF'D STATEMENT`.
+
+The editor now prevents it. While a run (the editor's, and the stage menu's demo
+listing) is typing, `StreamControlHandle.holdKeyboard()` is held and the
+visitor's keys are dropped before they reach the guest: key down and up,
+modifiers included, and the on-screen keyboard. The mechanism is
+`spa/src/three/keyHold.ts`:
+
+- at run start, keys the guest believes are down are released;
+- a key held at the start, or pressed during the run, has its repeats and its
+  release swallowed after the run, so no orphan release is sent and nothing is
+  "pressed" retroactively;
+- when the run ends, is stopped, or the stream drops, forwarding resumes from a
+  clean slate.
+
+The progress line carries the note "Your keyboard is paused while the editor
+types — press Stop to take over." Stop is the way back (Escape is not bound).
+
 ## What the editor refuses to do quietly
 
 - **Characters the machine cannot receive** (anything outside printable

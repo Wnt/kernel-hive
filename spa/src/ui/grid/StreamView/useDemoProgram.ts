@@ -45,6 +45,7 @@ export function useDemoProgram({
     const handle = controlRef.current;
     if (!handle) { setState('err'); return; }
     busyRef.current = true;
+    const resumeKeys = handle.holdKeyboard();
     setState('typing');
     // A keyword-entry machine's demo is ASCII BASIC, typed as key chords.
     const keywords = keywordMachineFor(osId);
@@ -54,7 +55,7 @@ export function useDemoProgram({
     })
       .then(() => { if (!goneRef.current) setState('idle'); })
       .catch(() => { if (!goneRef.current) setState('err'); })
-      .finally(() => { busyRef.current = false; });
+      .finally(() => { resumeKeys(); busyRef.current = false; });
   }, [program, osId, controlRef]);
 
   return { program, state, typeIn };

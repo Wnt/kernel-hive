@@ -193,6 +193,9 @@ export function useTypeInEditor({
     flow.tag(stationAttrs);
     flowRef.current = flow;
     recordMetric('typein.run.lineCount', lines.length);
+    // The visitor's own keys would corrupt the listing (a held Shift turns
+    // VIC-20 letters into graphics glyphs): pause them until the run ends.
+    const resumeKeys = handle.holdKeyboard();
     setRun('typing');
     setProgress({ line: 0, lines: lines.length, chars: 0, totalChars: 0 });
     void typeListing({ osId, config, spec, keywords, lines, handle, signal: abort.signal, onProgress: setProgress })
@@ -209,6 +212,7 @@ export function useTypeInEditor({
         if (!goneRef.current) setRun('error');
       })
       .finally(() => {
+        resumeKeys();
         abortRef.current = null;
         flowRef.current = null;
       });
