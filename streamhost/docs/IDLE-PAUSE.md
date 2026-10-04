@@ -119,6 +119,34 @@ leave it at `0`.
   labctl) must either connect a WebTransport session, use `labctl`'s
   auto-cont verbs, or set `SH_IDLE_PAUSE_SECS=0` for that tile.
 
+## The launcher's standby freeze (host-native MAME) and the scene marker
+
+The daemon cannot cover a station's FIRST grace period after a (re)start, so
+the shared mame-native launcher (`streamhost/stations/mame-native/x11-runtime.sh`)
+freezes its own emulator once the scene is done:
+`MAME_NATIVE_STANDBY_DELAY_S` after launch, wall seconds by default, or
+emulated seconds of a cold boot with `MAME_NATIVE_STANDBY_CLOCK=emulated`
+(ctlsock `PING` -> mtime; a MAME cold boot reaches its prompt at the same
+emulated instant every time, however loaded the box is). The daemon takes over
+from there: `session_started` CONTs it, and the reconciler resumes it if it
+lands under a live session.
+
+**The delay must end on the FINISHED scene.** Whatever frame is up at the
+freeze is what the next visitor walks up to, and a guest frozen mid-boot
+finishes booting in front of them. On a keyboard station that also eats the
+first keys they type: msx2's old 8 s froze its blank blue disk-boot screen 4 s
+before `Ok` (2026-10-04). Measure the boot in emulated seconds and check the
+frozen frame, not the log line.
+
+The launcher also writes `$BASE/scene.state`: `booting <pid>` at launch, and
+`ready <pid>` once that pid is frozen at its scene. After a cold relaunch,
+`scripts/serve/reset-tile.sh` and `labctl reset` report done only at `ready`.
+The bound is 3x the delay plus 15 s, and a station whose delay is over 90 s is
+not waited on. So a visitor's Restore reconnects them to the prompt rather than
+to the boot, and the freeze can no longer land under their session. The standby
+subshell is bound to its own pid, so a subshell that outlived its launch never
+freezes the next emulator.
+
 ## Auto-reset — the next visitor gets the golden, not the last visitor's mess
 
 The pauser owns the session count, so it also drives `auto_reset.rs`: a station

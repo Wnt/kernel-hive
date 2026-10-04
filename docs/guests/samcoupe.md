@@ -188,12 +188,16 @@ line (see §Traps).
 `registry/examples/samcoupe/` has three SAM BASIC programs: Rainbow fan
 (draw), Circle maker (input) and Higher or lower (game). They are typed at the
 SAM BASIC prompt (B on the menu). The editor types `NEW` before each run,
-because the menu's program stays in memory, and waits 2 s after it
-(`typeIn.settleAfter`). They avoid the keys a US typist cannot reach
-(`< > ? [ ] { } \ |`), which the station declares in `typeIn.unreachable`.
+because the menu's program stays in memory, waits 2 s after it
+(`typeIn.settleAfter`), then types a bare ENTER (`typeIn.enterAfter`). With a
+program in memory, `NEW` puts the MGT banner up until a key arrives, and about
+one key in six that dismisses it is lost. Before the ENTER, that key was the
+`1` of line 10, and the listing lost its first line (2 in 10 runs of
+shift-lead's 12-line listing; 4 in 24 of the race, 2026-10-04). The examples
+still open with a REM title on line 10. They avoid the keys a US typist cannot
+reach (`< > ? [ ] { } \ |`), which the station declares in `typeIn.unreachable`.
 All three were proven through the exact `typeText()` path on a sandbox rig on
-2026-10-04. `NEW` can redraw the MGT banner, which eats the next key, so line
-10 is always a REM title. See
+2026-10-04. See
 [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#sam-coup%C3%A9-what-the-typist-cannot-reach-and-what-new-does).
 
 ## §Traps
