@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dialectSpec } from './basicDialects';
 import {
-  applyCase, checkListing, cleanListing, estimateMs, foldToAscii, formatDuration, linesToType,
+  applyCase, checkListing, cleanListing, estimateMs, foldToAscii, formatDuration, linesToType, withClearFirst,
 } from './listingText';
 import { abortableSleep, paceFor, prepareFor, typeListing } from './typeInRun';
 import { typeInFor } from '../../data/demoPrograms';
@@ -42,6 +42,24 @@ describe('checkListing', () => {
 
   it('folds typographic characters to ASCII and nothing else', () => {
     expect(foldToAscii('10 PRINT “IT’S” – OK…  π')).toEqual({ text: '10 PRINT "IT\'S" - OK...  π', changed: 5 });
+  });
+});
+
+describe('withClearFirst — a run never merges with the program in memory', () => {
+  it('puts the dialect clear command (NEW) in front', () => {
+    expect(cbm.clearCommand).toBe('NEW');
+    expect(withClearFirst(['10 A=1'], cbm, true)).toEqual(['NEW', '10 A=1']);
+  });
+
+  it('never doubles it, and stays out of the way when off or empty', () => {
+    expect(withClearFirst(['new', '10 A=1'], cbm, true)).toEqual(['new', '10 A=1']);
+    expect(withClearFirst(['10 A=1'], cbm, false)).toEqual(['10 A=1']);
+    expect(withClearFirst([], cbm, true)).toEqual([]);
+  });
+
+  it('every dialect has one', () => {
+    for (const d of ['cbm-basic', 'bbc-basic', 'msx-basic', 'locomotive-basic', 'superbasic', 'sam-basic',
+      'oric-basic', 'color-basic', 'applesoft'] as const) expect(dialectSpec(d).clearCommand).toBe('NEW');
   });
 });
 

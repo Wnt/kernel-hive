@@ -1,4 +1,3 @@
-NEW
 10 REM Higher or lower
 20 MODE 3: CLS: RANDOMIZE: LET s=0: LET c=1+RND(12)
 30 PRINT "Card ";c;". Is the next higher or lower (h/l): ";

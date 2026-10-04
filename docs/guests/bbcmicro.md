@@ -204,11 +204,16 @@ for labctl) and used by the UI typist and by the builder's proof:
 Untranslated, `=` and every bracket land one key over and a BASIC listing is
 quietly corrupt — the symptom reads exactly like dropped keystrokes.
 
-**The MOS enables CAPS LOCK at reset**, so unshifted letters arrive upper case,
-which is what BBC BASIC's tokeniser requires. The registry demo listing is
-therefore written in lower case (as vic20's and mpf2's are) and the machine does
-the shifting. Sending real upper case with caps lock on would produce lower case
-and `Mistake`.
+**The MOS enables CAPS LOCK at reset**, so letters arrive upper case, which is
+what BBC BASIC's tokeniser requires. That holds whether or not Shift is held.
+Measured on the live station on 2026-10-04 through the SPA's own key path:
+`PRINT 1` typed with Shift held on every letter, and `print 2` typed
+unshifted, both echoed as `PRINT` and printed their number. (An earlier
+version of this paragraph said Shift+letter gives lower case and `Mistake`
+here; the frame says otherwise, and armeval's capitals demo agrees.) The demo
+listing is written in lower case and the type-in editor sends letters
+unshifted (`typeIn.case: unshifted`). Lower case inside a string is out of
+reach either way while CAPS LOCK is on.
 
 ### Pacing
 

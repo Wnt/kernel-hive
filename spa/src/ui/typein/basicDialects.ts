@@ -27,6 +27,10 @@ export interface DialectSpec {
   readonly questionPrint: boolean;
   /** Magazine listings write control keys as `{CLR}`, `{DOWN}` (Commodore). */
   readonly braceTokens: boolean;
+  /** The direct command that wipes the program in memory. NEW in every
+   *  dialect here (Commodore, BBC, MSX, Locomotive, SuperBASIC, SAM, Oric,
+   *  Color BASIC, Applesoft), but a dialect field rather than a constant. */
+  readonly clearCommand: string;
 }
 
 const MS_CORE =
@@ -34,7 +38,9 @@ const MS_CORE =
   'POKE PRINT CONT LIST CLEAR NEW TAB TO FN SPC THEN NOT STEP AND OR SGN INT ABS USR FRE POS SQR RND LOG ' +
   'EXP COS SIN TAN ATN PEEK LEN STR$ VAL ASC CHR$ LEFT$ RIGHT$ MID$ GET';
 
-const WORDS: Record<BasicDialect, { name: string; words: string; crunched: boolean; apostrophe?: boolean; question?: boolean; braces?: boolean }> = {
+const WORDS: Record<BasicDialect, {
+  name: string; words: string; crunched: boolean; apostrophe?: boolean; question?: boolean; braces?: boolean; clear?: string;
+}> = {
   'cbm-basic': {
     name: 'Commodore BASIC',
     crunched: true, question: true, braces: true,
@@ -136,6 +142,7 @@ export function dialectSpec(dialect: BasicDialect): DialectSpec {
       apostropheComment: !!w.apostrophe,
       questionPrint: !!w.question,
       braceTokens: !!w.braces,
+      clearCommand: w.clear ?? 'NEW',
     };
     SPECS.set(dialect, spec);
   }
