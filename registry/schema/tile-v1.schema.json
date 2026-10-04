@@ -526,7 +526,8 @@
             "sam-basic",
             "oric-basic",
             "color-basic",
-            "applesoft"
+            "applesoft",
+            "kc-basic"
           ],
           "description": "Which keyword list the editor highlights with (spa/src/ui/typein/basicDialects.ts)."
         },

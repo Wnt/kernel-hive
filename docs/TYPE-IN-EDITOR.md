@@ -24,7 +24,7 @@ typing engine is `typeLines()` in
 The opt-in is DATA: a station gets the editor if its registry entry has a
 `typeIn` block, and for no other reason. There are no id checks in the SPA.
 
-| In (17) | Why |
+| In (18) | Why |
 |---|---|
 | vic20 pet2001 cbm8032 c128 plus4 cbm2 | Commodore BASIC at power-on |
 | bbcmicro armeval | BBC BASIC (armeval: ARM BASIC on the tube) |
@@ -33,12 +33,12 @@ The opt-in is DATA: a station gets the editor if its registry entry has a
 | dragon32 oricatmos mpf2 | Microsoft-family BASICs (Color, Oric, Applesoft-like) |
 | sinclairql | SuperBASIC |
 | samcoupe | SAM BASIC, one keypress away (the `hint` tells the visitor to press B first) |
+| kc854 | HC-BASIC, one typed command away (the `hint` tells the visitor to type BASIC and press ENTER twice; [details below](#kc-854-getting-into-hc-basic-and-what-basic-does-twice)) |
 
 | Out | Why |
 |---|---|
 | zxspectrum, zx81 | **Keyword entry.** One key *is* a keyword (P gives PRINT), so ASCII typed letter by letter arrives as garbage. The demo listing types keystroke form (`10 b1`) for exactly this reason. Supporting them needs a keyword transcoder, which is a follow-up; its measured design is [below](#keyword-transcoder-for-zxspectrum-and-zx81-measured-not-built). |
 | svi328cpm, svi738 | Boot to CP/M; MBASIC has to be loaded first (their demo listings do that with a 20 s settle). |
-| kc854 | Boots to the CAOS 4.2 command menu. HC-BASIC is one typed command away, proven on a rig on 2026-10-04: `BASIC` + ENTER gives `MEMORY END ? :`, a bare ENTER gives `47854 BYTES FREE` / `OK`, and `10 PRINT "KC 85/4: ";6*7` typed through the existing `charMap` at 260 ms/char RUNs to `KC 85/4:  42`. The open question is the two-line preamble: a `typeIn` field for it, or examples that begin with `BASIC` and an empty line. Typing `BASIC` when HC-BASIC is already running is untested. |
 | atari800xl, apple2e | Boot to a menu or a DOS, not to an interpreter. |
 | c64, apple2, msxturbor | Boot to GEOS / MSX View desktops. |
 
@@ -81,7 +81,7 @@ wrong on most of these machines:
 | `unshifted` | every letter goes down unshifted | vic20 pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos (CAPS LOCK on at reset, so Shift+letter gives *lower* case and BBC BASIC answers `Mistake`); dragon32 mpf2 (no lower case) |
 | `code-lower` | letters outside strings, REM and DATA go down unshifted; literals keep the visitor's case | cbm8032 cbm2 (business keyboard, text mode: unshifted is lower case, and BASIC wants it) |
 | `code-upper` | code is upper-cased, literals kept | msx2 svi728 svi328 (the proven demo path) |
-| `as-typed` (default) | unchanged | amstradcpc sinclairql samcoupe |
+| `as-typed` (default) | unchanged | amstradcpc sinclairql samcoupe kc854 |
 
 The station `keyboard` block (`charMap`, `letterCase`) is applied after the
 case rule, exactly as for the demo listing.
@@ -261,6 +261,22 @@ the 7 runs at 600 ms. Waiting 1.5 s or more after `NEW` avoided it in 6 of 7
 runs; the seventh is unexplained. A per-line settle after `NEW` (at least 2 s) is
 the fix, and it belongs in `typeIn`, not in the listings. The station's demo
 listing (`NEW`, then `10 MODE 4`) is exposed to the same loss.
+
+### KC 85/4: getting into HC-BASIC, and what BASIC does twice
+
+**Proven on a sandbox rig of the station's own MAME binary and 80/80 pacing, 2026-10-04**, typing through the registry `charMap` at the editor's 260 ms/char with 260/600 ms line and ENTER settles.
+
+**The way in.** The machine boots to the CAOS 4.2 menu. `BASIC` + ENTER answers `MEMORY END ? :`, and a bare ENTER accepts the default: `47854 BYTES FREE`, `OK`. That is the `hint` ("First type BASIC and press ENTER twice to wake HC-BASIC."). The registry carries no preamble field, and the examples do not start with `BASIC`.
+
+**`BASIC` typed again inside HC-BASIC is harmless.** HC-BASIC reads it as a variable name and answers `?SN ERROR` / `OK`; the next bare ENTER is an empty line (a program in memory was not tried). A visitor who follows the hint twice loses nothing. (To leave and come back with the program kept, CAOS has `REBASIC`; `BYE` leaves HC-BASIC. The BASIC-Handbuch chapter 1 documents both.)
+
+**Case.** The case rule is `as-typed`. The KC's unshifted letters are capitals, and the station `charMap` swaps the case, so a capital listing arrives unshifted. HC-BASIC also accepts keywords in lower case (`print 1+2` printed 3), so a visitor's lower-case code does not break either.
+
+**The dialect.** The `kc-basic` word list is read from the two token tables in the shipping ROMs: the 8 KB BASIC ROM, and CAOS 4.2's extension table (`CLS`, `PSET`, `PRESET`, `LINE`, `CIRCLE`, `LOCATE`, `INKEY$`, `COLOR`, `INK`, `PAPER`, `BEEP`, `SOUND` and others). Graphics coordinates are 320 by 256 with `y` counted up from the bottom; the colour is the last argument (`CIRCLE x,y,r,c`, 2 red, 4 green, 6 yellow, 7 white). `LOCATE` takes row, then column. `INPUT` works only inside a program (direct mode gives `?ID ERROR`).
+
+**Traps found.** `THEN END ELSE 20` is a `?SN ERROR`; use two lines. `LIST` of a long program stops when the screen fills and swallows the next keys until one is typed, so type something harmless before `RUN`. The examples start with `NEW`.
+
+**Examples (`registry/examples/kc854/`).** Each was typed whole with the editor's timing and read off the framebuffer: *Rainbow target* draws six coloured rings and a crosshair; *Times table* asks for a number and prints its ten-times table (typed 7, got 7 x 1 = 7 down to 7 x 10 = 70); *Stop the dot* stops on a key (OFF BY 7 and OFF BY 2 in two rounds), replays on any key and ends cleanly on N. The manuals are the original German BASIC-Handbuch and Systemhandbuch (1988).
 
 ### Keyword transcoder for zxspectrum and zx81 (measured, not built)
 
