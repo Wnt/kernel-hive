@@ -1,0 +1,30 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Mystic rose",
+      "description": "Joins twelve points on a circle with every possible line in high-resolution graphics, changing colour as it goes; type TEXT afterwards to clear the screen."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "How many days old are you?",
+      "description": "Asks your age in years and works out roughly how many days, hours and minutes that makes."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "I will guess your number",
+      "description": "Think of a number from 1 to 100 and answer H for higher, L for lower or Y for yes; the MPF-II needs at most seven guesses. Q quits after a round."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Micro-Professor MPF-II User's Manual",
+      "url": "https://www.computerhistory.org/collections/catalog/102665804",
+      "lang": "en",
+      "note": "Owner's manual (Multitech, 1982); scan in the Computer History Museum collection, PDF linked from the catalogue page"
+    }
+  ]
+}
