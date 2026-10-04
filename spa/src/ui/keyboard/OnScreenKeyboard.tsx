@@ -33,6 +33,7 @@ import { keyboardProfileFor } from './keyboardProfiles.data';
 import { ABC_ROWS, SYM_ROWS, QFUNC, ACTION_ROW, type QRow, type QKey } from './qwertyLayout';
 import { LayerTabs, type OskLayer } from './LayerTabs';
 import { createKeySender, type KeySender } from './keySender';
+import { physicalCharMapFor, physicalTypist } from '../../three/physicalCharMap';
 import { diffProxyValue } from './freeTextDiff';
 import { hapticTap } from './haptics';
 import { DANGER_ARM_MS, LONGPRESS_MS, PROXY_SENTINEL } from './oskConstants';
@@ -69,6 +70,11 @@ export function OnScreenKeyboard({
   const profile = useMemo(() => keyboardProfileFor(osId), [osId]);
   const handleRef = useRef(handle);
   handleRef.current = handle;
+  // keyboard.physical stations (physicalCharMap.ts): the OSK's typeText paths
+  // go through the station charMap like the visitor's own keys do.
+  const physMap = useMemo(() => physicalCharMapFor(osId), [osId]);
+  const physMapRef = useRef(physMap);
+  physMapRef.current = physMap;
 
   const [, setBump] = useState(0); // re-render signal for sender-held latch state
   const [armedId, setArmedId] = useState<string | null>(null);
@@ -84,7 +90,7 @@ export function OnScreenKeyboard({
   const inlineRef = useRef<HTMLInputElement>(null);
 
   const makeSender = useCallback(
-    () => createKeySender(() => handleRef.current, {
+    () => createKeySender(() => physicalTypist(handleRef.current, physMapRef.current), {
       onHaptic: (kind) => hapticTap(kind === 'tap' ? 10 : 15),
     }),
     [],
@@ -185,7 +191,7 @@ export function OnScreenKeyboard({
     // COUNTS ONLY. `text` itself never leaves this function — the two numbers
     // are the halves of a bucketed percentage and nothing else (composeTelemetry).
     composeRef.current?.freeText(backspaces, text.length);
-    const h = handleRef.current;
+    const h = physicalTypist(handleRef.current, physMapRef.current);
     let sent = false;
     if (h) {
       for (let i = 0; i < backspaces; i++) {

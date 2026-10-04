@@ -456,6 +456,10 @@
             "type": "string"
           }
         },
+        "physical": {
+          "type": "boolean",
+          "description": "Apply charMap to the visitor's own printable keys too (spa/src/three/physicalCharMap.ts), not only to the typists. Opt-in per station; requires charMap."
+        },
         "letterCase": {
           "enum": [
             "upper-only"
