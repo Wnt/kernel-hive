@@ -158,6 +158,10 @@
     "runCommand": "RUN",
     "perCharMs": 400
   },
+  "typeIn": {
+    "dialect": "superbasic",
+    "perCharMs": 400
+  },
   "museum": {
     "id": "sinclairql",
     "displayName": "Sinclair QL",

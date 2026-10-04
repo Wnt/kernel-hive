@@ -154,6 +154,12 @@
     "runCommand": "run",
     "perCharMs": 180
   },
+  "typeIn": {
+    "dialect": "cbm-basic",
+    "perCharMs": 180,
+    "case": "unshifted",
+    "maxLineChars": 80
+  },
   "museum": {
     "id": "pet2001",
     "displayName": "Commodore PET 2001",

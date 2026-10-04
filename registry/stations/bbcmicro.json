@@ -169,6 +169,11 @@
     "runCommand": "run",
     "perCharMs": 170
   },
+  "typeIn": {
+    "dialect": "bbc-basic",
+    "perCharMs": 170,
+    "case": "unshifted"
+  },
   "museum": {
     "id": "bbcmicro",
     "displayName": "Acorn BBC Micro Model B",

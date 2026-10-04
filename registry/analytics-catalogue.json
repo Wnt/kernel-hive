@@ -95,6 +95,14 @@
         "act"
       ]
     },
+    "poster.manual.opened": {
+      "area": "poster",
+      "owner": "src/ui/ExhibitPoster.tsx",
+      "what": "a visitor followed a link to the machine's own manual from its exhibit notes",
+      "grades": [
+        "act"
+      ]
+    },
     "station.key.orphanedRelease": {
       "area": "station",
       "owner": "src/three/useStreamControl.ts",
@@ -256,6 +264,71 @@
         "auto"
       ]
     },
+    "typein.ascii.folded": {
+      "area": "keyboard",
+      "owner": "src/ui/typein/TypeInEditor.tsx",
+      "what": "a listing arrived with typographic characters the machine cannot receive and the visitor let the editor replace them",
+      "grades": [
+        "act"
+      ]
+    },
+    "typein.editor.opened": {
+      "area": "keyboard",
+      "owner": "src/ui/typein/useTypeInEditor.ts",
+      "what": "a visitor opened the type-in code editor on a BASIC machine",
+      "grades": [
+        "act"
+      ]
+    },
+    "typein.example.loaded": {
+      "area": "keyboard",
+      "owner": "src/ui/typein/TypeInEditor.tsx",
+      "what": "a visitor opened one of the machine's example programs (or its demo listing) into the editor",
+      "grades": [
+        "act"
+      ]
+    },
+    "typein.file.opened": {
+      "area": "keyboard",
+      "owner": "src/ui/typein/TypeInEditor.tsx",
+      "what": "a visitor loaded a plain-text listing from their own device",
+      "grades": [
+        "act"
+      ]
+    },
+    "typein.manual.opened": {
+      "area": "keyboard",
+      "owner": "src/ui/typein/TypeInEditor.tsx",
+      "what": "a visitor followed a link to the machine's own manual from the editor",
+      "grades": [
+        "act"
+      ]
+    },
+    "typein.run.completed": {
+      "area": "keyboard",
+      "owner": "src/ui/typein/useTypeInEditor.ts",
+      "what": "a whole listing was typed into the machine without being stopped or cut off",
+      "grades": [
+        "show",
+        "auto"
+      ]
+    },
+    "typein.run.stopped": {
+      "area": "keyboard",
+      "owner": "src/ui/typein/useTypeInEditor.ts",
+      "what": "a visitor pressed Stop during a run",
+      "grades": [
+        "act"
+      ]
+    },
+    "typein.text.pasted": {
+      "area": "keyboard",
+      "owner": "src/ui/typein/TypeInEditor.tsx",
+      "what": "a visitor pasted a listing into the editor — the clipboard-to-keystrokes ask, met without a helper tool",
+      "grades": [
+        "act"
+      ]
+    },
     "walkin.play.claimInstant": {
       "area": "walkin",
       "owner": "src/walkin/playTelemetry.ts",
@@ -352,6 +425,14 @@
         "frozen",
         "reconnecting",
         "moving"
+      ]
+    },
+    "typein.run": {
+      "area": "keyboard",
+      "what": "typing a listing from the editor into the machine, from the click to the last line",
+      "steps": [
+        "start",
+        "typed"
       ]
     },
     "walkin.play": {
@@ -556,6 +637,12 @@
       "what": "a high value means retries are landing deep in the budget rather than succeeding on the first re-try, so the backoff ladder is absorbing a fault instead of riding out a blip",
       "scale": "count"
     },
+    "typein.run.lineCount": {
+      "area": "keyboard",
+      "owner": "src/ui/typein/useTypeInEditor.ts",
+      "what": "a high value means visitors type long listings, so per-station pacing and the daemon's key queue must hold across hundreds of lines, not a five-line demo",
+      "scale": "count"
+    },
     "walkin.play.claimRetries": {
       "area": "walkin",
       "owner": "src/walkin/playTelemetry.ts",
@@ -673,7 +760,7 @@
     "walkin.anon.wall": {
       "area": "walkin",
       "owner": "scripts/serve/auth/anon_plane.py",
-      "what": "a stranger's sixty seconds ran out and their machine was frozen behind the conversion wall; a zero means nobody has ever reached the end of the budget"
+      "what": "a stranger's intro time ran out and their machine was frozen behind the conversion wall; a zero means nobody has ever reached the end of the budget"
     },
     "walkin.claim.queued": {
       "area": "walkin",

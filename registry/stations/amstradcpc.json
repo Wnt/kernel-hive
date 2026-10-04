@@ -96,6 +96,10 @@
     "runCommand": "run",
     "perCharMs": 90
   },
+  "typeIn": {
+    "dialect": "locomotive-basic",
+    "perCharMs": 90
+  },
   "runtime": {
     "stationEnv": {
       "SH_STATION": "amstradcpc",

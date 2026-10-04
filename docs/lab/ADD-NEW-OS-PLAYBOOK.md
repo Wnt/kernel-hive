@@ -967,8 +967,10 @@ that was itself broken. Look at the reference frame before believing a rung.
 `line.length * perCharMs` before submitting the next line; below the station's
 hold+gap drain rate a backlog builds and BASIC loses the characters that arrive
 while it is tokenising. Declare `demoProgram.perCharMs` in the registry when a
-station drains slower than the fleet default — `validate_demo_pacing` in
-`scripts/stations-registry.py` fails the build if the two disagree.
+station drains slower than the fleet default, and `typeIn.perCharMs` (always
+required) on a BASIC machine that offers the type-in code editor —
+`scripts/stations_registry/validate_typein.py` fails the build if either is
+below hold+gap. See [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md).
 
 **One rejected line can impersonate a broken input plane — check the LISTING
 before you touch the pacing.** A BASIC that rejects a line may leave the
