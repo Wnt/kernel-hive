@@ -36,9 +36,10 @@ The opt-in is DATA: a station gets the editor if its registry entry has a
 
 | Out | Why |
 |---|---|
-| zxspectrum, zx81 | **Keyword entry.** One key *is* a keyword (P gives PRINT), so ASCII typed letter by letter arrives as garbage. The demo listing types keystroke form (`10 b1`) for exactly this reason. Supporting them needs a keyword transcoder, which is a follow-up. |
+| zxspectrum, zx81 | **Keyword entry.** One key *is* a keyword (P gives PRINT), so ASCII typed letter by letter arrives as garbage. The demo listing types keystroke form (`10 b1`) for exactly this reason. Supporting them needs a keyword transcoder, which is a follow-up; its measured design is [below](#keyword-transcoder-for-zxspectrum-and-zx81-measured-not-built). |
 | svi328cpm, svi738 | Boot to CP/M; MBASIC has to be loaded first (their demo listings do that with a 20 s settle). |
-| kc854, atari800xl, apple2e | Boot to a menu or a DOS, not to an interpreter. |
+| kc854 | Boots to the CAOS 4.2 command menu. HC-BASIC is one typed command away, proven on a rig on 2026-10-04: `BASIC` + ENTER gives `MEMORY END ? :`, a bare ENTER gives `47854 BYTES FREE` / `OK`, and `10 PRINT "KC 85/4: ";6*7` typed through the existing `charMap` at 260 ms/char RUNs to `KC 85/4:  42`. The open question is the two-line preamble: a `typeIn` field for it, or examples that begin with `BASIC` and an empty line. Typing `BASIC` when HC-BASIC is already running is untested. |
+| atari800xl, apple2e | Boot to a menu or a DOS, not to an interpreter. |
 | c64, apple2, msxturbor | Boot to GEOS / MSX View desktops. |
 
 **A station without validated pacing never gets the editor.** The validator
@@ -110,6 +111,15 @@ pre-push gate) checks the following:
 - manual URLs are `https://` and `lang` is a two-letter code.
 
 A station with no folder simply has no examples. That is never an error.
+
+The editor types exactly the file and sends nothing else, so `NEW` is part of
+the listing where a machine may already hold a program. The SAM Coupé must
+start with `NEW`: after B the boot menu's own program is still in memory, and
+its stray lines (85, 9000) would interleave with an example. The QL examples
+start with `NEW` too, so a second example does not inherit the first one's
+higher line numbers. Line 10 of those listings is a REM title on purpose. If a
+machine eats the first key after `NEW` (the SAM does, below), the worst case is
+a lost title, not a lost statement.
 
 Examples and manuals are **runtime content**. They are rendered into
 `poster-docs.json` as a top-level `typeIn` key, a sibling of `posters`, and
@@ -201,6 +211,109 @@ deshift of a held host Shift racing the KERNAL's matrix scan, so the fix
 belongs in the module or the sink, not the pacing. A visitor typing `:` on
 the physical keyboard holds Shift too, so this is not only the editor's
 problem.
+
+### Known defect: every shifted character is lost on the QL
+
+**Open as of 2026-10-04.** This was measured on a sandbox rig with
+sinclairql's live configuration: the same MAME 0.289 `ql` binary, the
+`ctlsock` module at the station's 40/40 hold/gap, and `MAME_CTL_KEY_EXCL=:Y`.
+Keys were sent with the edges `typeText()` produces: Left Shift down, key
+down, key up, Left Shift up, back to back. The daemon forwards them unchanged.
+The module applies Shift and the key in the **same drain pass**. The QL's 8049
+keyboard processor then never reports the key at all. Capitals and all shifted
+punctuation (`" : ( ) + * & $ !`) vanish, while unshifted keys land:
+
+| Edges sent | Result on the framebuffer |
+|---|---|
+| `typeText()` style, `print 1+2` | `print 12` |
+| `typeText()` style, `PRINT "AB"` | nothing |
+| `typeText()` style, `10 REMark Sunburst` | `10 ark unburst` |
+| Shift released 120 ms late, pressed with the key | nothing |
+| Shift pressed 60 ms before the key | `PRINT "PRE"`, intact |
+| Shift 60 ms early, module's 40 ms key hold, a 195-character listing | 2 lost (one `*`, one ENTER) |
+| Shift 100 ms early, keys held 100 ms, about 1,000 characters | 0 lost |
+
+The QL needs Shift down at least one keyboard scan **before** the key. The fix
+belongs in the module or the sink, which should give a modifier press a lead
+before the next key press. Pacing is not the fix. It affects everything typed
+through `typeText()` on the QL, including its demo listing. The QL example
+programs were proven with the 100/100 timing. A visitor's physical typing is
+not affected, because a person presses Shift well before the letter.
+
+### SAM Coupé: what the typist cannot reach, and what NEW does
+
+**Keys a US typist cannot produce on the SAM.** `<` `>` `?` `[` `]` `{` `}`
+`\` `|` have no `charMap` entry. Typed anyway, `<` lands as `,`, `>` as `.`,
+`?` toggles inverse video (the INV key), and `[` / `]` land as `=` / `"`. The
+SAM examples avoid them all and compare with `SGN`. Everything else in the
+`charMap`, including capitals, landed exactly through the `typeText()` path
+in every listing typed.
+
+**`NEW` can bring back the MGT banner, and the banner eats a key.** After `NEW`
+with a program in memory, the SAM sometimes redraws the
+`MILES GORDON TECHNOLOGY PLC © 1990 SAM Coupé 512K` banner for about a second.
+The next keypress only dismisses it. With the editor's 600 ms ENTER settle,
+that keypress is the `1` of line `10`. The SAM then rejects `0 REM …` with
+`29 Not understood` and typing carries on, so the listing loses its first line.
+A frame-by-frame capture shows the banner up from 0.1 s to at least 0.5 s
+after the ENTER, and gone once the `1` arrives at 0.6 s. It happened in 4 of
+the 7 runs at 600 ms. Waiting 1.5 s or more after `NEW` avoided it in 6 of 7
+runs; the seventh is unexplained. A per-line settle after `NEW` (at least 2 s) is
+the fix, and it belongs in `typeIn`, not in the listings. The station's demo
+listing (`NEW`, then `10 MODE 4`) is exposed to the same loss.
+
+### Keyword transcoder for zxspectrum and zx81 (measured, not built)
+
+Both machines boot into keyword entry: the 48K Spectrum (`spectrum`,
+`-bios en`, the untouched 1982 screen; not 128K BASIC) and the ZX81
+(`-bios 2nd`, 1 KB, a lone `K` cursor). ASCII through the `typeText()` path
+does not just fail; on the Spectrum it can **succeed wrongly**.
+`10 PRINT "Hi"` was accepted as `10 PRINT rint hi`: P in K mode gave PRINT,
+the remaining letters became a variable name, and the quotes were dropped
+(SYMBOL SHIFT is host Right Shift, and `typeText()` only sends Left Shift). On
+the ZX81 the same line became `10 "S<=(<<> **(` and was rejected, because every
+capital went out as SHIFT+letter, which on the ZX81 is a symbol or token. The
+station has no `keyboard` block, so this happens to any typed text there.
+
+What works, proven on rigs on 2026-10-04 by sending key chords instead of ASCII:
+
+- **Spectrum**: `10 PRINT "Hi"` / `20 INK 2: CIRCLE 128,88,40` keyed as 26
+  chords. These were `p` for PRINT in K mode, RShift+`p` for `"`,
+  LShift+`h`, RShift+`z` for `:`, and CAPS+SYMBOL (E mode) then RShift+`x`
+  for INK and RShift+`h` for CIRCLE. The listing came out exact, and RUN
+  printed `Hi` and drew a red circle.
+- **ZX81**: `10 PRINT "HI"` / `20 PRINT INT (RND*9)` keyed as `p` for PRINT,
+  SHIFT+`p` for `"`, and FUNCTION (SHIFT+NEWLINE) then `r` for INT and `t` for
+  RND. The listing came out exact, and RUN printed `HI` and a digit.
+
+The smallest transcoder that would carry an ASCII listing:
+
+1. **Track the cursor mode the ROM will be in.** K at the start of a statement
+   (after the line number, after `:`, after THEN), L otherwise, and literal
+   text inside quotes and after REM.
+2. **Tokenise greedily against a per-machine table**, mapping each keyword or
+   symbol to a chord sequence:
+   - a K-mode statement keyword is one key;
+   - an L-mode operator or keyword (TO STEP THEN AND OR NOT AT `<=` `<>`
+     `>=`) and every symbol is a shift chord: SYMBOL SHIFT (RShift) on the
+     Spectrum, SHIFT on the ZX81;
+   - a function is E mode (Spectrum: LShift+RShift, then the key, plus RShift
+     for INK PAPER FLASH BRIGHT INVERSE OVER CIRCLE BEEP …) or FUNCTION mode
+     (ZX81: SHIFT+NEWLINE, then the key);
+   - letters: on the Spectrum lower case is the bare key and upper case is
+     LShift+key; on the ZX81 every letter is the bare key.
+3. **Drop spaces between tokens.** The ROM prints its own. Keep them inside
+   strings and REM.
+4. **Send chords, not characters.** This needs a typist call that can send
+   RShift and multi-key chords, which `typeText()` cannot.
+
+The Spectrum table can be generated mechanically: `zxspectrum.keymap`'s
+comments already list each key's K, CAPS, SYMBOL, E and E+SYMBOL legends.
+`zx81.keymap` carries the K and SHIFT legends only, so the FUNCTION-mode
+column comes from the ZX81 manual's key legends (R=INT and T=RND are proven
+above). Pace at the stations' own hold/gap: 200/200 on the Spectrum and a
+100/100 window on the ZX81. The ZX81's 1 KB also caps an example at a few
+hundred bytes, screen included.
 
 ## Analytics
 

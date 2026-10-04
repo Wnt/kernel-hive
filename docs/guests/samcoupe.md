@@ -184,6 +184,16 @@ one line per `emu.wait(6)`, in `MODE 3` — a single unpaced
 `-autoboot_command` string was tried first and mangled every ENTER into one
 line (see §Traps).
 
+## §Type-in examples
+`registry/examples/samcoupe/` has three SAM BASIC programs: Rainbow fan
+(draw), Circle maker (input) and Higher or lower (game). They are typed at the
+SAM BASIC prompt (B on the menu), start with `NEW` because the menu's program
+stays in memory, and avoid the keys a US typist cannot reach (`< > ? [ ] { } \ |`).
+All three were proven through the exact `typeText()` path on a sandbox rig on
+2026-10-04. `NEW` can redraw the MGT banner, which eats the next key, so line
+10 is always a REM title. See
+[`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#sam-coup%C3%A9-what-the-typist-cannot-reach-and-what-new-does).
+
 ## §Traps
 Four walls hit and fixed by the media stream, worth knowing before touching
 the disk composer again:

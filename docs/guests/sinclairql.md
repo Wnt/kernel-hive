@@ -209,6 +209,17 @@ keyboard and is not one (`labctl` resumes automatically, raw QMP does not).
   (MODE 8 / MODE 4 / CLS, F1–F5, BREAK = Ctrl+Space). The QL's idle screen says
   nothing at all, so those buttons are the exhibit's only invitation.
 
+## Type-in editor and example programs
+
+`registry/examples/sinclairql/` has three SuperBASIC programs: Sunburst
+(draw), Mirror writer (input) and Guess my number (game). Each starts with
+`NEW` and was proven on a sandbox rig of this station on 2026-10-04: typed,
+LISTed and RUN, with the result read off the framebuffer. **Typed through
+`typeText()` today, every shifted character is lost.** The module applies
+Shift and the key in the same pass, and the 8049 never reports the key. The
+programs were proven with Shift leading by 100 ms. See
+[`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#known-defect-every-shifted-character-is-lost-on-the-ql).
+
 ## Rollback
 
 `overlay.qcow2` holds the checkpoint; never delete or recreate it except through
