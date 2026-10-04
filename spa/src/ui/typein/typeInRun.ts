@@ -5,7 +5,8 @@ import {
   type DemoTypist, type TypingPace, type TypingProgress,
 } from '../grid/StreamView/typeDemoProgram';
 import type { DialectSpec } from './basicDialects';
-import { applyCase } from './listingText';
+import { transcodeLine, type KeywordMachine } from './keywordEntry';
+import { applyCase, isNewCommand } from './listingText';
 
 // ---------------------------------------------------------------------------
 //  typeInRun — one editor run, pure and injectable so Stop and a dropped
@@ -15,14 +16,17 @@ import { applyCase } from './listingText';
 export type RunOutcome = 'done' | 'stopped' | 'disconnected';
 
 /** The station's declared pace (registry `typeIn`), demo-typist defaults for
- *  the two optional settles. `enterMs` is the flat settle, for the estimate. */
-export function paceFor(config: TypeInConfig): TypingPace & { enterMs: number } {
+ *  the optional settles. The settle after line `index` of `lines` is
+ *  `newDelayMs` for a bare NEW, else `enterDelayMs`, plus `index` times
+ *  `enterDelayPerLineMs` for a machine whose redraw grows with the listing. */
+export function paceFor(config: TypeInConfig, lines: readonly string[] = []): TypingPace {
   const enterMs = config.enterDelayMs ?? DEMO_ENTER_DELAY_MS;
+  const newMs = config.newDelayMs ?? enterMs;
+  const growth = config.enterDelayPerLineMs ?? 0;
   return {
     perCharMs: config.perCharMs,
     lineDelayMs: config.lineDelayMs ?? DEMO_LINE_DELAY_MS,
-    enterDelayMs: () => enterMs,
-    enterMs,
+    enterDelayMs: (index) => (isNewCommand(lines[index] ?? '') ? newMs : enterMs) + index * growth,
   };
 }
 
@@ -43,12 +47,16 @@ export function abortableSleep(signal: AbortSignal): (ms: number) => Promise<voi
   });
 }
 
+/** `keywords`: a keyword-entry machine's transcoder. Each line then goes in as
+ *  key chords (typeChord), never as characters; the editor refuses to start a
+ *  listing with transcoder issues, so none is typed half-right. */
 export async function typeListing({
-  osId, config, spec, lines, handle, signal, onProgress, sleep = abortableSleep(signal),
+  osId, config, spec, keywords, lines, handle, signal, onProgress, sleep = abortableSleep(signal),
 }: {
   osId: string;
   config: TypeInConfig;
   spec: DialectSpec;
+  keywords?: KeywordMachine;
   lines: readonly string[];
   handle: DemoTypist & { isConnected(): boolean };
   signal: AbortSignal;
@@ -63,8 +71,9 @@ export async function typeListing({
     if (!handle.isConnected()) { dropped = true; return true; }
     return false;
   };
+  const chords = keywords ? (line: string) => transcodeLine(line, keywords).chords : undefined;
   const done = await typeLines({
-    lines, handle, pace: paceFor(config), prepare: prepareFor(osId, config, spec), sleep, cancelled, onProgress,
+    lines, handle, pace: paceFor(config, lines), prepare: prepareFor(osId, config, spec), chords, sleep, cancelled, onProgress,
   });
   return done ? 'done' : dropped ? 'disconnected' : 'stopped';
 }

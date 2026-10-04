@@ -526,9 +526,11 @@
             "sam-basic",
             "oric-basic",
             "color-basic",
-            "applesoft"
+            "applesoft",
+            "sinclair-basic",
+            "zx81-basic"
           ],
-          "description": "Which keyword list the editor highlights with (spa/src/ui/typein/basicDialects.ts)."
+          "description": "Which keyword list the editor highlights with (spa/src/ui/typein/basicDialects.ts). sinclair-basic and zx81-basic are KEYWORD-ENTRY machines (one key is a keyword): they also select the keyword transcoder, which types the listing as key chords built from the station's own keymap (scripts/stations_registry/keyword_keys.py) and owns letter case, so they take no `case`."
         },
         "perCharMs": {
           "type": "integer",
@@ -544,6 +546,16 @@
           "type": "integer",
           "minimum": 0,
           "description": "Settle after each ENTER while BASIC tokenises the line (default 600, the demo typist's)."
+        },
+        "enterDelayPerLineMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Added to the settle after line N (0-based) N times: a machine that redraws its whole listing after every ENTER takes longer as the listing grows. Measured on the 1 KB ZX81 (collapsed display rebuilt byte by byte): about 90 ms more per listed line. Default 0."
+        },
+        "newDelayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Settle after a line that is just NEW, instead of enterDelayMs: a machine that wipes and re-tests its memory ignores keys meanwhile (48K Spectrum: about 2 s). Default: enterDelayMs."
         },
         "case": {
           "enum": [

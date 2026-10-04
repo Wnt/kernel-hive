@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Figure of eight",
+      "description": "Two sine waves, one twice as fast as the other, trace a sideways figure of eight one block pixel at a time, at the ZX81's 64 by 44 resolution."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Square and cube",
+      "description": "Asks for a number and prints its square and its cube. ** is the ZX81's sign for a power."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Letter dash",
+      "description": "A random letter appears: press that key as fast as you can. TIME counts how often the program looped while you looked for it."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Sinclair ZX81 BASIC Programming (1981)",
+      "url": "https://spectrumcomputing.co.uk/entry/2000452/Book/ZX81_BASIC_Programming",
+      "lang": "en",
+      "note": "Steven Vickers' manual that came with the ZX81, as a PDF scan; chapter 2 pictures the keyboard with every keyword"
+    },
+    {
+      "title": "ZX81 BASIC Programming at the Internet Archive",
+      "url": "https://archive.org/details/zx-81-basic-programming",
+      "lang": "en",
+      "note": "The same manual, second edition, readable in the browser"
+    }
+  ]
+}

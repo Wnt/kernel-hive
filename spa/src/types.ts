@@ -189,7 +189,29 @@ export interface GuestKeyboard {
  *  keyword lists in ui/typein/basicDialects.ts). */
 export type BasicDialect =
   | 'cbm-basic' | 'bbc-basic' | 'msx-basic' | 'locomotive-basic' | 'superbasic'
-  | 'sam-basic' | 'oric-basic' | 'color-basic' | 'applesoft';
+  | 'sam-basic' | 'oric-basic' | 'color-basic' | 'applesoft' | KeywordDialect;
+
+/** Keyword-entry BASICs: one key is a keyword, so the editor types key chords
+ *  through the keyword transcoder (ui/typein/keywordEntry.ts). */
+export type KeywordDialect = 'sinclair-basic' | 'zx81-basic';
+
+/** Set1 scancodes pressed in order and released in reverse: one keystroke. */
+export type KeyChord = readonly number[];
+
+/** A keyword-entry station's key table (data/keywordKeys.ts, generated from the
+ *  station keymap by scripts/stations_registry/keyword_keys.py). */
+export interface KeywordTable {
+  readonly dialect: KeywordDialect;
+  /** Statement keywords: one key, only where the ROM's cursor is K. */
+  readonly statements: Readonly<Record<string, readonly KeyChord[]>>;
+  /** Keywords and symbols the machine enters from any cursor mode. */
+  readonly tokens: Readonly<Record<string, readonly KeyChord[]>>;
+  /** Plain characters: letters (per the machine's case), digits, space. */
+  readonly chars: Readonly<Record<string, readonly KeyChord[]>>;
+  /** Accepted ASCII spellings -> the table's own (ROM) spelling. */
+  readonly aliases: Readonly<Record<string, string>>;
+  readonly enter: KeyChord;
+}
 
 /** How letters become keystrokes (registry `typeIn.case`). */
 export type TypeInCase = 'as-typed' | 'unshifted' | 'code-upper' | 'code-lower';
@@ -203,6 +225,10 @@ export interface TypeInConfig {
   readonly perCharMs: number;
   readonly lineDelayMs?: number;
   readonly enterDelayMs?: number;
+  /** Settle after a line that is just NEW (a machine that re-tests its memory). */
+  readonly newDelayMs?: number;
+  /** Added per line already typed: the settle grows with the listing (ZX81). */
+  readonly enterDelayPerLineMs?: number;
   readonly case?: TypeInCase;
   /** Longest logical line the machine's screen editor accepts. */
   readonly maxLineChars?: number;

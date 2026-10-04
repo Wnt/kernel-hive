@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Colour web",
+      "description": "Cyan rays and six coloured rings, drawn with PLOT, DRAW and CIRCLE. Where a ring crosses a ray, the ray changes colour: the Spectrum keeps only one ink colour per 8 by 8 cell."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Times table",
+      "description": "Asks for a number at the bottom of the screen, then prints its times table from 1 to 10."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Catch",
+      "description": "Move the bat with O and P to catch the falling ball. Every catch beeps and scores a point."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Sinclair ZX Spectrum BASIC Programming (1982)",
+      "url": "https://archive.org/details/zx-spectrum-basic-programming",
+      "lang": "en",
+      "note": "Steven Vickers' manual that came with the Spectrum, second edition, facsimile scan"
+    },
+    {
+      "title": "ZX Spectrum BASIC Programming, web edition",
+      "url": "https://worldofspectrum.org/ZXBasicManual/",
+      "lang": "en",
+      "note": "The same manual as web pages at World of Spectrum, one chapter per page"
+    }
+  ]
+}

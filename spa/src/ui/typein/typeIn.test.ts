@@ -67,7 +67,8 @@ describe('applyCase — the station case rule', () => {
 
 describe('estimate', () => {
   it('prices each line by the station pace', () => {
-    expect(estimateMs(['ab', 'c'], { perCharMs: 100, lineDelayMs: 10, enterDelayMs: 1 })).toBe(3 * 100 + 2 * 11);
+    expect(estimateMs([2, 1], { perCharMs: 100, lineDelayMs: 10, enterDelayMs: () => 1 })).toBe(3 * 100 + 2 * 11);
+    expect(estimateMs([1, 1], { perCharMs: 0, lineDelayMs: 0, enterDelayMs: (i) => 10 * (i + 1) })).toBe(30);
     expect(formatDuration(42_000)).toBe('42 s');
     expect(formatDuration(100_000)).toBe('1 min 40 s');
   });
@@ -172,17 +173,18 @@ describe('typeListing — the editor typist', () => {
 describe('registry typeIn data', () => {
   it('gives every editor station a declared pace and a dialect', () => {
     for (const id of ['vic20', 'pet2001', 'cbm8032', 'c128', 'plus4', 'cbm2', 'bbcmicro', 'armeval', 'dragon32',
-      'oricatmos', 'msx2', 'svi728', 'svi328', 'amstradcpc', 'mpf2', 'sinclairql', 'samcoupe']) {
+      'oricatmos', 'msx2', 'svi728', 'svi328', 'amstradcpc', 'mpf2', 'sinclairql', 'samcoupe', 'zxspectrum', 'zx81']) {
       const config: TypeInConfig | undefined = typeInFor(id);
       expect(config, id).toBeDefined();
       expect(paceFor(config!).perCharMs).toBe(config!.perCharMs);
     }
   });
 
-  it('keeps keyword-entry machines out: letters typed one by one are not keywords there', () => {
+  it('sends keyword-entry machines through the transcoder: letters typed one by one are not keywords there', () => {
     // On a 48K Spectrum or a ZX81 one key IS a keyword (P gives PRINT), so an
     // ASCII listing typed letter by letter would arrive as garbage.
-    expect(typeInFor('zxspectrum')).toBeUndefined();
-    expect(typeInFor('zx81')).toBeUndefined();
+    expect(typeInFor('zxspectrum')?.dialect).toBe('sinclair-basic');
+    expect(typeInFor('zx81')?.dialect).toBe('zx81-basic');
+    expect(typeInFor('zx81')?.case).toBeUndefined();
   });
 });

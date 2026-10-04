@@ -17,6 +17,7 @@ from serve.walkin.naming import SLOT_MAX as WALKIN_SLOT_MAX
 from serve.walkin.naming import SLOT_MIN as WALKIN_SLOT_MIN
 
 from .constants import GENERATED_SHELL, LABCTL_KEYS, POSTERS, REGISTRY, REPO, TEMPLATES
+from .keyword_keys import render_keyword_keys
 from .loading import RegistryError
 from .render import (
     apply_count_tokens,
@@ -135,6 +136,7 @@ def generated() -> OrderedDict[str, bytes]:
     out["spa/src/data/posterIndex.ts"] = render_poster_index(posters)
     out["spa/src/data/demoPrograms.ts"] = render_demo_programs(rows)
     out["spa/src/data/keyboards.ts"] = render_keyboards(rows)
+    out["spa/src/data/keywordKeys.ts"] = render_keyword_keys(rows)
 
     declarations = OrderedDict(
         [

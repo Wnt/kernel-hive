@@ -9,6 +9,7 @@ import type { FlowHandle } from '../../analytics/flows';
 import type { Attrs } from '../../analytics/trace';
 import type { TypingProgress } from '../grid/StreamView/typeDemoProgram';
 import { dialectSpec, type DialectSpec } from './basicDialects';
+import { keywordMachineFor, type KeywordMachine } from './keywordEntry';
 import { checkListing, cleanListing, estimateMs, type ListingCheck } from './listingText';
 import { paceFor, typeListing } from './typeInRun';
 
@@ -33,6 +34,8 @@ export interface TypeInEditorModel {
   readonly osId: string;
   readonly config: TypeInConfig;
   readonly spec: DialectSpec;
+  /** The keyword transcoder, on a keyword-entry machine (zxspectrum, zx81). */
+  readonly keywords: KeywordMachine | undefined;
   readonly text: string;
   setText(text: string): void;
   /** Replace the listing (asks first when the visitor has unsaved edits). */
@@ -153,9 +156,11 @@ export function useTypeInEditor({
   const close = useCallback(() => setOpen(false), []);
 
   const spec = useMemo(() => dialectSpec(config?.dialect ?? 'cbm-basic'), [config?.dialect]);
-  const check = useMemo(() => checkListing(text, config ?? {}, spec), [text, config, spec]);
-  const pace = useMemo(() => (config ? paceFor(config) : null), [config]);
-  const estimate = pace ? estimateMs(check.lines, { ...pace, enterDelayMs: pace.enterMs }) : 0;
+  const keywordDialect = config?.dialect === 'sinclair-basic' || config?.dialect === 'zx81-basic';
+  const keywords = useMemo(() => (keywordDialect ? keywordMachineFor(osId) : undefined), [keywordDialect, osId]);
+  const check = useMemo(() => checkListing(text, config ?? {}, spec, keywords), [text, config, spec, keywords]);
+  const pace = useMemo(() => (config ? paceFor(config, check.lines) : null), [config, check.lines]);
+  const estimate = pace ? estimateMs(check.keystrokes, pace) : 0;
 
   const typing = run === 'typing';
   const blocked = typing ? 'Typing…'
@@ -163,13 +168,15 @@ export function useTypeInEditor({
     : otherTypistBusy ? 'The demo program is being typed'
     : check.lines.length === 0 ? 'Nothing to type yet'
     : check.bad.length > 0 ? 'Some characters cannot be typed on this machine'
+    : keywordDialect && !keywords ? 'This machine has no key table for its keywords'
+    : check.keywordIssues.length > 0 ? 'Some of the listing cannot be typed on this machine'
     : null;
 
   const start = useCallback(() => {
     const handle = controlRef.current;
     if (!config || abortRef.current || blocked) return;
     if (!handle || !handle.isConnected()) { setRun('disconnected'); return; }
-    const lines = checkListing(textRef.current, config, spec).lines;
+    const lines = checkListing(textRef.current, config, spec, keywords).lines;
     const abort = new AbortController();
     abortRef.current = abort;
     const flow = beginFlow('typein.run');
@@ -178,7 +185,7 @@ export function useTypeInEditor({
     recordMetric('typein.run.lineCount', lines.length);
     setRun('typing');
     setProgress({ line: 0, lines: lines.length, chars: 0, totalChars: 0 });
-    void typeListing({ osId, config, spec, lines, handle, signal: abort.signal, onProgress: setProgress })
+    void typeListing({ osId, config, spec, keywords, lines, handle, signal: abort.signal, onProgress: setProgress })
       .then((outcome) => {
         if (outcome === 'done') {
           flow.step('typed');
@@ -195,7 +202,7 @@ export function useTypeInEditor({
         abortRef.current = null;
         flowRef.current = null;
       });
-  }, [config, blocked, controlRef, spec, osId, stationAttrs]);
+  }, [config, blocked, controlRef, spec, keywords, osId, stationAttrs]);
 
   const stop = useCallback(() => {
     if (!abortRef.current) return;
@@ -215,7 +222,7 @@ export function useTypeInEditor({
     close,
     typing,
     model: {
-      osId, config, spec, text, setText, load, sourceLabel,
+      osId, config, spec, keywords, text, setText, load, sourceLabel,
       demoText, demoLabel: demo?.label ?? null, doc, check,
       estimateMs: estimate, run, progress, blocked, start, stop,
     },

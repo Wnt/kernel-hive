@@ -405,13 +405,13 @@ const DEMO_PROGRAMS = {
   "zxspectrum": {
     "label": "Type in a demo program (one key = one keyword)",
     "lines": [
-      "10 b1",
-      "20 b2",
-      "30 b6",
-      "40 b5",
-      "50 g10"
+      "10 BORDER 1",
+      "20 BORDER 2",
+      "30 BORDER 6",
+      "40 BORDER 5",
+      "50 GO TO 10"
     ],
-    "runCommand": "r",
+    "runCommand": "RUN",
     "perCharMs": 400
   }
 } as const satisfies Record<string, DemoProgram>;
@@ -507,6 +507,17 @@ const TYPE_IN = {
     "perCharMs": 170,
     "case": "unshifted",
     "maxLineChars": 88
+  },
+  "zx81": {
+    "dialect": "zx81-basic",
+    "perCharMs": 400,
+    "enterDelayMs": 1000,
+    "enterDelayPerLineMs": 100
+  },
+  "zxspectrum": {
+    "dialect": "sinclair-basic",
+    "perCharMs": 400,
+    "newDelayMs": 3000
   }
 } as const satisfies Record<string, TypeInConfig>;
 

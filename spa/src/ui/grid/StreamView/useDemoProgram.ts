@@ -5,6 +5,7 @@ import type { DemoProgram } from '../../../types';
 import { demoProgramFor } from '../../../data/demoPrograms';
 import { keyboardFor } from '../../../data/keyboards';
 import { typeDemoProgram } from './typeDemoProgram';
+import { keywordMachineFor, transcodeLine } from '../../typein/keywordEntry';
 
 // ---------------------------------------------------------------------------
 //  useDemoProgram — stage-menu state for "type in a demo program".
@@ -45,8 +46,11 @@ export function useDemoProgram({
     if (!handle) { setState('err'); return; }
     busyRef.current = true;
     setState('typing');
+    // A keyword-entry machine's demo is ASCII BASIC, typed as key chords.
+    const keywords = keywordMachineFor(osId);
+    const chords = keywords ? (line: string) => transcodeLine(line, keywords).chords : undefined;
     void typeDemoProgram({
-      program, handle, keyboard: keyboardFor(osId), cancelled: () => goneRef.current,
+      program, handle, keyboard: keyboardFor(osId), chords, cancelled: () => goneRef.current,
     })
       .then(() => { if (!goneRef.current) setState('idle'); })
       .catch(() => { if (!goneRef.current) setState('err'); })

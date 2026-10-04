@@ -73,6 +73,7 @@ const GENERATED = new Set([
   "spa/src/data/posterIndex.ts",
   "spa/src/data/demoPrograms.ts",
   "spa/src/data/keyboards.ts",
+  "spa/src/data/keywordKeys.ts",
   "spa/src/three/archetypeRegistry.ts",
   "scripts/build-guests/build-all.sh",
   "streamhost/stations-manifest.sh",

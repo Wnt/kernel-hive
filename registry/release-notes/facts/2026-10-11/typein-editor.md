@@ -41,7 +41,8 @@ rule per station decides it.
 its exhibit notes, as the per-machine content lands in `registry/examples/`.
 
 **Not there yet, and why:**
-1. ZX Spectrum and ZX81 have no editor. One key there *is* a keyword (P gives
-   PRINT), so typing letters one by one produces garbage.
+1. ZX Spectrum and ZX81 got the editor the same week, through a keyword
+   transcoder (see `zx-transcoder.md`): one key there *is* a keyword (P gives
+   PRINT), so typing letters one by one would produce garbage.
 2. Tokenised `.prg` files cannot be opened, only text listings.
 3. `{CLR}`-style codes are not yet translated into the real Commodore keys.

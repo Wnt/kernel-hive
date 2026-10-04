@@ -23,6 +23,7 @@ from collections import OrderedDict
 from typing import Any
 
 from .constants import REGISTRY
+from .keyword_keys import KEYWORD_DIALECTS, keyword_tables
 from .validate_schema import fail
 
 EXAMPLES = REGISTRY / "examples"
@@ -30,12 +31,31 @@ EXAMPLES = REGISTRY / "examples"
 # spa/src/ui/grid/StreamView/typeDemoProgram.ts DEMO_PER_CHAR_MS -- what the UI
 # typist assumes when a demoProgram declares no perCharMs of its own.
 SPA_DEFAULT_PER_CHAR_MS = 70
+# ... and DEMO_ENTER_DELAY_MS, the settle after ENTER when typeIn declares none.
+SPA_DEFAULT_ENTER_DELAY_MS = 600
 
-TYPEIN_KEYS = {"dialect", "perCharMs", "lineDelayMs", "enterDelayMs", "case", "maxLineChars", "hint"}
+TYPEIN_KEYS = {
+    "dialect",
+    "perCharMs",
+    "lineDelayMs",
+    "enterDelayMs",
+    "enterDelayPerLineMs",
+    "newDelayMs",
+    "case",
+    "maxLineChars",
+    "hint",
+}
 # Upper bounds the JSON-Schema-lite evaluator cannot express (it has no
 # `maximum`). Generous on purpose: they catch a unit slip (seconds typed as ms
 # times a thousand), not a tuning choice.
-TYPEIN_MAXIMA = {"perCharMs": 2000, "lineDelayMs": 10000, "enterDelayMs": 60000, "maxLineChars": 255}
+TYPEIN_MAXIMA = {
+    "perCharMs": 2000,
+    "lineDelayMs": 10000,
+    "enterDelayMs": 60000,
+    "enterDelayPerLineMs": 5000,
+    "newDelayMs": 60000,
+    "maxLineChars": 255,
+}
 HINT_MAX = 160
 
 EXAMPLE_KINDS = ("draw", "input", "game", "sound", "other")
@@ -120,6 +140,31 @@ def validate_type_in(rows: list[dict[str, Any]], errors: list[str]) -> None:
                 f"typeIn.perCharMs={budget} is below the tile's typed drain rate ({drain} ms/char = "
                 f"SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS); the editor would out-run the guest",
             )
+        if block.get("dialect") in KEYWORD_DIALECTS:
+            validate_chord_pacing(row, block, drain, errors)
+    keyword_tables(rows, errors)
+
+
+def validate_chord_pacing(row: dict[str, Any], block: dict[str, Any], drain: int, errors: list[str]) -> None:
+    """A keyword-entry station is typed in CHORDS (modifiers + one key, or a
+    modifiers-only E/FUNCTION prefix). The key module applies a chord's
+    modifiers in the same pass as its key, releases them with it after
+    SH_KEY_MIN_HOLD_MS, and admits the next press SH_KEY_MIN_GAP_MS later, so
+    one chord drains in hold+gap -- the same budget as one character. Every
+    wait that precedes a chord must cover it, the ENTER settles included, or
+    the next chord's edges queue behind a chord still in flight.
+    """
+    enter = block.get("enterDelayMs", SPA_DEFAULT_ENTER_DELAY_MS)
+    for key, value in (("enterDelayMs", enter), ("newDelayMs", block.get("newDelayMs", enter))):
+        if isinstance(value, int) and value < drain:
+            fail(
+                errors,
+                row,
+                f"typeIn.{key}={value} is below one chord ({drain} ms = SH_KEY_MIN_HOLD_MS + "
+                f"SH_KEY_MIN_GAP_MS); the next line's first chord would land on the ENTER still in flight",
+            )
+    if "case" in block:
+        fail(errors, row, "typeIn.case on a keyword-entry dialect: the keyword transcoder owns letter case")
 
 
 def _example_errors(os_id: str, folder: Any, block: dict[str, Any], doc: Any) -> tuple[list[str], dict | None]:

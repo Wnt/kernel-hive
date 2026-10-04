@@ -171,3 +171,28 @@ export function markOverflow(tokens: readonly Token[], max: number | undefined):
   }
   return out;
 }
+
+/** Repaint the character ranges a keyword-entry machine cannot type as `bad`
+ *  (keywordEntry.ts issues: `at` is a column, `len` how many characters). */
+export function markBad(tokens: readonly Token[], ranges: readonly { at: number; len: number }[]): Token[] {
+  if (!ranges.length) return [...tokens];
+  const inRange = (col: number) => ranges.some((r) => col >= r.at && col < r.at + r.len);
+  const out: Token[] = [];
+  let col = 0;
+  for (const token of tokens) {
+    let run = '';
+    let runBad = false;
+    for (const ch of token.text) {
+      const isBad = inRange(col);
+      if (run && isBad !== runBad) {
+        out.push({ ...token, kind: runBad ? 'bad' : token.kind, text: run });
+        run = '';
+      }
+      run += ch;
+      runBad = isBad;
+      col += ch.length;
+    }
+    if (run) out.push({ ...token, kind: runBad ? 'bad' : token.kind, text: run });
+  }
+  return out;
+}

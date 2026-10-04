@@ -136,6 +136,12 @@
     "accentColor": "#D8462F",
     "eraLabel": "1981 · ZX81 (1 KB, black and white)"
   },
+  "typeIn": {
+    "dialect": "zx81-basic",
+    "perCharMs": 400,
+    "enterDelayMs": 1000,
+    "enterDelayPerLineMs": 100
+  },
   "museum": {
     "id": "zx81",
     "displayName": "Sinclair ZX81",

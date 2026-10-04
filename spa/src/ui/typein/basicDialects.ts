@@ -1,4 +1,5 @@
-import type { BasicDialect } from '../../types';
+import type { BasicDialect, KeywordDialect } from '../../types';
+import { keywordTables } from '../../data/keywordKeys';
 
 // ---------------------------------------------------------------------------
 //  basicDialects — just enough of each BASIC for a highlighter to be useful.
@@ -27,14 +28,32 @@ export interface DialectSpec {
   readonly questionPrint: boolean;
   /** Magazine listings write control keys as `{CLR}`, `{DOWN}` (Commodore). */
   readonly braceTokens: boolean;
+  /** How the visitor starts the program, when it is not typing RUN. */
+  readonly runHint?: string;
 }
+
+// A keyword-entry machine's words are exactly what its key table can type
+// (data/keywordKeys.ts), so the paint and the transcoder never disagree.
+function keywordWords(dialect: KeywordDialect): string {
+  const words = new Set<string>();
+  for (const table of keywordTables()) {
+    if (table.dialect !== dialect) continue;
+    for (const spelling of [...Object.keys(table.statements), ...Object.keys(table.tokens), ...Object.keys(table.aliases)]) {
+      for (const word of spelling.split(/[ #]+/)) if (/^[A-Z][A-Z$]*$/.test(word)) words.add(word);
+    }
+  }
+  return [...words].join(' ');
+}
+const KEYWORD_RUN = 'press R (one key is RUN) and then ENTER';
 
 const MS_CORE =
   'END FOR NEXT DATA INPUT DIM READ LET GOTO GOSUB RUN IF RESTORE RETURN REM STOP ON WAIT LOAD SAVE DEF ' +
   'POKE PRINT CONT LIST CLEAR NEW TAB TO FN SPC THEN NOT STEP AND OR SGN INT ABS USR FRE POS SQR RND LOG ' +
   'EXP COS SIN TAN ATN PEEK LEN STR$ VAL ASC CHR$ LEFT$ RIGHT$ MID$ GET';
 
-const WORDS: Record<BasicDialect, { name: string; words: string; crunched: boolean; apostrophe?: boolean; question?: boolean; braces?: boolean }> = {
+const WORDS: Record<BasicDialect, {
+  name: string; words: string; crunched: boolean; apostrophe?: boolean; question?: boolean; braces?: boolean; run?: string;
+}> = {
   'cbm-basic': {
     name: 'Commodore BASIC',
     crunched: true, question: true, braces: true,
@@ -118,6 +137,8 @@ const WORDS: Record<BasicDialect, { name: string; words: string; crunched: boole
       'NORMAL NOTRACE ONERR PDL PLOT POP RECALL RESUME ROT SCALE SCRN SHLOAD SPEED STORE TEXT TRACE VLIN ' +
       'VTAB XDRAW',
   },
+  'sinclair-basic': { name: 'Sinclair BASIC', crunched: false, words: keywordWords('sinclair-basic'), run: KEYWORD_RUN },
+  'zx81-basic': { name: 'ZX81 BASIC', crunched: false, words: keywordWords('zx81-basic'), run: KEYWORD_RUN },
 };
 
 const SPECS = new Map<BasicDialect, DialectSpec>();
@@ -136,6 +157,7 @@ export function dialectSpec(dialect: BasicDialect): DialectSpec {
       apostropheComment: !!w.apostrophe,
       questionPrint: !!w.question,
       braceTokens: !!w.braces,
+      runHint: w.run,
     };
     SPECS.set(dialect, spec);
   }

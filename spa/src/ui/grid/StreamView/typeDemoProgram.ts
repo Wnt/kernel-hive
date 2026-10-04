@@ -1,4 +1,4 @@
-import type { DemoProgram, GuestKeyboard } from '../../../types';
+import type { DemoProgram, GuestKeyboard, KeyChord } from '../../../types';
 
 // ---------------------------------------------------------------------------
 //  typeDemoProgram — key a registry type-in listing into the live guest.
@@ -82,6 +82,10 @@ export function applyKeyboard(text: string, kb?: GuestKeyboard): string {
 
 export interface DemoTypist {
   typeText(text: string): void;
+  /** One chord of set1 scancodes: pressed in order, released in reverse, back to
+   *  back. The keyword transcoder's path (RShift, E-mode prefixes), which
+   *  typeText's ASCII + Left Shift cannot express. */
+  typeChord?(chord: KeyChord): void;
 }
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -91,7 +95,8 @@ const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
  *  scripts/stations_registry/validate_typein.py — never a constant buried in a
  *  component. */
 export interface TypingPace {
-  /** Wait after each character (one character per typeText call). */
+  /** Wait after each character (one character per typeText call), or after
+   *  each chord on the chord path. */
   readonly perCharMs: number;
   /** Pause after a line's last character, before its ENTER. */
   readonly lineDelayMs: number;
@@ -114,16 +119,21 @@ export interface TypingProgress {
  * `prepare` rewrites a line into the keystrokes that produce it on this machine
  * (the case rule, then the station keyboard) — the progress counts the
  * VISITOR's characters, so it never disagrees with what the editor shows.
+ * `chords`, when given, replaces `prepare`: the line becomes key chords (the
+ * keyword transcoder) sent one per typeChord call, the per-character wait after
+ * each, so every edge of a chord -- its modifier releases included -- is
+ * applied before the next chord's first press.
  * `cancelled` is polled before every key: once it is true no further key edge
  * leaves this function, which is what makes a Stop button honest.
  */
 export async function typeLines({
-  lines, handle, pace, prepare = (line) => line, sleep = wait, cancelled = () => false, onProgress,
+  lines, handle, pace, prepare = (line) => line, chords, sleep = wait, cancelled = () => false, onProgress,
 }: {
   lines: readonly string[];
   handle: DemoTypist;
   pace: TypingPace;
   prepare?: (line: string) => string;
+  chords?: (line: string) => readonly KeyChord[];
   sleep?: (ms: number) => Promise<void>;
   cancelled?: () => boolean;
   onProgress?: (progress: TypingProgress) => void;
@@ -140,11 +150,19 @@ export async function typeLines({
     // exactly '' for it (never whitespace, which would type as nothing but
     // read as content).
     if (line.length > 0) {
-      const typed = await typePaced(prepare(line), handle, pace.perCharMs, sleep, cancelled, (n) => {
-        chars += n;
-        report();
-      });
+      const start = chars;
+      const typed = chords
+        ? await typeChords(chords(line), handle, pace.perCharMs, sleep, cancelled, (done, of) => {
+          // Progress stays in the VISITOR's characters: a share of this line.
+          chars = start + Math.round((line.length * done) / Math.max(1, of));
+          report();
+        })
+        : await typePaced(prepare(line), handle, pace.perCharMs, sleep, cancelled, (n) => {
+          chars += n;
+          report();
+        });
       if (!typed) return false;
+      chars = start + line.length;
       // The line has reached the guest chunk by chunk; the inter-line pace is
       // what is left.
       await sleep(pace.lineDelayMs);
@@ -158,10 +176,14 @@ export async function typeLines({
   return !cancelled();
 }
 
+/** `chords`: a keyword-entry machine's transcoder (ui/typein/keywordEntry.ts).
+ *  The listing is then plain ASCII BASIC and goes in as key chords, the run
+ *  command too. */
 export async function typeDemoProgram({
   program,
   handle,
   keyboard,
+  chords,
   delayMs = DEMO_LINE_DELAY_MS,
   perCharMs = DEMO_PER_CHAR_MS,
   enterDelayMs,
@@ -171,6 +193,7 @@ export async function typeDemoProgram({
   program: DemoProgram;
   handle: DemoTypist;
   keyboard?: GuestKeyboard;
+  chords?: (line: string) => readonly KeyChord[];
   delayMs?: number;
   perCharMs?: number;
   enterDelayMs?: number;
@@ -188,8 +211,9 @@ export async function typeDemoProgram({
       enterDelayMs ?? (typeof configured === 'number' ? configured : configured?.[index]) ?? DEMO_ENTER_DELAY_MS,
   };
   const prepare = (line: string) => applyKeyboard(line, keyboard);
-  if (!(await typeLines({ lines: program.lines, handle, pace, prepare, sleep, cancelled }))) return false;
+  if (!(await typeLines({ lines: program.lines, handle, pace, prepare, chords, sleep, cancelled }))) return false;
   // No newline: the visitor supplies it.
+  if (chords) return typeChords(chords(program.runCommand), handle, charMs, sleep, cancelled, () => {});
   return typePaced(prepare(program.runCommand), handle, charMs, sleep, cancelled);
 }
 
@@ -222,6 +246,24 @@ async function typePaced(
     handle.typeText(chunk);
     onTyped?.(chunk.length);
     await sleep(chunk.length * charMs);
+  }
+  return true;
+}
+
+async function typeChords(
+  chords: readonly KeyChord[],
+  handle: DemoTypist,
+  chordMs: number,
+  sleep: (ms: number) => Promise<void>,
+  cancelled: () => boolean,
+  onTyped: (done: number, of: number) => void,
+): Promise<boolean> {
+  if (!handle.typeChord) throw new Error('this stream cannot send key chords');
+  for (const [index, chord] of chords.entries()) {
+    if (cancelled()) return false;
+    handle.typeChord(chord);
+    onTyped(index + 1, chords.length);
+    await sleep(chordMs);
   }
   return true;
 }

@@ -37,6 +37,8 @@ import {
 // streamClient/keysym.ts (ts-src 600-line hard cap).
 import { XK, keysymFromKeyboardEvent } from './streamClient/keysym';
 import { withSyntheticInput } from './usageStats';
+import { createSyntheticTyping } from './syntheticTyping';
+import type { KeyChord } from '../types';
 import { reach } from '../analytics';
 export { XK };
 
@@ -92,6 +94,8 @@ export interface StreamControlHandle {
   sendKey(keysym: number, down: boolean): void;
   sendKeyEvent(e: { key: string; location?: number; code?: string; getModifierState?: (k: string) => boolean }, down: boolean): number | null;
   typeText(text: string): void;
+  /** Set1 scancodes pressed in order and released in reverse (syntheticTyping.ts). */
+  typeChord(chord: KeyChord): void;
   releaseAllKeys(): void;
   sendTouch(phase: TouchPhase, guestX: number, guestY: number): void;
   requestControl(): void;
@@ -398,23 +402,8 @@ export function createStreamController(
     return ks;
   };
 
-  // Software-generated typing: one act by the visitor, hundreds of key edges.
-  // Counted as the former (three/usageStats withSyntheticInput).
-  const typeText = (text: string) => {
-    if (disposed) return;
-    withSyntheticInput(() => typeTextNow(text));
-  };
-
-  const typeTextNow = (text: string) => {
-    for (const ch of text) {
-      const s = asciiToScancode(ch);
-      if (!s) continue;
-      if (s.shift) client.sendKeyScancode(SHIFT_L_SCANCODE, true);
-      client.sendKeyScancode(s.code, true);
-      client.sendKeyScancode(s.code, false);
-      if (s.shift) client.sendKeyScancode(SHIFT_L_SCANCODE, false);
-    }
-  };
+  // Software-generated typing (one act by the visitor, many key edges).
+  const { typeText, typeChord } = createSyntheticTyping((sc, down) => client.sendKeyScancode(sc, down), () => disposed);
 
   const releaseAllKeys = () => {
     for (const sc of downScancodes) client.sendKeyScancode(sc, false);
@@ -564,6 +553,7 @@ export function createStreamController(
     sendKey,
     sendKeyEvent,
     typeText,
+    typeChord,
     releaseAllKeys,
     sendTouch,
     requestControl,

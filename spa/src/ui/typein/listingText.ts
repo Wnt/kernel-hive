@@ -1,6 +1,7 @@
 import type { TypeInCase, TypeInConfig } from '../../types';
 import type { DialectSpec } from './basicDialects';
 import { isTypable } from './basicHighlight';
+import { transcodeLine, type KeywordIssue, type KeywordMachine } from './keywordEntry';
 
 // ---------------------------------------------------------------------------
 //  listingText — what the editor holds versus what the typist keys.
@@ -29,6 +30,12 @@ export function cleanListing(text: string): string {
  *  BASIC prompt does nothing but cost a settle). */
 export function linesToType(text: string): string[] {
   return cleanListing(text).split('\n').filter((line) => line.trim().length > 0);
+}
+
+/** A line that is just NEW: the machine clears (and may re-test) its memory and
+ *  ignores the keyboard meanwhile, hence `typeIn.newDelayMs`. */
+export function isNewCommand(line: string): boolean {
+  return /^\s*new\s*$/i.test(line);
 }
 
 // Typographic look-alikes with an exact ASCII meaning. Anything not here
@@ -63,15 +70,23 @@ export interface ListingCheck {
   readonly longLines: readonly number[];
   /** 1-based editor lines with a {CLR}-style magazine control token. */
   readonly braceLines: readonly number[];
+  /** What a keyword-entry machine cannot type as written (keywordEntry.ts),
+   *  by 1-based editor line. Printable ASCII only: the rest is in `bad`. */
+  readonly keywordIssues: readonly (KeywordIssue & { readonly line: number })[];
   /** Lines the typist would send. */
   readonly lines: readonly string[];
+  /** Keystrokes per typed line: characters, or chords on a keyword machine. */
+  readonly keystrokes: readonly number[];
 }
 
-export function checkListing(text: string, config: Pick<TypeInConfig, 'maxLineChars'>, spec: DialectSpec): ListingCheck {
+export function checkListing(
+  text: string, config: Pick<TypeInConfig, 'maxLineChars'>, spec: DialectSpec, keywords?: KeywordMachine,
+): ListingCheck {
   const bad: string[] = [];
   const badLines: number[] = [];
   const longLines: number[] = [];
   const braceLines: number[] = [];
+  const keywordIssues: (KeywordIssue & { line: number })[] = [];
   cleanListing(text).split('\n').forEach((line, index) => {
     let lineBad = false;
     for (const ch of line) {
@@ -82,14 +97,22 @@ export function checkListing(text: string, config: Pick<TypeInConfig, 'maxLineCh
     if (lineBad) badLines.push(index + 1);
     if (config.maxLineChars && [...line].length > config.maxLineChars) longLines.push(index + 1);
     if (spec.braceTokens && /\{[A-Za-z0-9 ]{1,12}\}/.test(line)) braceLines.push(index + 1);
+    if (keywords && line.trim()) {
+      for (const issue of transcodeLine(line, keywords).issues) {
+        if ([...issue.text].every(isTypable)) keywordIssues.push({ ...issue, line: index + 1 });
+      }
+    }
   });
+  const lines = linesToType(text);
   return {
     bad,
     foldable: bad.filter((ch) => FOLDS[ch] !== undefined).length,
     badLines,
     longLines,
     braceLines,
-    lines: linesToType(text),
+    keywordIssues,
+    lines,
+    keystrokes: lines.map((line) => (keywords ? transcodeLine(line, keywords).chords.length : line.length)),
   };
 }
 
@@ -124,9 +147,13 @@ export function applyCase(line: string, rule: TypeInCase | undefined, spec: Dial
   }
 }
 
-/** How long typing `lines` takes at this pace, for the "about 2 min" estimate. */
-export function estimateMs(lines: readonly string[], pace: { perCharMs: number; lineDelayMs: number; enterDelayMs: number }): number {
-  return lines.reduce((ms, line) => ms + line.length * pace.perCharMs + pace.lineDelayMs + pace.enterDelayMs, 0);
+/** How long typing takes at this pace, given each line's keystroke count
+ *  (ListingCheck.keystrokes), for the "about 2 min" estimate. */
+export function estimateMs(
+  keystrokes: readonly number[],
+  pace: { perCharMs: number; lineDelayMs: number; enterDelayMs: (index: number) => number },
+): number {
+  return keystrokes.reduce((ms, n, index) => ms + n * pace.perCharMs + pace.lineDelayMs + pace.enterDelayMs(index), 0);
 }
 
 export function formatDuration(ms: number): string {

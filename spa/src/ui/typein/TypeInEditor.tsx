@@ -1,6 +1,6 @@
-import { useRef, useState, type ClipboardEvent, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ClipboardEvent, type ReactNode } from 'react';
 import { reach } from '../../analytics';
-import { highlightLine, markOverflow, type Token } from './basicHighlight';
+import { highlightLine, markBad, markOverflow, type Token } from './basicHighlight';
 import { cleanListing, foldToAscii, formatDuration } from './listingText';
 import type { TypeInEditorModel } from './useTypeInEditor';
 import './TypeInEditor.css';
@@ -116,13 +116,25 @@ export function TypeInEditor({ model, displayName, onClose }: {
 
   const loadedExample = model.doc?.examples.find((ex) => ex.title === model.sourceLabel);
   const lines = model.text.split('\n');
+  // What a keyword-entry machine cannot type, by editor line, painted red.
+  const issueRanges = useMemo(() => {
+    const byLine = new Map<number, { at: number; len: number }[]>();
+    for (const issue of check.keywordIssues) {
+      byLine.set(issue.line, [...(byLine.get(issue.line) ?? []), { at: issue.at, len: issue.text.length }]);
+    }
+    return byLine;
+  }, [check.keywordIssues]);
   const pct = progress && progress.totalChars ? Math.min(100, Math.round((100 * progress.chars) / progress.totalChars)) : 0;
 
   let status: ReactNode;
   if (typing && progress) {
     status = <span>Typing line {Math.max(1, progress.line)} of {progress.lines}…</span>;
   } else if (run === 'done') {
-    status = <span className="ti-ok">Typed {plural(check.lines.length, 'line')}. Click the picture, type RUN and press RETURN.</span>;
+    status = (
+      <span className="ti-ok">
+        Typed {plural(check.lines.length, 'line')}. Click the picture, {spec.runHint ?? 'type RUN and press RETURN'}.
+      </span>
+    );
   } else if (run === 'stopped' && progress) {
     status = <span>Stopped at line {progress.line} of {progress.lines}. Nothing more was typed.</span>;
   } else if (run === 'disconnected') {
@@ -173,7 +185,10 @@ export function TypeInEditor({ model, displayName, onClose }: {
       <div className="ti-code">
         <pre ref={preRef} className="ti-hl" aria-hidden="true">
           {lines.map((line, i) => (
-            <span key={i}><Tokens tokens={markOverflow(highlightLine(line, spec), config.maxLineChars)} />{'\n'}</span>
+            <span key={i}>
+              <Tokens tokens={markOverflow(markBad(highlightLine(line, spec), issueRanges.get(i + 1) ?? []), config.maxLineChars)} />
+              {'\n'}
+            </span>
           ))}
           {' '}
         </pre>
@@ -203,6 +218,19 @@ export function TypeInEditor({ model, displayName, onClose }: {
             <button type="button" className="ti-link" onClick={fold}>Replace typographic quotes and dashes</button>
           )}
         </p>
+      )}
+      {check.keywordIssues.length > 0 && (
+        <div className="ti-warn" role="status">
+          {check.keywordIssues.length === 1 ? 'This cannot be typed' : 'These cannot be typed'} on this machine as written:
+          <ul className="ti-issues">
+            {check.keywordIssues.slice(0, 4).map((issue) => (
+              <li key={`${issue.line}:${issue.at}`}>
+                line {issue.line}: <span className="ti-badlist">{issue.text}</span> ({issue.why})
+              </li>
+            ))}
+            {check.keywordIssues.length > 4 && <li>and {check.keywordIssues.length - 4} more</li>}
+          </ul>
+        </div>
       )}
       {check.longLines.length > 0 && (
         <p className="ti-warn">

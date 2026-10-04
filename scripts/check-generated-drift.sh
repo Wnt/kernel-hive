@@ -28,6 +28,7 @@ GENERATED_PATHS=(
   spa/src/data/posterIndex.ts
   spa/src/data/demoPrograms.ts
   spa/src/data/keyboards.ts
+  spa/src/data/keywordKeys.ts
   registry/generated/labctl-declarations.json
 )
 

@@ -68,10 +68,15 @@ re-hashes the ROM fails the build instead of passing quietly.
 
 At the start of a BASIC line the cursor is in **K mode**, where one keypress
 enters an entire token. Typing `p`,`r`,`i`,`n`,`t` gives `PRINT RINT`, not
-`PRINT`. The registry `demoProgram` is therefore written as the **keystrokes a
-person actually presses**, which is why its lines look like `10 b1` — that
-produces `10 BORDER 1` on the screen. Proven by framebuffer: `10 b2` typed
-through QMP renders `10 BORDER 2`.
+`PRINT`. So the demo listing and the type-in editor never type ASCII letter by
+letter here: they carry an ordinary listing (`10 BORDER 1`) through the
+**keyword transcoder** (`spa/src/ui/typein/keywordEntry.ts`), which tracks the
+cursor mode the ROM will be in and presses what a person would — `b` for BORDER
+at the K cursor, SYMBOL SHIFT chords for symbols and L-mode keywords, CAPS +
+SYMBOL (E mode) for functions and the colour statements. Its key table is
+generated from this station's keymap. The design, the ROM quirks it models (a
+`:` inside a REM still returns the cursor to K) and the measured pacing are in
+[`docs/TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#the-keyword-transcoder-zxspectrum-zx81).
 
 ### 3. The 40-key matrix has no punctuation at all
 
@@ -79,9 +84,10 @@ Every symbol on a Spectrum is SYMBOL SHIFT plus a letter or digit (`"` is
 SYMBOL SHIFT + P, `;` is + O, `=` is + L …), every editing key is CAPS SHIFT
 plus a digit, and the cursor arrows live on 5/6/7/8. MAME maps CAPS SHIFT to
 host **left** shift and SYMBOL SHIFT to host **right** shift, while the UI's
-`typeText()` only ever sends US scancodes with left shift. So no type-in can
-ever produce a quote on this machine. The affordance is the UI's `zxspectrum`
-keyboard profile
+`typeText()` only ever sends US scancodes with left shift, so plain ASCII typing
+can never produce a quote on this machine. The keyword transcoder sends chords
+instead (`typeChord`, right shift included). For a visitor's own keys the
+affordance is the UI's `zxspectrum` keyboard profile
 ([`spa/src/ui/keyboard/keyboardProfiles.ts`](../../spa/src/ui/keyboard/keyboardProfiles.ts)),
 which carries both shifts as latches plus the symbol chords, EXTENDED MODE
 (both shifts at once) and the four real cursor keys.
@@ -168,7 +174,10 @@ is a host-scheduling stall, not frame quantisation, so another 100 ms per key
 buys nothing measurable and makes every type-in half as fast again. Hence
 200/200 — and the registry `demoProgram` is written with **no repeated
 character in any line**, so the exhibit's own listing never depends on the one
-case that can still drop a keystroke.
+case that could still drop a keystroke. (That table was measured on the bridge
+tile's QMP path. On the host-native station the ctlsock module paces each key
+in emulated time, and the 2026-10-04 transcoder runs typed doubled digits such
+as `128,88` without a loss across several hundred chords.)
 
 Shipped: `SH_KEY_MIN_HOLD_MS=200`, `SH_KEY_MIN_GAP_MS=200`, and
 `demoProgram.perCharMs=400` to match (`validate_demo_pacing` enforces the
