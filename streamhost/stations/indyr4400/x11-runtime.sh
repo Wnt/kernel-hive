@@ -301,6 +301,15 @@ fi
 # --as-pid2: nspawn's stub init is PID 1 and reaps; nspawn-inner.sh is PID 2 and
 # execs Iris, so Iris's exit ends the container. --keep-unit: stays in the
 # caller's BindsTo scope, so `systemctl stop streamhost@<tile>` sweeps it.
+# Wait out nspawn's asynchronous unix-export teardown, force-clear a stale mount,
+# refuse if a live container holds the name (scripts/lib/nspawn-unix-export.sh).
+# shellcheck source=/dev/null
+. /usr/local/lib/nspawn-unix-export.sh || {
+  echo "indyr4400[$TILE]: /usr/local/lib/nspawn-unix-export.sh missing — box-deploy --apply installs it" >&2
+  exit 1
+}
+nspawn_export_clear "$MACHINE" || exit 1
+
 nohup systemd-nspawn \
   --quiet --register=no --keep-unit --as-pid2 \
   --machine="$MACHINE" --uuid="$(printf '%032x' "$UIDBASE")" \

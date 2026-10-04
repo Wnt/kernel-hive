@@ -177,6 +177,15 @@ install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$INNER" "$BASE/work/nspawn-inner.sh
 # a tmpfs upper over the read-only tree, nothing persists. The Medley tree and
 # maiko are bound at their host paths so /proc/<pid>/exe and the cmdline the
 # idle freezer matches on read the same from the host.
+# Wait out nspawn's asynchronous unix-export teardown, force-clear a stale mount,
+# refuse if a live container holds the name (scripts/lib/nspawn-unix-export.sh).
+# shellcheck source=/dev/null
+. /usr/local/lib/nspawn-unix-export.sh || {
+  echo "medley[$TILE]: /usr/local/lib/nspawn-unix-export.sh missing — box-deploy --apply installs it" >&2
+  exit 1
+}
+nspawn_export_clear "kh-$TILE" || exit 1
+
 nohup systemd-nspawn \
   --quiet --register=no --keep-unit --as-pid2 \
   --machine="kh-$TILE" --uuid="$(printf '%032x' "$UIDBASE")" \

@@ -202,6 +202,15 @@ chown "$UIDBASE:$UIDBASE" "$WORK"
 install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$INNER" "$WORK/inner.sh"
 
 # --- the sandbox (docs/lab/PERQ-WAVE.md §Sandbox carries the audit) --------------
+# Wait out nspawn's asynchronous unix-export teardown, force-clear a stale mount,
+# refuse if a live container holds the name (scripts/lib/nspawn-unix-export.sh).
+# shellcheck source=/dev/null
+. /usr/local/lib/nspawn-unix-export.sh || {
+  echo "perq[$TILE]: /usr/local/lib/nspawn-unix-export.sh missing — box-deploy --apply installs it" >&2
+  exit 1
+}
+nspawn_export_clear "$MACHINE" || exit 1
+
 nohup systemd-nspawn --quiet --register=no --keep-unit --as-pid2 \
   --machine="$MACHINE" --uuid="$(printf '%032x' "$UIDBASE")" \
   --directory="$ROOTFS" --read-only --tmpfs=/var/tmp \

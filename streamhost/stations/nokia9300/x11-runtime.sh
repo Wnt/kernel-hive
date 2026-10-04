@@ -167,8 +167,6 @@ reap_previous() {
   ! station_nspawn_pid >/dev/null
 }
 reap_previous || die "the previous sandbox is still alive after SIGKILL — refusing to start a second one"
-[ ! -e "/run/systemd/nspawn/unix-export/$MACHINE" ] ||
-  die "/run/systemd/nspawn/unix-export/$MACHINE exists — an orphaned container named $MACHINE (a SIGKILLed nspawn leaves its init running); kill its (sd-stubinit) first"
 rm -f "$PIDFILE" "$XPIDFILE" "$NSPAWN_PIDFILE" "$WORK/placed"
 
 # --- host side of the X socket --------------------------------------------------
@@ -224,6 +222,15 @@ case "${NOKIA_NET:-off}" in
     ;;
   *) die "NOKIA_NET=${NOKIA_NET} — want retronet or off" ;;
 esac
+
+# Wait out nspawn's asynchronous unix-export teardown, force-clear a stale mount,
+# refuse if a live container holds the name (scripts/lib/nspawn-unix-export.sh).
+# shellcheck source=/dev/null
+. /usr/local/lib/nspawn-unix-export.sh || {
+  echo "nokia9300[$TILE]: /usr/local/lib/nspawn-unix-export.sh missing — box-deploy --apply installs it" >&2
+  exit 1
+}
+nspawn_export_clear "$MACHINE" || exit 1
 
 nohup "${NET_PREFIX[@]}" systemd-nspawn --quiet --register=no --keep-unit --as-pid2 \
   --machine="$MACHINE" --uuid="$(printf '%032x' "$UIDBASE")" \

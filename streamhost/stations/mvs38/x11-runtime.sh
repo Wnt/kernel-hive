@@ -137,19 +137,8 @@ reap_previous() {
     done
     kill -0 "$p" 2>/dev/null && kill -TERM "$p" 2>/dev/null || true
   fi
-  # systemd-nspawn leaves /run/systemd/nspawn/unix-export/<machine> mounted if
-  # the container dies without its supervisor reaping it, and the NEXT start
-  # then refuses outright:
-  #   Mount point '/run/systemd/nspawn/unix-export/kh-mvs38' exists already
-  # MEASURED 2026-09-20 — one uncleanly-stopped container wedges every restart
-  # of the station from then on, which is exactly the shape of failure a
-  # visitor would see as a permanently dead exhibit. Clear it here, but only
-  # once nothing of ours is alive.
-  local ux="/run/systemd/nspawn/unix-export/kh-$TILE"
-  if [ -z "$(station_vm_pids)" ] && [ -d "$ux" ]; then
-    umount "$ux" 2>/dev/null || true
-    rmdir "$ux" 2>/dev/null || true
-  fi
+  # The unix-export mount nspawn leaves behind is cleared by nspawn_export_clear
+  # just before the nspawn line (scripts/lib/nspawn-unix-export.sh).
   sleep 0.5
   [ -z "$(station_vm_pids)" ]
 }
@@ -215,6 +204,15 @@ else
   echo "mvs38[$TILE]: no TSO password at $PASSFILE — the exhibit will rest on the" \
     "VTAM screen instead of the ISPF primary option menu" >&2
 fi
+
+# Wait out nspawn's asynchronous unix-export teardown, force-clear a stale mount,
+# refuse if a live container holds the name (scripts/lib/nspawn-unix-export.sh).
+# shellcheck source=/dev/null
+. /usr/local/lib/nspawn-unix-export.sh || {
+  echo "mvs38[$TILE]: /usr/local/lib/nspawn-unix-export.sh missing — box-deploy --apply installs it" >&2
+  exit 1
+}
+nspawn_export_clear "kh-$TILE" || exit 1
 
 nohup systemd-nspawn \
   --quiet --register=no --keep-unit --as-pid2 \

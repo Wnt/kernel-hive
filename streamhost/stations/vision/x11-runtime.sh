@@ -192,27 +192,10 @@ reap_previous || {
 rm -f "$PIDFILE" "$NSPAWN_PIDFILE"
 
 # --- the relaunch trap: nspawn's leftover unix-export mount -------------------
-# systemd-nspawn mounts a per-machine tmpfs at /run/systemd/nspawn/unix-export/
-# <machine> and refuses to start if one is already there ("Mount point ...
-# exists already, refusing"). Its teardown is ASYNCHRONOUS: it happens a beat
-# after the container's pids are gone, so reap_previous can return true while
-# the mount is still up. Since reset = relaunch on this station, that race is
-# the second launch, every time — measured 2026-09-13, the relaunch died at the
-# nspawn line while the first launch's own teardown was still in flight. Wait
-# for it, then clear it by force.
-UNIX_EXPORT="/run/systemd/nspawn/unix-export/$MACHINE"
-for _ in $(seq 1 40); do
-  [ -e "$UNIX_EXPORT" ] || break
-  sleep 0.25
-done
-if [ -e "$UNIX_EXPORT" ]; then
-  umount "$UNIX_EXPORT" 2>/dev/null || true
-  rmdir "$UNIX_EXPORT" 2>/dev/null || true
-fi
-if [ -e "$UNIX_EXPORT" ]; then
-  echo "vision[$TILE]: $UNIX_EXPORT will not go away — another container owns $MACHINE" >&2
-  exit 1
-fi
+# Handled by nspawn_export_clear (scripts/lib/nspawn-unix-export.sh, called
+# right before the nspawn line below) — vision's wait-then-force-clear, shared
+# by every nspawn launcher. Reset = relaunch on this station, so it matters here
+# on every reset.
 
 # --- fresh work copies, owned by the container's root -------------------------
 # hd0.pbi carries the installed Visi On; VOAPP1.psi is the key disk that must be
@@ -233,6 +216,15 @@ chown -R "$UIDBASE:$UIDBASE" "$WORK" "$X11DIR"
 chmod 1777 "$X11DIR"
 
 # --- the sandbox --------------------------------------------------------------
+# Wait out nspawn's asynchronous unix-export teardown, force-clear a stale mount,
+# refuse if a live container holds the name (scripts/lib/nspawn-unix-export.sh).
+# shellcheck source=/dev/null
+. /usr/local/lib/nspawn-unix-export.sh || {
+  echo "vision[$TILE]: /usr/local/lib/nspawn-unix-export.sh missing — box-deploy --apply installs it" >&2
+  exit 1
+}
+nspawn_export_clear "$MACHINE" || exit 1
+
 nohup systemd-nspawn --quiet --register=no --keep-unit --as-pid2 \
   --machine="$MACHINE" --uuid="$(printf '%032x' "$UIDBASE")" \
   --directory="$ROOTFS" \
