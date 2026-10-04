@@ -624,6 +624,15 @@ earlier. With the keymap regenerated over every port, the old binary typed the
 stress listing exactly; the //e's own encoder reads Shift when it latches a
 key. It gets the 10 ms lead with the rest of the fleet.
 
+**And it needs exclusive scan.** The editor's keys can reach the daemon in
+bunches when the browser's timer slips (two characters 0 to 6 ms apart, 7
+times in a 462-character run on the live station). Without
+`MAME_CTL_KEY_EXCL` two keys were then down together, and the //e's encoder
+reported them in scan order: `GUESS` became `UGESS`. With `:X` the module
+keeps one key down at a time, and a deliberately paired listing types exactly
+([`guests/apple2e.md`](guests/apple2e.md#keyboard)). Every other MAME keyboard
+station in the editor already runs EXCL.
+
 **Examples (`registry/examples/apple2e/`).** *Hi-res starburst* draws 126
 coloured lines from the centre of the hi-res screen; *Prime checker* answers
 whether a number is prime or names its smallest factor; *Guess my letter* is a
