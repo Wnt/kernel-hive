@@ -121,6 +121,43 @@ no way to get stuck.
 MEASURED: the generated keymap's 64/82 fields matched against source plus the
 override rows above.
 
+## Shifted characters and overlapping keys (2026-10-04)
+
+**The modifier lead.** `SH_KEY_MOD_LEAD_MS=10` in the station fixture: the
+`ctlsock` module holds a key press until the SHIFT edge in front of it has been
+in the matrix for 10 emulated ms, the fleet's value, five times the largest
+threshold measured on a MAME machine
+([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead)).
+
+**Exclusive scan: POKEY sees one key at a time.** The 800XL's keyboard is
+scanned by POKEY, which reports a single key. A key pressed while the previous
+one is still down is never seen, and a visitor typing at speed overlaps keys
+constantly. Measured in The Last Word (RETURN at the menu, then wait for the
+editor's own status line), a burst with every second key pressed before the
+one before it is released:
+
+| | Result |
+|---|---|
+| slow reference | `the quick brown fox jumps over the lazy dog 1234567890` |
+| without EXCL | `teqi bo f jM orth a og24679` |
+| `MAME_CTL_KEY_EXCL=:keyboard.` | exact, 2 of 2 |
+
+With EXCL a press on `:keyboard.0` to `.7` waits until every other key there
+is up. The stress listing typed at the typists' pace came out with EXCL on
+pixel-identical to the old binary's run without it, in 2 of 2 runs, so
+ordinary typing pays nothing for it. All runs were at 1.00x real time.
+
+That listing is not a Shift test on this machine: The Last Word is a word
+processor, and the US punctuation lands on the Atari's own layout (`"` `+` `*`
+come out as other keys), identically on the old and new binaries. The shifted
+characters that map one to one (`( ) $ ! :`) arrived right on both.
+
+**Golden.** Pixel-identical under the new binary, and the savestate signature
+is unchanged (`2e5e7e4d`, 1875 entries). Rollback:
+`assets/atari800xl/mame-native/atari800xl.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`. Evidence:
+`/data/vms/streamhost/stations/atari800xl/evidence/shift-lead-2026-10-04/`.
+
 ## §Checkpoint
 Captured on a sandbox rig (never the station dir): cold boot with
 `-flop1 hive.atr -flop2 hive2.atr` attached (no `-sio` on the command line —

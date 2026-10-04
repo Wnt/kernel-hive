@@ -113,3 +113,31 @@ The MAME binary itself: 87 354 072 bytes, sha256
   `scripts/build-guests/emulators/native.d/msx2.sh` and dropping `msx2`
   from `stations-manifest.sh`/the SPA lineup removes the station; no golden
   to retire (`resetMode=relaunch`, no checkpoint baked).
+
+## Shifted characters: the modifier lead (2026-10-04)
+
+`SH_KEY_MOD_LEAD_MS=10` in the station fixture: the `ctlsock` module holds a
+key press until the Shift edge in front of it has been in the matrix for 10
+emulated ms, so the MSX BIOS's matrix scan sees SHIFT before the key it
+modifies. This machine lost no shifted character on the old engine (0 in lines
+2 to 16 of three survey passes). It gets the fleet's 10 ms anyway, five times
+the largest threshold measured on a MAME machine
+([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead)).
+`typeIn.perCharMs` 260 already covers it: HOLD 40 + max(GAP 40, LEAD) + LEAD =
+90.
+
+**Rig proof (2026-10-04).** A rig of this station's own binary and cold boot
+took the keys through a sandbox daemon, exactly as the editor sends them
+(`typeListing()` replayed by `key-burst-proof.mjs --edges`). The rig ran at
+1.00x real time. A 16-line listing with `"A+B*C:D(E)$!";1+2*3` on every line
+(`code-upper`, so the keywords go down as Shift+letter too), LISTed
+pixel-identical to a slow reference typed with Shift 60 ms ahead, in 2 of 2
+runs, and all three examples typed exactly, twice each. The cold-boot screen
+is pixel-identical under the new binary, and the savestate signature is
+unchanged (`40e821ed`, 1217 entries).
+
+**Live since 2026-10-04.** The real editor typed *Times table*; LIST was
+exact, RUN printed the 7 times table, and Restore to golden brought back Disk
+BASIC. Rollback: `assets/msx2/mame-native/msx2.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`. Evidence:
+`/data/vms/streamhost/stations/msx2/evidence/shift-lead-2026-10-04/`.
