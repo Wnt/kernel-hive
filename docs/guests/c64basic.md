@@ -99,14 +99,17 @@ for byte from a `SAVEST` snapshot tokenised with `petcat -w2`:
 | Shift_L + the shifted keysym | 100/100 | 10 of 30 |
 | the keysym alone, no Shift edge (control) | 60/60 | **0 of 30** |
 
-Every corrupted line is the **known shifted-punctuation defect**
-([TYPE-IN-EDITOR.md](../TYPE-IN-EDITOR.md#known-defect-shifted-punctuation-on-the-vice-stations)):
+Every corrupted line is VICE's **torn Shift latch**
+([TYPE-IN-EDITOR.md](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead)):
 a `*` lost or a `:` arriving as `[`, plus one `@` and one `+` at 100/100.
 Nothing without a Shift edge was lost at 60/60, and slowing to 100/100 did not
 lower the rate, so the pace is not the cause and the station keeps 60/60. The
-fix belongs in the VICE module (the shift-lead stream), not here. The C64 rate,
-about 1 such character in 20, is higher than the 1 in 50 measured on vic20,
-c128 and cbm8032.
+C64 rate, about 1 such character in 20, is higher than the 1 in 50 measured on
+vic20, c128 and cbm8032. The fix is the `vicectl` Shift staging
+(`SH_KEY_MOD_LEAD_MS=40`, fork `a1cb4b5c8d`), which made the CBM stress
+listing exact on vic20, cbm8032 and c128. **This station does not have it
+yet:** it needs an x64sc built at that pin and the knob in its fixture, then
+the stress listing re-read on a rig.
 
 - **`keyboard.letterCase: upper-only`** and **`typeIn.case: unshifted`**: a
   shifted letter in the power-on character set is a PETSCII graphics glyph.

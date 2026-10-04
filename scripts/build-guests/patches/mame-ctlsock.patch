@@ -97,7 +97,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.h mame-src/src/osd/m
 diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd/modules/ctlsock/ctlsock.cpp
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
 +++ b/src/osd/modules/ctlsock/ctlsock.cpp
-@@ -0,0 +1,3145 @@
+@@ -0,0 +1,3187 @@
 +// license:BSD-3-Clause
 +// copyright-holders:osgallery lab
 +/***************************************************************************
@@ -227,6 +227,14 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +                             order of drain_keys(), NOT arrival order
 +                             (strict arrival order deadlocks on real,
 +                             overlapping typing)                 [off]
++      MAME_CTL_KEY_MOD_LEAD  MODIFIER LEAD, EMULATED ms: a non-
++                             modifier press waits this long after
++                             the last APPLIED modifier edge (press
++                             or release), so the guest's scan sees
++                             the new Shift/Ctrl level on its own
++                             before the key it modifies. 0 = the
++                             pre-lead engine, byte for byte. See
++                             drain_keys() for the QL measurement   [0]
 +      MAME_CTL_MOVEA_TRIES   accepted, INERT since engine V2 (V2
 +                             flights terminate by construction)     [40]
 +      MAME_CTL_SWAP_ITEMS    "<seq>,<dx>,<dy>": the VC2 cursor-swap
@@ -440,6 +448,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		m_key_gap = double(env_long("MAME_CTL_KEY_GAP", 50)) / 1e3;
 +		if (char const *e = std::getenv("MAME_CTL_KEY_EXCL"); e && *e)
 +			m_key_excl = e;
++		m_mod_lead = double(std::clamp(env_long("MAME_CTL_KEY_MOD_LEAD", 0), 0L, 1000L)) / 1e3;
 +		m_cal_x = env_long("MAME_CTL_CAL_X", -31);
 +		m_cal_y = env_long("MAME_CTL_CAL_Y", -31);
 +		m_movea_tries = int(env_long("MAME_CTL_MOVEA_TRIES", 40));
@@ -484,6 +493,9 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		std::fprintf(stderr, "ctlsock: init machine=%s phase=%d sock=%s\n",
 +				m_machine.system().name, int(m_machine.phase()),
 +				sock.empty() ? "(unset: disabled arm)" : sock.c_str());
++		std::fprintf(stderr, "ctlsock: keys hold=%dms gap=%dms excl=%s modlead=%dms\n",
++				int(m_key_hold * 1e3 + 0.5), int(m_key_gap * 1e3 + 0.5),
++				m_key_excl.empty() ? "off" : m_key_excl.c_str(), int(m_mod_lead * 1e3 + 0.5));
 +		std::fflush(stderr);
 +
 +		if (!sock.empty())
@@ -1278,6 +1290,7 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +		m_kup_at.clear();
 +		m_excl_down.clear();
 +		m_excl_up_at = -1e9;
++		m_mod_edge_at = -1e9;
 +		m_esc_frames = 0;
 +		m_probe_frames = 0;
 +	}
@@ -1572,11 +1585,12 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	//      unblock that press — and it is safe: a release carries no level and
 +	//      the key it ends is already down.
 +	//
-+	// Barriers are raised ONLY by an edge held back by its OWN dwell gate or
-+	// by the EXCL gate, NEVER by an edge held back by a barrier. That is what
-+	// keeps the relation acyclic: every barrier clears through the passage of
-+	// time (a dwell elapsing) or through a release that rule 3 always lets
-+	// past, so no set of barriers can wait on itself.
++	// Barriers are raised ONLY by an edge held back by its OWN dwell gate, by
++	// the modifier lead or by the EXCL gate, NEVER by an edge held back by a
++	// barrier. That is what keeps the relation acyclic: every barrier clears
++	// through the passage of time (a dwell or the lead elapsing) or through a
++	// release that rule 3 always lets past, so no set of barriers can wait on
++	// itself.
 +	//
 +	// THE TWO DEFECTS THIS SHAPE EXISTS FOR (both live on the VICE stations,
 +	// the first also REPRODUCED on this module, 2026-08-17, dragon32 rig):
@@ -1637,6 +1651,30 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +				++it;
 +				continue;
 +			}
++			// THE MODIFIER LEAD (MAME_CTL_KEY_MOD_LEAD). A browser sends a
++			// shifted character as Shift-down, key-down, key-up, Shift-up back
++			// to back, so without this gate the modifier and the key it
++			// modifies reach the matrix in the SAME drain pass, i.e. at the
++			// same emulated instant. A real typist never does that: Shift goes
++			// down tens of milliseconds first. Measured on sinclairql
++			// (2026-10-04): the QL's 8049 IPC then never reports the key AT
++			// ALL — `print 1+2` lands as `print 12`, every capital and every
++			// shifted symbol vanishes — and on any CPU-scanned matrix a scan
++			// that straddles the instant can read the key row and the shift
++			// row from different sides of it. So a non-modifier PRESS waits
++			// until the last applied modifier edge (press OR release: the
++			// unshifted key after a shifted one needs the release settled just
++			// as much) has been visible for the lead. It is a dwell gate like
++			// the per-field one above: it clears by the passage of emulated
++			// time alone, so it may raise a barrier without making the relation
++			// cyclic. 0 (the default) never defers anything.
++			if (!mod_key && e.val == 1 && now < m_mod_edge_at + m_mod_lead)
++			{
++				bar_press = true;
++				blocked.insert(e.field);
++				++it;
++				continue;
++			}
 +			// Exclusive-scan mode (MAME_CTL_KEY_EXCL, matched against the
 +			// PORT tag): the MPF-II lesson — its ROM scans the matrix itself
 +			// and accepts a new key only after seeing it EMPTY, so a press
@@ -1690,6 +1728,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +			else
 +				reply_err(e.ack, "noport", "no port/field " + e.port + " | " + e.field);
 +			((e.val == 1) ? m_kdown_at : m_kup_at)[e.field] = now;
++			if (mod_key)
++				m_mod_edge_at = now;
 +			if (excl)
 +			{
 +				if (e.val == 1)
@@ -3149,6 +3189,8 @@ diff -ruN mame-src-pristine/src/osd/modules/ctlsock/ctlsock.cpp mame-src/src/osd
 +	std::string m_key_excl;                       // MAME_CTL_KEY_EXCL port-tag substring
 +	std::unordered_set<std::string> m_excl_down;  // matching fields currently applied down
 +	double m_excl_up_at = -1e9;                   // last matching release (emu s)
++	double m_mod_lead = 0.0;                      // MAME_CTL_KEY_MOD_LEAD (emu s); 0 = off
++	double m_mod_edge_at = -1e9;                  // last APPLIED modifier edge (emu s)
 +
 +	std::deque<click_entry> m_clickq;
 +	click_entry m_click_cur{};

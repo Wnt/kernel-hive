@@ -157,6 +157,16 @@ headless VICE (`docs/lab/research/vice-daemon-plane.md`).
   (`streamhost/stations/vice-native/us-layout.keysyms`).
 - **`keyboard.letterCase: upper-only`.** A *shifted* letter on a VIC-20 is a
   graphics glyph, not a capital, so the UI typist sends letters unshifted.
+- **Shift is staged: `SH_KEY_MOD_LEAD_MS=40`, two frames.** `:` `*` `+` `@`
+  are Shift+key on a US keyboard but plain keys on a VIC-20, and `'` `[` `]`
+  are the reverse. VICE used to change SHIFT and set the key in one matrix
+  latch, and a KERNAL scan that straddled the latch read `:` as `[`, about once
+  in 50 shift-changing keys. The `vicectl` module now puts the Shift level a
+  key needs in front of it and holds the press for two frames, so a `:` typed
+  with Shift held never touches the emulated SHIFT at all. It needs the
+  `kernel-hive/integrated` fork at or after `vicectl: stage the shift level`;
+  an older binary ignores the knob. The measurement is in
+  [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead).
 - **On-screen keyboard:** the `c64` profile, because it is literally the same
   keyboard — Commodore reused the VIC-20's case, keyboard and ports for the C64
   — and the same VICE bindings drive it (RUN/STOP = Esc, RESTORE = PageUp,
