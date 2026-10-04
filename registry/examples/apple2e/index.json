@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "file": "draw.bas",
+      "kind": "draw",
+      "title": "Hi-res starburst",
+      "description": "126 lines fan out from the middle of the 280 by 160 hi-res screen in green and violet, orange and blue, drawn with Applesoft's HGR, HCOLOR and HPLOT ... TO."
+    },
+    {
+      "file": "input.bas",
+      "kind": "input",
+      "title": "Prime checker",
+      "description": "Type a whole number and the //e tells you whether it is prime, or splits it into its smallest factor and the rest; 0 stops."
+    },
+    {
+      "file": "game.bas",
+      "kind": "game",
+      "title": "Guess my letter",
+      "description": "The //e picks a letter from A to Z; press letter keys and it answers earlier or later in the alphabet until you hit it, then counts your guesses."
+    }
+  ],
+  "manuals": [
+    {
+      "title": "Apple IIe Owner's Manual (1983)",
+      "url": "https://archive.org/details/apple-iie-owner-manual",
+      "lang": "en",
+      "note": "Apple's own manual for the machine and its keyboard; PDF scan"
+    },
+    {
+      "title": "Applesoft BASIC Programmer's Reference Manual, Volumes 1 and 2 (for the //e)",
+      "url": "https://archive.org/details/applesoft-basic-programmers-reference-manual-vol-1-iie-only",
+      "lang": "en",
+      "note": "Apple's complete Applesoft reference, HPLOT and GET included; PDF scans"
+    }
+  ]
+}

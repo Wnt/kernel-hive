@@ -441,6 +441,12 @@ const TYPE_IN = {
     "dialect": "locomotive-basic",
     "perCharMs": 180
   },
+  "apple2e": {
+    "dialect": "applesoft",
+    "perCharMs": 120,
+    "case": "unshifted",
+    "hint": "Press B on the boot menu for the Applesoft ] prompt first."
+  },
   "armeval": {
     "dialect": "bbc-basic",
     "perCharMs": 170,
@@ -494,6 +500,7 @@ const TYPE_IN = {
       "ms": 500,
       "promptCols": 1
     },
+    "enterDelayMs": 800,
     "case": "unshifted",
     "unreachable": "[\\]_`{|}~"
   },
