@@ -9,25 +9,53 @@ images:
 ---
 ## Origins
 
-SymbOS is Prodatron's multitasking graphical operating system for 8-bit computers.
-Its MSX port first appeared in 2006. This station runs the 2025 release, SymbOS
-4.0, on a Philips NMS 8250 MSX2 with a disclosed 512 KiB memory expansion.
-It demonstrates what enthusiasts built long after the machine's original era.
+SymbOS began with a question from its creator, Prodatron: could the Amstrad
+CPC have a graphical operating system inspired by the Commodore 64's GEOS?
+Development started in 2000, and the project grew to include several families
+of Z80 computers. The MSX version first appeared in **2006**.
 
-## Windows on a Z80
+This station brings that later history into the museum. Its Philips NMS 8250
+is a **1987** MSX2 model; the SymbOS 4.0 software running on it was released
+in **2025**. The decades between them are part of the exhibit.
 
-Open SymCommander to browse the floppy, run a small application, and watch Task
-Manager show how several programs share the processor and memory. The machine
-still uses a Z80 and its stock V9938 video hardware. Its graphical desktop is
-later software, rather than a product sold with the computer in the 1980s.
+## Significance
 
-## Try it
+SymbOS gives the Z80 a desktop with windows, file management and preemptive
+multitasking: the operating system shares processor time among running
+programs. The familiar interface depends on careful management of the older
+machine's resources. Memory expansion helps, but the processor and V9938 video
+hardware remain those of the MSX2.
+
+This is also a different kind of preservation. Alongside systems as their
+original buyers encountered them, the museum can show computers that remain
+subjects of new work. Here, writing an operating system is a way to explore
+hardware long after its commercial lifetime.
+
+## What you're looking at
+
+**SymbOS 4.0 on an emulated Philips NMS 8250**, with a 512 KiB memory expansion
+and one writable floppy disk. The desktop includes shortcuts to Notepad,
+Pocket Calculator and Game of Life. SymCommander browses files; Task Manager
+shows the programs sharing processor time and memory. This exhibit is offline.
+
+### Try it
 
 Double-click **Notepad**, **Pocket Calculator**, or **Game of Life** on the
 desktop. In Game of Life, press Random, then Start to watch generations evolve.
 Use **Start → Run** to launch `A:\NOTEPAD.EXE`, `A:\CALC.EXE`, or
 `A:\GAMELIFE.EXE`. In Notepad, type a short note and save it on drive A.
-The Calculator and Game of Life provide two other small desktop activities.
-Reset restores a fresh floppy and discards changes made during the visit.
+Leave an application open while you try another to explore the multitasking
+desktop. **Restore to golden snapshot** restores a fresh floppy and discards
+changes made during the visit.
 
-[SymbOS project and downloads](https://www.symbos.org/download.htm)
+## Legacy
+
+SymbOS continues the MSX story through software made by enthusiasts. Beside
+the museum's MSX View desktop, it offers a useful comparison: one environment
+belongs to the platform's commercial era, the other to the community that
+kept developing for it. The same broad hardware family supports both histories.
+
+## Sources
+
+- [SymbOS project history and architecture](https://www.symbos.org/facts.htm)
+- [SymbOS 4.0 release and downloads](https://www.symbos.org/download.htm)
