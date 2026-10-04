@@ -119,6 +119,47 @@ screen (Space) and launcher panel (`Input Device: Mouse` / `File System:
 Professional File`; Return reaches the canvas with the File/Tools/Edit/
 Goodies/Undo bar). Rollover/overlap is not stress-tested.
 
+**Until 2026-10-04 the keymap had no Shift, no Control and no Apple keys.**
+`apple2e.keymap` was generated from a `KEYDUMP` filtered to the matrix ports
+`:X0`..`:X8`; the modifiers live on `:keyb_special` (`Left Shift`, `Right
+Shift`, `Control`, `Caps Lock`, `Open Apple`, `Solid Apple`, `RESET`), so the
+daemon counted every Shift edge as `unmapped` and the //e never saw one. Every
+shifted character a visitor or a typist sent arrived unshifted: `print
+6502*2` came out as `PRINT 650282`, and a REM holding
+`!@#$%^&*()_+` listed as `1234567890-=`. Letters looked right only because the
+//e boots with CAPS LOCK down. The keymap is now regenerated over every port
+(`mame-keymap.py <sock> --tags :`): Left/Right Shift, Control (so Ctrl-C stops
+a running program), Open/Solid Apple on Left/Right Alt (AppleWorks' commands),
+Caps Lock, and RESET on F12. With Shift mapped, the old binary typed a
+10-line listing with 110 shifted characters exactly at 120 ms per character.
+It was the keymap, not timing, that the earlier "`*` arrives as `8`" report
+had seen.
+
+**Modifier lead `SH_KEY_MOD_LEAD_MS=10`.** The //e's own encoder reads Shift
+when it latches a key, so it never lost one to timing on the old binary. It
+gets the fleet's 10 ms lead anyway (`../TYPE-IN-EDITOR.md`, "Shifted
+characters"). Because the //e has no `MAME_CTL_KEY_EXCL`, it needs the module
+from 2026-10-04 that keeps the ordering barriers on whenever a lead is set: with
+the first build of the lead, Shift's release overtook the deferred key and
+`(` landed as `9`.
+
+## Type-in editor
+
+The //e is in the editor (`typeIn`: `applesoft`, `unshifted`, `perCharMs`
+120). The ProDOS menu is in the way, so the `hint` asks the visitor to press
+**B** first ("Press B on the boot menu for the Applesoft ] prompt first."). B
+leaves `STARTUP` in memory, and the editor's `NEW` clears it before a listing.
+CAPS LOCK is down at power-on, so every letter arrives upper case whichever
+way it is sent, and lower case inside a string is out of reach (as on the
+Oric and the BBC).
+
+`registry/examples/apple2e/` holds three original Applesoft programs:
+*Hi-res starburst* (HGR, HCOLOR, HPLOT ... TO: 126 coloured lines from the
+centre), *Prime checker* (INPUT, then a trial division; 0 stops) and *Guess my
+letter* (GET: earlier or later in the alphabet until you hit it). The manuals
+are Apple's IIe Owner's Manual (1983) and the Applesoft BASIC Programmer's
+Reference Manual, volumes 1 and 2, for the //e, both on archive.org.
+
 ## Pointer — scale, origin and belief fixed; a count leak in the guest is still open; ships keyboard-only
 `stream.pointer.transport` stays `"none"`. Three real mechanisms were found and
 fixed in the station's binary (all wired in via

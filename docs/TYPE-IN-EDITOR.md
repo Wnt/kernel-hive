@@ -273,6 +273,18 @@ The threshold is between 1 and 2 ms, and sinclairql ships 20 ms, ten times
 that. The lead is emulated time, so host load cannot eat it. It costs a
 shifted character at most 40 ms against the editor's 400.
 
+**Without exclusive-scan, the lead needs the ordering barriers too.** The
+module's three ordering rules (a modifier edge never moves; a press never
+overtakes a press or a waiting modifier; a release may overtake a waiting
+press) used to apply only under `MAME_CTL_KEY_EXCL`. The QL has EXCL, so its
+lead worked. On a station without it the lead deferred the key press, but
+Shift's own release is another field that nothing held back, so it applied in
+the same pass and the key landed unshifted. The apple2e, which has no EXCL,
+typed `(` as `9` and `$` as `4` with the first build of the lead. Since
+2026-10-04 a lead above 0 turns the three rules on for every station. A
+station with EXCL behaves exactly as before, and lead 0 without EXCL is still
+the old engine, byte for byte.
+
 **The Commodores, VICE `vicectl`: the scan tore the latch.** VICE resolves a
 keysym through the machine's `.vkm` keymap, and on a VIC-20 `:` `*` `+` `@`
 are Shift+key on a US keyboard but unshifted keys (the keymap's *deshift*),
@@ -476,6 +488,33 @@ and a typed `^` arrives as `&`. The MPF-II has no `[ ] _ { }` either.
 **Traps found.** `THEN END ELSE 20` is a `?SN ERROR`; use two lines. `LIST` of a long program stops when the screen fills and swallows the next keys until one is typed, so type something harmless before `RUN`.
 
 **Examples (`registry/examples/kc854/`).** Each was typed whole with the editor's timing and read off the framebuffer: *Rainbow target* draws six coloured rings and a crosshair; *Times table* asks for a number and prints its ten-times table (typed 7, got 7 x 1 = 7 down to 7 x 10 = 70); *Stop the dot* stops on a key (OFF BY 7 and OFF BY 2 in two rounds), replays on any key and ends cleanly on N. The manuals are the original German BASIC-Handbuch and Systemhandbuch (1988).
+
+### Apple //e: the B key, and the Shift key it never had
+
+**The way in.** The station boots ProDOS into its own Applesoft `STARTUP` menu
+(`[1]` AppleWorks, `[2]` Dazzle Draw, `[B]` BASIC prompt). One keypress, B,
+reaches Applesoft's `]` prompt; that is the `hint`. B leaves `STARTUP` in
+memory (`LIST` shows it), which is exactly what the editor's `NEW` is for.
+
+**Case.** `unshifted`: the //e boots with CAPS LOCK down, so letters arrive
+upper case whichever way they are sent, and lower case inside a string is out
+of reach, as on the Oric and the BBC.
+
+**Shift was never mapped.** Until 2026-10-04 `apple2e.keymap` had no Shift,
+Control or Apple-key rows: it was generated from the `:X0`..`:X8` matrix ports
+only, and the //e keeps its modifiers on `:keyb_special`. Every Shift edge was
+`unmapped` in the daemon, so every shifted character arrived unshifted
+(`PRINT 6502*2` as `PRINT 650282`). That, not timing, was the loss reported
+earlier. With the keymap regenerated over every port, the old binary typed the
+stress listing exactly; the //e's own encoder reads Shift when it latches a
+key. It gets the 10 ms lead with the rest of the fleet.
+
+**Examples (`registry/examples/apple2e/`).** *Hi-res starburst* draws 126
+coloured lines from the centre of the hi-res screen; *Prime checker* answers
+whether a number is prime or names its smallest factor; *Guess my letter* is a
+GET loop that says earlier or later in the alphabet. The manuals are Apple's
+IIe Owner's Manual and the Applesoft BASIC Programmer's Reference Manual for
+the //e.
 
 ### The keyword transcoder (zxspectrum, zx81)
 

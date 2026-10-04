@@ -14,7 +14,7 @@
 //   INVITE=<code or path> GALLERY_URL=https://kernelhive.madekivi.fi \
 //     node typein-editor-probe.mjs <station> <listing.bas> [--run <cmd>] [--restore] [--fb-shot <dir>]
 //                                  [--stop-after <seconds>] [--inject-keys <seconds>] [--then <steps>]
-//                                  [--first <steps>]
+//                                  [--first <steps>] [--demo <label>]
 //
 // The listing is pasted (a synthetic `paste` event, so the editor's own paste
 // cleaning runs). `--run` types its argument + RETURN through the real
@@ -34,7 +34,9 @@
 // `#<label>` for a framebuffer shot (an INPUT answer, a game's keys).
 // `--first` plays steps of the same form BEFORE the editor opens: the step a
 // station's `typeIn.hint` asks the visitor for (B at the SAM's and the //e's
-// boot menus, BASIC + RETURN twice on the KC 85/4).
+// boot menus, BASIC + RETURN twice on the KC 85/4). `--demo <label>` (with
+// `-` as the listing) presses the stage menu's demo-typist row instead of the
+// editor, for a keyboard station with a demoProgram but no typeIn block.
 // A signed-in session is required to see the stream at all
 // (station-open.mjs's signIn header), hence INVITE + the public origin.
 import { chromium } from 'playwright';
@@ -52,13 +54,14 @@ if (!id || !listingPath) {
   console.error('usage: node typein-editor-probe.mjs <station> <listing.bas> [--run <cmd>] [--restore] [--fb-shot <dir>]');
   process.exit(2);
 }
-const listing = fs.readFileSync(listingPath, 'utf8');
+const listing = listingPath === '-' ? '' : fs.readFileSync(listingPath, 'utf8');
 const runCmd = flag('--run');
 const fbDir = flag('--fb-shot');
 const restore = args.includes('--restore');
 const stopAfter = Number(flag('--stop-after') ?? 0);
 const thenSteps = (flag('--then') ?? '').split(',').filter(Boolean);
 const firstSteps = (flag('--first') ?? '').split(',').filter(Boolean);
+const demoLabel = flag('--demo');
 const injectAfter = Number(flag('--inject-keys') ?? 0);
 let injected = !injectAfter;
 const base = galleryUrl();
@@ -102,29 +105,7 @@ const pageShot = async (page, path) => {
   }
 };
 
-const browser = await chromium.launch({
-  headless: false,
-  channel: 'chrome',
-  args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--ignore-certificate-errors'],
-  env: { ...process.env, DISPLAY: process.env.DISPLAY || ':1' },
-});
-const code = inviteCode();
-const storageState = code ? await signIn(browser, code, `${OUT}/${tag}-state.json`) : undefined;
-const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1600, height: 900 }, storageState });
-const page = await ctx.newPage();
-const logs = [];
-page.on('pageerror', (e) => logs.push(`[pageerror] ${String(e).slice(0, 200)}`));
-
-try {
-  const opened = await openStation(page, base, id, { direct: true, log: (m) => console.log(m) });
-  if (!opened.ok) throw new Error(`station did not open: ${opened.why}`);
-  console.log(`stream live ${opened.video.w}x${opened.video.h}`);
-  if (firstSteps.length) {
-    const vbox = await page.locator('video').first().boundingBox();
-    if (vbox) await page.mouse.click(vbox.x + vbox.width / 2, vbox.y + vbox.height / 2);
-    await play(page, firstSteps);
-  }
-
+const typeWithEditor = async (page) => {
   await page.click('button[aria-label="Controls"]');
   await page.getByRole('button', { name: /Code editor/ }).click();
   const ta = page.locator('.ti-panel textarea');
@@ -179,6 +160,53 @@ try {
   console.log(`run ended after ${(ms / 1000).toFixed(1)} s: ${typed} chars, ${(ms / Math.max(1, typed)).toFixed(0)} ms/char all-in`);
   await pageShot(page, `${OUT}/${tag}-typed.png`);
   fbShot('typed');
+};
+
+// --demo <label>: the stage menu's "Type in a demo program" row (its aria-label
+// is the station's demoProgram.label) instead of the editor -- for keyboard
+// stations without a typeIn block. Waits while the row is disabled (typing).
+const typeDemo = async (page, label) => {
+  const row = () => page.locator(`button[aria-label="${label}"]`);
+  await page.click('button[aria-label="Controls"]');
+  await row().click();
+  const t0 = Date.now();
+  for (;;) {
+    await page.waitForTimeout(3000);
+    await page.click('button[aria-label="Controls"]');
+    const busy = (await row().count()) && (await row().isDisabled());
+    await page.keyboard.press('Escape');
+    if (!busy) break;
+    if (Date.now() - t0 > 30 * 60 * 1000) throw new Error('demo did not finish in 30 min');
+  }
+  console.log(`demo typist done after ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  fbShot('typed');
+};
+
+const browser = await chromium.launch({
+  headless: false,
+  channel: 'chrome',
+  args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--ignore-certificate-errors'],
+  env: { ...process.env, DISPLAY: process.env.DISPLAY || ':1' },
+});
+const code = inviteCode();
+const storageState = code ? await signIn(browser, code, `${OUT}/${tag}-state.json`) : undefined;
+const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1600, height: 900 }, storageState });
+const page = await ctx.newPage();
+const logs = [];
+page.on('pageerror', (e) => logs.push(`[pageerror] ${String(e).slice(0, 200)}`));
+
+try {
+  const opened = await openStation(page, base, id, { direct: true, log: (m) => console.log(m) });
+  if (!opened.ok) throw new Error(`station did not open: ${opened.why}`);
+  console.log(`stream live ${opened.video.w}x${opened.video.h}`);
+  if (firstSteps.length) {
+    const vbox = await page.locator('video').first().boundingBox();
+    if (vbox) await page.mouse.click(vbox.x + vbox.width / 2, vbox.y + vbox.height / 2);
+    await play(page, firstSteps);
+  }
+
+  if (demoLabel) await typeDemo(page, demoLabel);
+  else await typeWithEditor(page);
 
   if (runCmd) {
     const vbox = await page.locator('video').first().boundingBox();

@@ -62,10 +62,12 @@ control) and confirm `journalctl -u streamhost@<id>` logged a `SESSION_ACCEPTED`
 for the run. A probe that fails on a healthy station is a broken probe, and
 every reading it produces on a sick one is noise.
 
-- `typein-editor-probe.mjs <id> <listing.bas> [--run <cmd>] [--stop-after <s>] [--fb-shot <dir>] [--restore]`
+- `typein-editor-probe.mjs <id> <listing.bas> [--run <cmd>] [--stop-after <s>] [--fb-shot <dir>] [--restore] [--first <steps>] [--then <steps>]`
   — drives the BASIC machines' type-in code editor end to end (paste, Type into
   machine, RUN, Stop, restore) and prints ms/char; the tool for tuning a
-  station's `typeIn` pace on long listings. See `docs/TYPE-IN-EDITOR.md`.
+  station's `typeIn` pace on long listings. `--first` presses the keys a
+  station's `hint` asks for before the editor opens (`b,@2500` at the apple2e
+  and samcoupe menus). See `docs/TYPE-IN-EDITOR.md`.
 
 - `open-check.mjs <id> [more…]` — did the visitor path OPEN the station, and
   nothing else. No input, no QMP, no guest state touched, so it is safe on a
@@ -189,7 +191,13 @@ its own before/after, not to zero.
   address, and says only "Opening handshake failed". How the 2026-10-04
   long-input fix was proven (`docs/guests/vic20.md` "Long input");
   `key-replay.py` writes the emulator's socket directly and cannot see a
-  daemon-side loss.
+  daemon-side loss. `--edges <edges.json>` plays a recorded edge list
+  (`[[scancode, down, ms after], …]`) instead of a text. Record one by running
+  the SPA's own `typeListing()` against a handle that logs `typeText()` /
+  `typeChord()` edges and `sleep()` waits. The daemon then receives exactly what
+  the editor sends for that station, with case rule, `charMap`, keyword chords,
+  `NEW` first and every settle included. The MAME shift-lead rollout was proven
+  this way.
 - `decoder-buffer-probe.mjs [Tile] [samples]` — headed Chrome probe that records
   each live `VideoDecoder.decode()` submit-to-output span and whether a later
   chunk was submitted first. A consistent one-frame DPB hold appears as roughly
