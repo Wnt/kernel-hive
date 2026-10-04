@@ -175,23 +175,20 @@ pub struct Config {
     /// forms) so this only matters once such a guest installs its own driver.
     /// Default off — modern guests keep distinct dedicated-vs-keypad arrows.
     pub legacy_kbd: bool,
-    /// The three per-station KEYBOARD QUIRK knobs. Full rationale, and the code
-    /// that applies them, live in `key_quirks.rs`; all three are env-only and
-    /// default to off, so no station changes behaviour without declaring them.
-    ///
-    /// `SH_KEY_REMAP` — `from:to` XT set1 wire codes (hex `0x…` or decimal,
-    /// extended keys in the browser's 0xE0xx form), comma-separated. Rewrites
-    /// the client's code before all other keyboard handling, for machines with
-    /// no key for something the browser has (mpf2 has no Backspace).
+    /// The four per-station KEYBOARD QUIRK knobs, env-only and off by default;
+    /// the rationale and the code that applies them live in `key_quirks.rs`.
+    /// `SH_KEY_REMAP` — `from:to` XT set1 wire codes (hex or decimal, extended
+    /// keys as 0xE0xx), comma-separated, rewritten before all other keyboard
+    /// handling, for machines with no key the browser has (mpf2: no Backspace).
     pub key_remap: Vec<(u32, u32)>,
-    /// `SH_KEY_MIN_HOLD_MS` — defer a Release until the key has been held this
-    /// long, so a once-per-frame emulator can sample it at all.
+    /// `SH_KEY_MIN_HOLD_MS` — defer a Release until the key was held this long.
     pub key_min_hold_ms: u64,
-    /// `SH_KEY_MIN_GAP_MS` — make a Press wait this long after the previous
-    /// Release, so the all-keys-up state between two keys is sampled too and
-    /// back-to-back typing is not read as one long chord. Both pacing knobs
-    /// share one serializing gate: over-typing queues in order, never drops.
+    /// `SH_KEY_MIN_GAP_MS` — a Press waits this long after the previous Release.
     pub key_min_gap_ms: u64,
+    /// `SH_KEY_MOD_LEAD_MS` — a non-modifier Press waits this long after the last
+    /// Shift/Ctrl/Alt edge. The QEMU/dbus pacing knobs share one serializing
+    /// gate: over-typing queues in order, never drops.
+    pub key_mod_lead_ms: u64,
     pub hash_file: String,
     pub signaling_json: String,
     pub cert_rotate_days: u64,
@@ -428,6 +425,7 @@ impl Config {
         let key_remap = parse_key_remap(&env_or("SH_KEY_REMAP", ""));
         let key_min_hold_ms: u64 = env_or("SH_KEY_MIN_HOLD_MS", "0").parse().unwrap_or(0);
         let key_min_gap_ms: u64 = env_or("SH_KEY_MIN_GAP_MS", "0").parse().unwrap_or(0);
+        let key_mod_lead_ms: u64 = env_or("SH_KEY_MOD_LEAD_MS", "0").parse().unwrap_or(0);
         let mut hash_file = std::env::var("SH_HASH_FILE").ok();
         let mut signaling_json = std::env::var("SH_SIGNALING_JSON").ok();
         let mut rotate_days: u64 = env_or("SH_CERT_ROTATE_DAYS", "10").parse().unwrap_or(10);
@@ -711,6 +709,7 @@ impl Config {
             // station.env cannot wedge the keyboard.
             key_min_hold_ms: key_min_hold_ms.min(250),
             key_min_gap_ms: key_min_gap_ms.min(250),
+            key_mod_lead_ms: key_mod_lead_ms.min(250),
             hash_file,
             signaling_json,
             cert_rotate_days: rotate_days.max(1),

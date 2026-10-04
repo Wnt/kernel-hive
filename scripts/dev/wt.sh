@@ -133,7 +133,7 @@ EOF
     git -C "$BOX_REPO" worktree add -q -b "$name" "$repo" "$from" || die "worktree add failed"
   fi
 
-  # 3. the rest of the stack: identity, real addresses, node_modules, hooks.
+  # 3. the rest of the stack: identity, real addresses, node_modules, Cargo config, hooks.
   printf '%s\n' "$name" >"$repo/.kh-session"
   # keep the identity file out of `git status` even before .gitignore has it
   printf '.kh-session\n' >>"$(git -C "$repo" rev-parse --git-path info/exclude)"
@@ -146,6 +146,15 @@ EOF
   if [ -d "$MAIN_REPO/spa/node_modules" ] && [ ! -e "$repo/spa/node_modules" ]; then
     ln -s "$MAIN_REPO/spa/node_modules" "$repo/spa/node_modules"
   fi
+  # The gitignored Cargo config (shared warm target + mold). build-deploy.sh
+  # mirrors it to the box and dies without it, so a canary from a fresh
+  # worktree failed until it was copied by hand (daemon-mod-lead, 2026-10-04).
+  for src in "$MAIN_REPO/streamhost/.cargo/config.toml" "$BOX_REPO/streamhost/.cargo/config.toml"; do
+    if [ -f "$src" ] && [ ! -f "$repo/streamhost/.cargo/config.toml" ]; then
+      mkdir -p "$repo/streamhost/.cargo" && cp "$src" "$repo/streamhost/.cargo/config.toml"
+      break
+    fi
+  done
   git -C "$repo" config core.hooksPath .claude/hooks 2>/dev/null || true
 
   cat <<EOM

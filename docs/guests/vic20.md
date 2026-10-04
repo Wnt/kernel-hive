@@ -157,6 +157,10 @@ headless VICE (`docs/lab/research/vice-daemon-plane.md`).
   (`streamhost/stations/vice-native/us-layout.keysyms`).
 - **`keyboard.letterCase: upper-only`.** A *shifted* letter on a VIC-20 is a
   graphics glyph, not a capital, so the UI typist sends letters unshifted.
+  The same holds for a visitor's own keyboard: a capital arriving without a
+  physical Shift (Caps Lock, `SendText`, paste tools) is sent as the plain
+  letter key; physical Shift+letter still gives the graphics glyph
+  ([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#the-case-rule)).
 - **Shift is staged: `SH_KEY_MOD_LEAD_MS=40`, two frames.** `:` `*` `+` `@`
   are Shift+key on a US keyboard but plain keys on a VIC-20, and `'` `[` `]`
   are the reverse. VICE used to change SHIFT and set the key in one matrix

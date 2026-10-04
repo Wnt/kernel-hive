@@ -22,7 +22,7 @@ const DEMO_PROGRAMS = {
       "110 goto 20"
     ],
     "runCommand": "run",
-    "perCharMs": 90
+    "perCharMs": 180
   },
   "armeval": {
     "label": "Time 20000 loops on a 1986 ARM",
@@ -438,7 +438,7 @@ export function demoProgramFor(osId: string): DemoProgram | undefined {
 const TYPE_IN = {
   "amstradcpc": {
     "dialect": "locomotive-basic",
-    "perCharMs": 90
+    "perCharMs": 180
   },
   "armeval": {
     "dialect": "bbc-basic",
@@ -490,7 +490,7 @@ const TYPE_IN = {
     "perCharMs": 70,
     "wrapPause": {
       "cols": 40,
-      "ms": 250,
+      "ms": 500,
       "promptCols": 1
     },
     "case": "unshifted",
