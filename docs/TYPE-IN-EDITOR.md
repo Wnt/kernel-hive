@@ -296,34 +296,65 @@ three barrier rules of `key_drain()` are unchanged, and the lead is one more
 dwell gate, cleared by time alone. A `:` typed with Shift held never touches
 VICE's Shift at all.
 
-The test was a 12-line stress listing with 122 level-changing characters a
-pass (`:` `*` `+` `'`, among `"` `( )` `$` `=`). It was typed with the
-editor's edges at 170 ms per character, then read back byte for byte from a
-`SAVEST` snapshot and tokenised with VICE's `petcat`:
+The first test (vic20, cbm8032, c128) was a 12-line stress listing with 122
+level-changing characters a pass (`:` `*` `+` `'`, among `"` `( )` `$` `=`).
+It was typed with the editor's edges at 170 ms per character, then read back
+byte for byte from a `SAVEST` snapshot and tokenised with VICE's `petcat`. On
+the old binaries vic20 tore 4 lines in 3 passes, cbm8032 5 and c128 6; with
+the lead at two frames, none.
 
-| Station | Old binary | New binary, lead 40 ms (2 frames) |
-|---|---|---|
-| vic20 | 4 bad lines in 3 passes | 0 in 3 (and 0 in 3 at 1 frame, 0 in 2 at 3 frames) |
-| cbm8032 | 5 bad lines in 3 passes | 0 in 3 |
-| c128 | 6 bad lines in 3 passes | 0 in 3 |
+**Every VICE station, 2026-10-04.** The rollout to the rest of the family
+used a 14-line listing, the 12 above plus two lines dense in `@` `[` `]`
+(`/data/vms/streamhost/stations/<id>/evidence/shift-lead-2026-10-04/cbm-stress.bas`).
+Every pass went through the real daemon: a sandbox daemon in front of a rig of
+the station's own binary, golden and pacing, typed by
+`scripts/e2e/key-burst-proof.mjs` at the station's `typeIn` pace with `NEW`
+first, exactly as the editor does, and read back from a snapshot. The three
+examples were typed the same way, three times each:
 
-The C64 is exposed the same way, at a higher rate. On c64basic (2026-10-04,
-a rig of the station's own x64sc and golden) a 10-line stress listing with 44
-such characters a pass lost about one in 20 at 60/60 (12 bad lines of 60), and
-still 10 of 30 at 100/100, while the same keysyms sent without a Shift edge
-lost none. Slowing the pacing down does not help, because the tear is not a
-pacing fault. c64basic needs the same binary and knob, and has neither yet.
-Through the real editor on the live station it hit once in four listing runs:
-a `+` in Quick Draw's line 40 arrived as the shifted-`+` graphics glyph, and
-RUN stopped with `?SYNTAX ERROR IN 40`
-([`guests/c64basic.md`](guests/c64basic.md#verification-2026-10-04-live)).
+| Station | Frame (measured) | Lead | Stress listing, old binary | New binary | Examples, new binary |
+|---|---|---|---|---|---|
+| vic20 | PAL, 22 152 cycles | 40 ms = 2 frames | 4 bad lines in 3 passes (12-line listing) | 0 in 3 | 30 of 30 |
+| pet2001 | **60 Hz**, 16 640 cycles | **33 ms** = 2 frames | 0 in 3 | 0 in 3 | 9 of 9 |
+| cbm8032 | 50 Hz CRTC, 20 032 cycles | 40 ms = 2 frames | 1 in 3 (`:` -> `*`) | 0 in 3 | 9 of 9 |
+| c128 | PAL, 19 656 cycles | 40 ms = 2 frames | 10 in 3 (`:` -> `[`, `+` -> its glyph, `*` gone) | 0 in 3 | 10 of 10 |
+| plus4 | PAL TED, 35 568 cycles | 40 ms = 2 frames | 9 in 3 | 0 in 3 | 9 of 9 |
+| cbm2 | 50 Hz CRTC, 40 064 cycles | 40 ms = 2 frames | {{CBM2_OLD}} | {{CBM2_NEW}} | {{CBM2_EX}} |
+| c64basic | PAL, 19 656 cycles | 40 ms = 2 frames | 20 in 3 | 0 in 3 | 9 of 9 |
+| c64 (GEOS) | PAL, 19 656 cycles | 40 ms = 2 frames | no BASIC; same x64sc as c64basic | GEOS rename field: 3 entries exact | no `typeIn` |
+
+How exposed a machine is follows from its keymap. The VIC-20, C64, C128 and
+Plus/4 share the deshift set `:` `*` `+` `@` and the virtual-shift set `'`
+`[` `]`, and tore the most. On the 8032's business keyboard only `:` and `'`
+change the level. On the CBM-II keyboard, laid out like a US one, none of the
+listing's characters do. On the 2001's graphics keyboard every shifted symbol
+is a deshift key, yet the old binary lost none in three passes; its KERNAL
+did not read a torn latch at this sample size. All of them ship the lead
+anyway, because the engine is one, and the frame argument below holds for
+each.
 
 Two frames is the shipped value because it is the smallest one that is safe by
 construction rather than by luck. VICE latches an event at most about a frame
 and 1,000 cycles after it is pushed, so with a two-frame lead a whole frame
 always separates the Shift latch from the key's latch. One jiffy scan cannot
 straddle both. A visitor typing `:` on a physical keyboard got the same
-`[`, and is fixed by the same change.
+`[`, and is fixed by the same change. **The frame is the machine's own, so the
+millisecond value differs.** `vicectl` counts the lead in frames and converts
+the knob by rounding up at the rate it reads at start-up: 50 on every VICE
+machine here, the PET 2001 included, whose real frame is 60 Hz (its 60 ms HOLD
+is three frames, not four). On the 50 Hz machines two frames are 40 ms. On the
+2001 they are 33 ms, and 33 is two frames under either rate, where 40 would
+become three at 60. `-model 8032` is not a 60 Hz machine: it boots the 50 Hz
+editor ROM (`edit-4-80-b-50Hz`), measured at 20 032 cycles a frame.
+
+The C64 was the worst of the family. On c64basic (a rig of the station's own
+x64sc and golden) a 10-line stress listing with 44 such characters a pass lost
+about one in 20 at 60/60 (12 bad lines of 60), and still 10 of 30 at
+100/100, while the same keysyms sent without a Shift edge lost none: slowing
+the pacing does not help, because the tear is not a pacing fault. Through the
+real editor on the live station it hit once in four listing runs, a `+` in
+Quick Draw's line 40 arriving as the shifted-`+` graphics glyph
+([`guests/c64basic.md`](guests/c64basic.md#keyboard)).
 
 VICE's own 8-slot `kbd_queue`, which drops silently when full, cannot overflow
 from this module. Under `VICE_CTL_KEY_EXCL=1`, which every VICE station runs,
@@ -337,16 +368,18 @@ loss: sinclairql 0 of 12 lines, vic20 and cbm8032 11 of 12, and oricatmos one
 line in two runs. On the new ones, sinclairql, vic20, cbm8032 and oricatmos
 were all byte-exact. vic20's three examples were typed exactly as the editor
 types them, `NEW` first, ten times each through the daemon at 40 ms: 30 of 30
-byte-exact, with `dropped=0 overflow=0` throughout. Evidence is in
-`/data/vms/streamhost/stations/{sinclairql,vic20}/evidence/shift-lead-2026-10-04/`.
+byte-exact, with `dropped=0 overflow=0` throughout.
 
-**Live since 2026-10-04 on sinclairql and vic20 only.** Both run the new
-binary with their lead, and both goldens restore unchanged under it: the
-frames are pixel-identical to the old binary's, and the QL's savestate
-signature is the same. `typein-editor-probe.mjs` then typed two lines dense in
-shifted characters through the real editor on each live station, and RUN
-printed exactly what the listing says. The old binaries are kept beside the
-new ones as `ql.pre-shiftlead-20261004` and `vice-native.pre-shiftlead-20261004`.
+**Live since 2026-10-04 on sinclairql and every VICE station.** sinclairql and
+vic20 went first as the canary; pet2001, cbm8032, c128, plus4, cbm2, c64 and
+c64basic followed the same day, one at a time. Every golden restores unchanged
+under the new binary: the frames are pixel-identical to the old binary's
+(pet2001 and plus4 cold-boot, and their power-on frames are identical too), and
+the QL's savestate signature is the same. `typein-editor-probe.mjs` then typed
+an example through the real editor on each live station; the LIST was exact
+and RUN worked. The old binaries are kept beside the new ones as
+`ql.pre-shiftlead-20261004` and `vice-native.pre-shiftlead-20261004`. Evidence
+is in `/data/vms/streamhost/stations/<id>/evidence/shift-lead-2026-10-04/`.
 
 **Which other stations are exposed.** Every MAME keyboard station applied
 Shift and the key in one drain pass before this, by construction. How much that
@@ -365,10 +398,10 @@ characters through its own editor rules (`survey` frames in the evidence):
 
 msx2 loses keys at the start of its first line in every run, old binary or new
 (`10 PRINT` arrives as `10 NT`). That is not Shift: the lead does not change
-it. On the VICE side, c64basic is exposed (above) and has no fix yet. The
-QEMU/dbus pacer in the daemon (`key_quirks.rs` `KeyHold`) also sends Shift and
-the key back to back by design, and amstradcpc once dropped the Shift of a `)`
-there. That needs the same lead in the daemon and is not part of this change.
+it. Every VICE station has the fix (above). The QEMU/dbus pacer in the daemon
+(`key_quirks.rs` `KeyHold`) also sends Shift and the key back to back by
+design, and amstradcpc once dropped the Shift of a `)` there. That needs the
+same lead in the daemon and is not part of this change.
 
 **A visitor's own keys reach the guest during a run.** The editor does not
 take the keyboard away while it types. On 2026-10-04 the operator's run of
