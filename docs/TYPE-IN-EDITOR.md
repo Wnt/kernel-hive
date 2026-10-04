@@ -143,6 +143,38 @@ Tokenised `.prg` files are out of scope. A file that looks binary is refused
 with a pointer to LIST it on a machine instead. Drafts persist per station in
 `localStorage`, as a convenience only.
 
+## Proving it — and tuning the pace
+
+`scripts/e2e/typein-editor-probe.mjs` drives the REAL editor in the real SPA
+the way a visitor does: ☰ → Code editor, paste, Type into machine. It waits for
+the run to end, then optionally types RUN, captures the station framebuffer
+(`labctl shot`), presses Stop mid-run, or restores the golden. It prints
+lines, characters, wall clock and effective ms/char. Use it for long listings
+when tuning `perCharMs` / `enterDelayMs`, and watch the daemon's
+`dropped`/`overflow`/`ack timeout` counters in
+`journalctl -u streamhost@<id>` beside it.
+
+```sh
+INVITE=<code or path> GALLERY_URL=https://kernelhive.madekivi.fi \
+  node typein-editor-probe.mjs vic20 listing.bas --run run \
+  --fb-shot /data/vms/sandbox/<name>/proof --restore
+```
+
+It needs a signed-in session to see the stream at all (see
+`station-open.mjs`'s `signIn`).
+
+**First proof, 2026-10-04, live vic20.** The probe pasted
+`10 PRINT "EDITOR OK"` / `20 FOR I=1 TO 3:PRINT I*I:NEXT` (written in capitals)
+and pressed Type into machine. The framebuffer showed both lines exactly:
+keywords right, so the letters went down unshifted, and `"`, `=`, `*`, `:`
+intact. RUN printed `EDITOR OK`, 1, 4, 9. It took 11.3 s for 50 characters
+(226 ms/char all-in at `perCharMs` 170 with the 260/600 ms line and ENTER
+settles), and the daemon counted `dropped=0 overflow=0` with no ack timeouts.
+A second run pressed Stop during line 2. The framebuffer right after Stop and
+3 s later differed only in the blinking cursor cell, so no key left after
+Stop. The run ended with the visitor's Restore to golden, and the framebuffer
+returned to the clean READY screen.
+
 ## Analytics
 
 `spa/src/analytics/catalogue/typein.ts` (area `keyboard`):
