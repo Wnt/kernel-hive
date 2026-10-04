@@ -1,0 +1,93 @@
+/* Type-in editor (TypeInEditor.tsx). Museum-daylight tokens from index.css.
+
+   LAYOUT: StreamView wraps the stage in .sv-main. Wide screens put the panel
+   beside the picture, where a 4:3 machine leaves letterbox to spare; phones and
+   narrow windows stack it under the picture. */
+.sv-main { display: flex; flex-direction: row; flex: 1; min-height: 0; min-width: 0; }
+.sv-main > .sv-stage { min-width: 0; }
+.sv-root[data-mobile="1"] .sv-main { flex-direction: column; }
+@media (max-width: 760px) { .sv-main { flex-direction: column; } }
+
+.ti-panel {
+  display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto;
+  width: clamp(320px, 36vw, 560px); min-height: 0;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: var(--paper-raised); color: var(--ink);
+  border-left: 1px solid var(--line);
+  font-family: var(--font-ui); font-size: 13px;
+  user-select: text; touch-action: auto; overflow-y: auto;
+}
+.sv-root[data-mobile="1"] .ti-panel { width: auto; height: 60%; border-left: 0; border-top: 1px solid var(--line); }
+@media (max-width: 760px) { .ti-panel { width: auto; height: 60%; border-left: 0; border-top: 1px solid var(--line); } }
+/* A phone has no room for the standing tip; the code gets it instead. */
+.sv-root[data-mobile="1"] .ti-tip { display: none; }
+.sv-root[data-mobile="1"] .ti-code { min-height: 180px; }
+
+.ti-head { display: flex; align-items: center; gap: 8px; }
+.ti-title { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.ti-title strong { font-size: 14px; }
+.ti-sub { color: var(--ink-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ti-close {
+  min-width: 36px; min-height: 36px; border-radius: 8px; border: 1px solid var(--line);
+  background: transparent; color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer;
+}
+
+.ti-tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.ti-select { flex: 1 1 180px; min-width: 0; min-height: 36px; border-radius: 8px; border: 1px solid var(--line-strong);
+  background: var(--paper); color: var(--ink); font: inherit; padding: 0 8px; }
+.ti-btn {
+  min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong);
+  background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; white-space: nowrap;
+}
+.ti-btn:disabled { opacity: 0.5; cursor: default; }
+.ti-go:not(:disabled) { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.ti-stop { border-color: var(--danger); color: var(--danger); font-weight: 600; }
+.ti-link { margin-left: 6px; padding: 0; border: 0; background: none; color: var(--accent-ink);
+  font: inherit; text-decoration: underline; cursor: pointer; }
+
+.ti-note, .ti-hint, .ti-warn { margin: 0; font-size: 12px; line-height: 1.4; }
+.ti-note { color: var(--ink-muted); }
+.ti-hint { color: var(--info); }
+.ti-warn { color: var(--warn); }
+.ti-badlist { font-family: var(--font-mono); background: rgba(178, 58, 44, 0.14); padding: 0 3px; border-radius: 3px; }
+.ti-ok { color: var(--ok); }
+.ti-err { color: var(--danger); }
+
+/* THE CODE AREA: the <pre> paints, the <textarea> on top takes input with its
+   text transparent. Every metric that positions a glyph is shared, and no
+   token style may change glyph width (no bold, no italic). */
+.ti-code { position: relative; flex: 1 1 auto; min-height: 120px; border: 1px solid var(--line-strong);
+  border-radius: 8px; background: var(--paper); overflow: hidden; }
+.ti-hl, .ti-input {
+  position: absolute; inset: 0; margin: 0; padding: 8px 10px; border: 0; box-sizing: border-box;
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.5; letter-spacing: 0;
+  white-space: pre; tab-size: 1; font-variant-ligatures: none; overflow-wrap: normal;
+}
+.ti-hl { overflow: hidden; pointer-events: none; color: var(--ink); }
+.ti-input {
+  width: 100%; height: 100%; resize: none; overflow: auto; outline: none;
+  background: transparent; color: transparent; caret-color: var(--ink);
+}
+.ti-input::selection { background: var(--accent-wash); color: transparent; }
+.ti-input::placeholder { color: var(--ink-muted); }
+.ti-input:focus-visible { box-shadow: inset 0 0 0 2px var(--accent-line); }
+.ti-input[readonly] { cursor: progress; }
+/* iOS zooms the page into any field under 16px; the phone layout pays 16px. */
+.sv-root[data-mobile="1"] .ti-hl, .sv-root[data-mobile="1"] .ti-input { font-size: 16px; }
+
+.ti-lineno { color: var(--info); }
+.ti-keyword { color: var(--accent-ink); }
+.ti-string { color: var(--ok); }
+.ti-number { color: #7a5a06; }
+.ti-comment { color: var(--ink-muted); }
+.ti-ctrl { background: rgba(143, 100, 7, 0.18); border-radius: 2px; }
+.ti-bad { background: rgba(178, 58, 44, 0.32); outline: 1px solid var(--danger); border-radius: 2px; }
+.ti-over { background: rgba(178, 58, 44, 0.12); text-decoration: line-through; text-decoration-color: var(--danger); }
+
+.ti-foot { display: flex; flex-direction: column; gap: 6px; }
+.ti-row { display: flex; align-items: center; gap: 8px; }
+.ti-status { flex: 1; min-width: 0; color: var(--ink-soft); font-size: 12px; }
+.ti-bar { height: 4px; border-radius: 2px; background: var(--paper-sunken); overflow: hidden; }
+.ti-bar > span { display: block; height: 100%; background: var(--accent); transition: width 160ms linear; }
+.ti-manuals { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--ink-muted); }
+.ti-manuals a { color: var(--accent-ink); }

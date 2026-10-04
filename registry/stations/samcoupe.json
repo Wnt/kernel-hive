@@ -203,6 +203,11 @@
     "runCommand": "RUN",
     "perCharMs": 260
   },
+  "typeIn": {
+    "dialect": "sam-basic",
+    "perCharMs": 260,
+    "hint": "Press B on the boot menu for SAM BASIC first."
+  },
   "keyboard": {
     "charMap": {
       "=": "[",

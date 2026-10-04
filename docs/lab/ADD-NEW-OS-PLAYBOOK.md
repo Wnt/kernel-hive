@@ -971,8 +971,10 @@ Under-waiting no longer LOSES anything on the daemon's side — since 2026-10-04
 every key sink delivers a burst of any length, in order (`docs/guests/vic20.md`
 "Long input") — it only bunches the listing up. Declare
 `demoProgram.perCharMs` in the registry when a station drains slower than the
-fleet default — `validate_demo_pacing` in `scripts/stations-registry.py` fails
-the build if the two disagree.
+fleet default, and `typeIn.perCharMs` (always required) on a BASIC machine that
+offers the type-in code editor — `scripts/stations_registry/validate_typein.py`
+fails the build if either is below hold+gap. See
+[`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md).
 
 **One rejected line can impersonate a broken input plane — check the LISTING
 before you touch the pacing.** A BASIC that rejects a line may leave the

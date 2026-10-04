@@ -170,6 +170,11 @@
     "runCommand": "RUN",
     "perCharMs": 160
   },
+  "typeIn": {
+    "dialect": "bbc-basic",
+    "perCharMs": 160,
+    "case": "unshifted"
+  },
   "museum": {
     "id": "armeval",
     "displayName": "Acorn ARM Evaluation System",

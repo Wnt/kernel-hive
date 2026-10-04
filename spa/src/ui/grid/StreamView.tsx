@@ -39,6 +39,8 @@ import { deriveStatus } from './StreamView/statusDerive';
 import { useCinemaMode } from './StreamView/useCinemaMode';
 import { useRestoreFlow } from './StreamView/useRestoreFlow';
 import { useDemoProgram } from './StreamView/useDemoProgram';
+import { useTypeInEditor } from '../typein/useTypeInEditor';
+import { TypeInEditor } from '../typein/TypeInEditor';
 import { bannerCopy } from './StreamView/bannerCopy';
 import { posterFor } from '../../data/posterIndex';
 import type { GestureState, Vec2, ZoomState } from './StreamView/types';
@@ -380,6 +382,11 @@ export default function StreamView({
 
   // ---- TYPE-IN DEMO PROGRAM (registry-declared stations only) -----------------
   const demo = useDemoProgram({ osId: os.osId, streamable, controlRef });
+  // ---- TYPE-IN CODE EDITOR (registry `typeIn` stations only; ui/typein) -------
+  const typeIn = useTypeInEditor({
+    osId: os.osId, streamable, controlRef, inputReady: mediaLive && !!ctl?.channelOpen,
+    otherTypistBusy: demo.state === 'typing', stationAttrs: osStationAttrs,
+  });
 
   // ---- status line + debug readout (pure derivation in statusDerive.ts) ----
   const { dotColor, statusLabel, bufReadout, resStr, codecStr } = deriveStatus({
@@ -455,6 +462,7 @@ export default function StreamView({
     >
       <style>{SPIN_KEYFRAMES}{FS_CSS}{POWER_ON_CSS}{PRESENT_CSS}{MOBILE_CSS}</style>
 
+      <div className="sv-main">
       <div ref={stageRef} className="sv-stage" style={S.stage}>
         {/* The exhibit's only chrome: a hamburger in the stage's top-left and
             every control behind it. In fullscreen it auto-hides with the rest
@@ -472,7 +480,8 @@ export default function StreamView({
             restoreState={restoreState}
             restoreToGolden={restoreToGolden}
             demoLabel={demo.program?.label}
-            demoState={demo.state}
+            demoState={typeIn.typing ? 'typing' : demo.state}
+            typeIn={typeIn.available ? { open: typeIn.open, toggle: typeIn.toggle } : undefined}
             demoTypeIn={demo.typeIn}
             toggleFullscreen={toggleFullscreen}
             exit={exit}
@@ -555,6 +564,8 @@ export default function StreamView({
         {touchChrome && streamable && !oskOpen && !device && (
           <KeyboardToggleBadge onOpen={() => setOskOpen(true)} />
         )}
+      </div>
+      {typeIn.open && typeIn.model && <TypeInEditor model={typeIn.model} displayName={displayName} onClose={typeIn.close} />}
       </div>
 
       {/* Shared per-OS on-screen keyboard: mobile = collapsible bottom sheet

@@ -170,6 +170,11 @@
     "runCommand": "run",
     "perCharMs": 170
   },
+  "typeIn": {
+    "dialect": "color-basic",
+    "perCharMs": 170,
+    "case": "unshifted"
+  },
   "museum": {
     "id": "dragon32",
     "displayName": "Dragon 32",

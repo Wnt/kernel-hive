@@ -155,6 +155,12 @@
     "runCommand": "run",
     "perCharMs": 170
   },
+  "typeIn": {
+    "dialect": "cbm-basic",
+    "perCharMs": 170,
+    "case": "unshifted",
+    "maxLineChars": 88
+  },
   "museum": {
     "id": "vic20",
     "displayName": "Commodore VIC-20",

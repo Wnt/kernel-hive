@@ -224,6 +224,10 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
     # joins the bridge later, through scripts/retronet/rn-onboard.sh, which is
     # what writes this block from the allocation it actually holds.
     row.pop("retronet", None)
+    # The type-in editor's opt-in names the sibling's BASIC dialect and case rule
+    # (facts about ITS interpreter) and its examples folder is keyed by the
+    # sibling's id. A new machine opts in once its own typing is proven.
+    row.pop("typeIn", None)
 
     # build.rows[].value.key was already rewritten by the exact-string pass above.
     if row.get("build", {}).get("rows"):

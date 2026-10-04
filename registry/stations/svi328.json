@@ -191,6 +191,11 @@
     "runCommand": "RUN",
     "perCharMs": 500
   },
+  "typeIn": {
+    "dialect": "msx-basic",
+    "perCharMs": 500,
+    "case": "code-upper"
+  },
   "keyboard": {
     "charMap": {
       ":": ";",

@@ -167,6 +167,11 @@
     "source": "scripts/build-guests/emulators/build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)",
     "driver": "xcbm2"
   },
+  "typeIn": {
+    "dialect": "cbm-basic",
+    "perCharMs": 170,
+    "case": "code-lower"
+  },
   "ui": "home-computer",
   "reset": {
     "stationDir": "cbm2",
