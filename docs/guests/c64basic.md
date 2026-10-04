@@ -114,7 +114,7 @@ the stress listing re-read on a rig.
 - **`keyboard.letterCase: upper-only`** and **`typeIn.case: unshifted`**: a
   shifted letter in the power-on character set is a PETSCII graphics glyph.
 - **`typeIn.unreachable: "{}"`**: VICE's C64 keymap has no braces, and typed
-  braces vanish (rig frame `unreachable.png`). `|`, `~`, `_`, `` ` `` and `\`
+  braces vanish (`evidence/rig-unreachable-braces.png`). `|`, `~`, `_`, `` ` `` and `\`
   do arrive, as the PETSCII glyphs on those codes (`\` is `£`).
 - **`maxLineChars: 80`** — the C64 screen editor's logical line is two 40-column rows.
 - **`perCharMs: 170`** for both the editor and the demo listing, ≥ 120 ms
