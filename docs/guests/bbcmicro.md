@@ -276,6 +276,39 @@ blue `A*`. This station's placard sets that exhibit up and does not duplicate it
   live `golden-manifest.json` or that endpoint returns `404 unknown osId` while
   the station streams perfectly.
 
+## Shifted characters: the modifier lead (2026-10-04)
+
+`SH_KEY_MOD_LEAD_MS=10` in the station fixture: the `ctlsock` module holds a
+key press until the Shift edge in front of it has been in the matrix for 10
+emulated ms, so the OS's keyboard poll sees SHIFT before the key it modifies.
+This machine lost no shifted character on the old engine (0 in the 2026-10-04
+survey). It gets the fleet's 10 ms anyway, five times the largest threshold
+measured on a MAME machine
+([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead)).
+`typeIn.perCharMs` 170 already covers it: HOLD 80 + max(GAP 80, LEAD) + LEAD =
+170.
+
+**Rig proof (2026-10-04).** A rig of this station's own binary and cold boot
+took the keys through a sandbox daemon, exactly as the editor sends them
+(`typeListing()` replayed by `key-burst-proof.mjs --edges`). The rig ran at
+0.88 to 0.91 of real time, which is this station's own speed: the live `bbcb`
+measured 0.912 at 99 % of a core (read-only, `ctlsock STAT` 60 s apart).
+MAME's `bbcb` is CPU-bound on this host, so a run counted when the rig was
+within 5 % of the live speed with its emulator thread saturated. A 16-line
+listing with `"A+B*C:D(E)$!";1+2*3` on every line, through the station's
+`charMap` (the BBC's `"` is Shift+2, `+` is Shift+`;`), LISTed pixel-identical
+to a slow reference typed with Shift 60 ms ahead, in 2 of 2 runs, and all
+three examples typed exactly, twice each. The cold-boot screen is
+pixel-identical under the new binary, and the savestate signature is unchanged
+(`7bfdf7d8`, 1672 entries).
+
+**Live since 2026-10-04.** The real editor typed *Twisted squares*; LIST was
+exact, RUN drew the squares, and Restore to golden brought back the BBC's
+cold-boot screen. Rollback:
+`assets/bbcmicro/mame-native/bbcb.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`. Evidence:
+`/data/vms/streamhost/stations/bbcmicro/evidence/shift-lead-2026-10-04/`.
+
 ## Rollback
 
 Keep the launcher and the checkpoint as an atomic pair. To roll back, restore the

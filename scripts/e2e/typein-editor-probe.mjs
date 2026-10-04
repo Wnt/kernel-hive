@@ -36,7 +36,8 @@
 // station's `typeIn.hint` asks the visitor for (B at the SAM's and the //e's
 // boot menus, BASIC + RETURN twice on the KC 85/4). `--demo <label>` (with
 // `-` as the listing) presses the stage menu's demo-typist row instead of the
-// editor, for a keyboard station with a demoProgram but no typeIn block.
+// editor, for a keyboard station with a demoProgram but no typeIn block; `-`
+// alone types nothing, so `--first`/`--then` are the visitor's whole input.
 // A signed-in session is required to see the stream at all
 // (station-open.mjs's signIn header), hence INVITE + the public origin.
 import { chromium } from 'playwright';
@@ -206,7 +207,9 @@ try {
   }
 
   if (demoLabel) await typeDemo(page, demoLabel);
-  else await typeWithEditor(page);
+  else if (listing) await typeWithEditor(page);
+  // listing '-' without --demo: no typist at all, only the --first/--then keys
+  // through the real SPA keyboard (a keyboard station with no editor and no demo)
 
   if (runCmd) {
     const vbox = await page.locator('video').first().boundingBox();

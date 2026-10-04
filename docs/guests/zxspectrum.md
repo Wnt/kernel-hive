@@ -221,14 +221,17 @@ A chord costs at most 10 ms more, so `typeIn.perCharMs` and the demo went from
 LEAD) + LEAD.
 
 **Proof (2026-10-04, a rig of this station's own binary and cold boot).** Keys
-went through a sandbox daemon, as the editor's own chord stream (`typeListing()`
-replayed by `key-burst-proof.mjs --edges`), with the rig at 1.00x real time.
-A 16-line listing dense in SYMBOL and CAPS SHIFT chords (`"A+B*C:D(E)$!";1+2*3`
-on every line) LISTed pixel-identical to a slow reference in 2 of 2 runs. All
-three examples typed exactly, twice each. The cold-boot screen is
-pixel-identical under the new binary, and the savestate signature is unchanged
-(`1706c707`, 905 entries; the station cold-boots, `MAME_NATIVE_CHECKPOINT=0`).
-Rollback: `assets/zxspectrum/mame-native/spectrum.pre-shiftlead-20261004` and
+went through a sandbox daemon, as the editor's own chord stream
+(`typeListing()` replayed by `key-burst-proof.mjs --edges`), with the rig at
+1.00x real time. A 16-line listing dense in SYMBOL and CAPS SHIFT chords
+(`"A+B*C:D(E)$!";1+2*3` on every line) LISTed pixel-identical to a slow
+reference in 2 of 2 runs. All three examples typed exactly, twice each. The
+cold-boot screen is pixel-identical under the new binary, and the savestate
+signature is unchanged (`1706c707`, 905 entries; the station cold-boots,
+`MAME_NATIVE_CHECKPOINT=0`). **Live since 2026-10-04.** The real editor typed
+*Colour web*; LIST (K) was exact, RUN drew the web (`0 OK, 70:1`), and Restore
+to golden brought back the 1982 power-on screen. Rollback:
+`assets/zxspectrum/mame-native/spectrum.pre-shiftlead-20261004` and
 `station.env.pre-shiftlead-20261004`. Evidence:
 `/data/vms/streamhost/stations/zxspectrum/evidence/shift-lead-2026-10-04/`.
 
