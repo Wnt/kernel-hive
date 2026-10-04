@@ -153,7 +153,12 @@ come out as other keys), identically on the old and new binaries. The shifted
 characters that map one to one (`( ) $ ! :`) arrived right on both.
 
 **Golden.** Pixel-identical under the new binary, and the savestate signature
-is unchanged (`2e5e7e4d`, 1875 entries). Rollback:
+is unchanged (`2e5e7e4d`, 1875 entries).
+
+**Live since 2026-10-04.** Through the real SPA keyboard: RETURN at the menu,
+then in The Last Word `Atari 800XL: the quick brown fox (1984) costs $5!`
+arrived exactly, and Restore to golden brought back the MyPicoDos menu.
+Rollback:
 `assets/atari800xl/mame-native/atari800xl.pre-shiftlead-20261004` and
 `station.env.pre-shiftlead-20261004`. Evidence:
 `/data/vms/streamhost/stations/atari800xl/evidence/shift-lead-2026-10-04/`.
