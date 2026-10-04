@@ -228,7 +228,10 @@ way:
 
 So the station keeps the VICE floor of 60/60: no character without a Shift
 edge was lost at that pace, and the failure rate did not fall at 100/100. The
-c64basic examples keep `:` and `*` few for the same reason.
+c64basic examples keep `:` and `*` few for the same reason. Through the real
+editor on the live station it hit once in four listing runs: a `+` in Quick
+Draw's line 40 arrived as the shifted-`+` graphics glyph, and RUN stopped with
+`?SYNTAX ERROR IN 40` ([`guests/c64basic.md`](guests/c64basic.md#verification-2026-10-04-live)).
 
 A module trace (`VICE_CTL_TRACE=1`) shows a failing `:` with exactly the same
 edge order and spacing as the good ones: Shift down, `:` down three frames

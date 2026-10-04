@@ -134,6 +134,36 @@ Manuals (both fetched and checked on 2026-10-04): the *Commodore 64 User's
 Guide* (176 pages) and the *Commodore 64 Programmer's Reference Guide* (first
 edition, eleventh printing, 1984, 508 pages), both at zimmers.net.
 
+## Verification (2026-10-04, live)
+
+The type-in steps went through the **real editor** on the live station
+(`scripts/e2e/typein-editor-probe.mjs`, signed in at the public origin). The
+keys after a run went through the real SPA keyboard (a Playwright session on
+`/os/c64basic`). Every frame is the station's own framebuffer (`labctl shot`).
+They are in `/data/vms/streamhost/stations/c64basic/evidence/`:
+
+| Frames | Shows |
+|---|---|
+| `golden-captured.png`, `golden-restored-fresh-process.png` | the bake: the captured READY, and the same scene restored in a fresh x64sc |
+| `live-station-up.png`, `gallery-grid.png` | station-up's shot; the tile in the public grid beside the GEOS `c64` (clicking it streams 768×544) |
+| `editor-open-draw.png` | ☰ → Code editor open: "Commodore BASIC · Commodore 64 BASIC", the examples menu, both manuals linked |
+| `draw-typed.png`, `draw-run.png`, `draw-list.png` | Diamond Rings typed (the editor's `NEW` first), the finished rings, then a key and `LIST`: all 15 lines exact |
+| `input-typed.png`, `input-run-2.png`, `input-run-7.png`, `input-list.png` | Border Colours: `2` gives a red border and "THE BORDER IS RED", `7` gives yellow; `-1` restores the light-blue border; `LIST` exact |
+| `game-typed.png`, `game-list.png`, `game-run-red.png`, `game-run-result.png`, `game-run-falsestart.png` | Quick Draw: `LIST` exact, the screen turns red, a key gives "YOU TOOK 3.14 SECONDS", and after Y a key pressed at once gives "TOO SOON - FALSE START!" |
+| `game-typed-defect-line40.png`, `game-run-syntax-error-line40.png` | the first Quick Draw attempt: the known shifted-punctuation defect turned the second `+` of line 40 into the shifted-`+` graphics glyph, and RUN stopped with `?SYNTAX ERROR IN 40`. Re-typed through the editor; clean on the second pass |
+| `restore-before.png`, `restore-after.png` | a dirtied screen, then `POST /restore/c64basic` (what Restore to golden sends): HTTP 200 in 1.3 s, and the clean READY on the framebuffer 2.2 s later |
+
+Editor pace, all in: 227, 210 and 208 ms/char for the three listings (269,
+378 and 402 characters), at `perCharMs` 170 plus the 260/600 ms line and ENTER
+settles. The daemon counted `dropped=0 overflow=0` and no ack timeouts across
+the session (`accepted=3438` at the end).
+
+The probe's own `--restore` shot came back showing the pre-reset screen. It
+fires as soon as the stream reconnects, and the relaunch publishes the
+restored frame about 2 s later (`VICE_SHM_HOLD_RESTORE` keeps the last frame
+until then). A later shot showed the clean READY, so the timed restore above
+is the evidence.
+
 ## Pointer
 
 None. `--pointer none --input-backend vicesock`, `stream.pointer.present:
