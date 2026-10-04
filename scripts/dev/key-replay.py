@@ -72,6 +72,16 @@ XT.update(
         "?": (0x35, True),
         "'": (0x28, False),
         '"': (0x28, True),
+        "<": (0x33, True),
+        ">": (0x34, True),
+        "[": (0x1A, False),
+        "{": (0x1A, True),
+        "]": (0x1B, False),
+        "}": (0x1B, True),
+        "\\": (0x2B, False),
+        "|": (0x2B, True),
+        "`": (0x29, False),
+        "~": (0x29, True),
     }
 )
 for ch in "abcdefghijklmnopqrstuvwxyz":
