@@ -96,6 +96,23 @@ bare key.
 The station `keyboard` block (`charMap`, `letterCase`) is applied after the
 case rule, exactly as for the demo listing.
 
+**The same rule on the visitor's keyboard.** On every `case: unshifted` station
+whose letter keys ARE the capitals (the Commodores and the rest of that row), a
+capital letter that reaches the SPA without the visitor physically holding
+Shift (Caps Lock, AutoHotkey `SendText`, an IME or a paste tool) goes to the
+guest as the plain unshifted letter key. Without this, `asdfghASDFGH` showed
+`ASDFGH` and then graphics glyphs on a VIC-20, because the SPA turns `A` into a
+synthetic Shift+a. The data source is `typeIn.case === 'unshifted'`
+(`spa/src/three/capitalsAsLetters.ts`), not `keyboard.letterCase`, which only a
+subset declares and which `zxspectrum` also sets (there CAPS SHIFT + letter is a
+real capital). cbm8032 and cbm2 (`code-lower`), c64 (GEOS, no `typeIn`) and
+every PC and Unix station are untouched. A letter typed while Shift is held
+(physically, or latched on the on-screen keyboard) keeps its Shift, so the
+graphics set stays reachable. The unshifted press is an ordinary make/break, so
+hold and repeat work and the keyup releases the same scancode. The on-screen
+keyboard's `char` keys (`typeText`) are NOT changed: its shifted layer is the
+visitor choosing Shift, and the editor's own typing already follows `case`.
+
 ## Example programs and manual links
 
 `registry/examples/<station-id>/` holds them. The content is written per
