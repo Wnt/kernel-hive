@@ -433,7 +433,10 @@ waits until the last Shift, Ctrl or Alt edge it sent to QEMU (press or
 release, either side) has been out that long. Modifier presses and all
 releases never wait it, the order of edges and the one FIFO gate are
 unchanged, and unset or 0 is the old gate, number for number. The x11test sink
-does not read it. Each shape was measured through a sandbox daemon of the new
+does not read it. The binary with this gate and the x11test key FIFO
+(`streamhost-98f78ebf`) went fleet-wide on 2026-10-04: 116 of 121 stations,
+with armeval, bbcmicro, c64basic, cbm2 and vic20 held back by claims or a
+visitor. Each shape was measured through a sandbox daemon of the new
 binary in front of a rig (`key-burst-proof.mjs`, the result read back from the
 framebuffer or as bytes). Two of the three shapes cannot tear at all:
 
@@ -463,7 +466,10 @@ framebuffer or as bytes). Two of the three shapes cannot tear at all:
   therefore ships 80/80 with a 20 ms lead, and its `perCharMs` is 180
   (HOLD + max(GAP, LEAD) + LEAD). The real fix is the host-native conversion,
   where the key module paces in emulated time, which host load cannot
-  compress.
+  compress. Through the real editor on the live station, 80/80 with the lead
+  still dropped 4 to 9 keys in each of three runs at load 31 to 80. A clone
+  started from a shell gets more CPU than a station does
+  ([`guests/amstradcpc.md`](guests/amstradcpc.md), OPEN).
 
 Evidence: `/data/vms/streamhost/stations/{amstradcpc,freedos,vax43bsd}/evidence/daemon-mod-lead-2026-10-04/`.
 

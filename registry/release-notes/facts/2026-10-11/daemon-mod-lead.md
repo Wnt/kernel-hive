@@ -1,13 +1,13 @@
 # daemon-mod-lead — facts for release notes
 
 **What changed for visitors:**
-- **Amstrad CPC 6128** loses far fewer keys typing in a listing while the lab
-  is busy. The CPC runs inside a small Linux guest, and when the box was loaded
-  that guest stalled, so a key's press and release could reach the emulator in
-  the same frame. A doubled `$$` became `$`, and line `110` became line `10`.
-  Each key is now held and spaced 80 ms instead of 40. A shifted key waits
-  20 ms behind its Shift, so `"` no longer arrives as `2` now and then. The
-  code editor types a character every 180 ms instead of 90 to match.
+- **Amstrad CPC 6128** holds and spaces each key 80 ms instead of 40, and a
+  shifted key waits 20 ms behind its Shift. The CPC runs inside a small Linux
+  guest, and when the lab is busy that guest stalls, so a key's press and
+  release can reach the emulator in the same frame: a doubled `$$` became `$`,
+  line `110` became line `10`, and once `"` came out as `2`. The code editor
+  now types a character every 180 ms instead of 90. Under heavy lab load it
+  still drops keys now and then; that is still open.
 - **The stations whose keys go in through X11** keep a fast run of keys in
   order: `eex` can no longer arrive as `exe`. These are Lisa, PERQ, Medley,
   VisiOn, AMIX and the Nokia 9300, plus the terminal machines 4.3BSD on the

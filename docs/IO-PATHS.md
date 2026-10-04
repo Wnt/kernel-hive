@@ -200,7 +200,10 @@ Debian kiosk) at 40/40 lost 1 to 11 keys in each of 12 passes of a 12-line
 listing at a 1-minute load of 25 to 60, as `$$` -> `$` and `110` -> `10`. At
 80/80 it lost none in 5 of 6 passes at load 35 to 54, and above load 70 nothing
 held. A host-native module paces in emulated time and does not have this
-problem.
+problem. A rig started from a shell understates the problem. It runs in
+`user.slice`, while every station's QEMU shares `system-streamhost.slice` with
+the rest of the fleet, so the live station lost keys at 80/80 where its clone
+did not (`guests/amstradcpc.md`, OPEN).
 
 **The modifier lead is for a guest that scans a key matrix.** On the dbus path
 `SH_KEY_MOD_LEAD_MS` holds a key's press behind the last Shift, Ctrl or Alt
