@@ -185,6 +185,7 @@
       "ms": 500,
       "promptCols": 1
     },
+    "enterDelayMs": 800,
     "case": "unshifted",
     "unreachable": "[\\]_`{|}~"
   },

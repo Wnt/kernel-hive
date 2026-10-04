@@ -561,6 +561,18 @@ Keys pressed while a program is PRINTING are also lost, about 2 in 20; the
 editor does not type then, so it is not covered. The MPF-II examples still
 keep every line within 38 characters.
 
+**ENTER at the bottom row needs 800 ms, not 600 (`typeIn.enterDelayMs`).** The
+same scroll follows every ENTER typed on the bottom row, after BASIC has
+tokenised the line. For the 33-character `110 HPLOT X(I),Y(I) TO X(J),Y(J)` of
+*Mystic rose*, tokenising and scrolling outlasted the default 600 ms, and the
+first key of the next line was lost: `120 NEXT J,I` arrived as `20 NEXT J,I`.
+It replaced line 20 (`HGR`), so RUN drew nothing. This happened in 4 of 4 runs
+(sandbox rig, 2026-10-04), with the modifier lead at 0 and at 10 ms alike, so
+the cause is the ENTER settle, not the lead. A slow reference holds ENTER
+about 30 ms longer and typed the line exactly. At 800 and at 1000 ms, all
+three examples typed exactly in 2 of 2 runs each. The station ships 800, which
+adds 200 ms per line.
+
 **`unreachable` for the five Microsoft-BASIC stations** was derived from each
 keymap and checked on the framebuffer for msx2 and svi328. On the MSX keyboards
 the PC backslash key is the MSX backtick key and the PC backtick is a dead key,
