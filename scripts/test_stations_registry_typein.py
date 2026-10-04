@@ -48,6 +48,21 @@ class TypeInPacingTest(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("below the tile's typed drain rate (120 ms/char", errors[0])
 
+    def test_the_modifier_lead_counts_in_the_drain_rate(self) -> None:
+        # vic20 ships 60/60 with a 40 ms lead: its worst character costs
+        # HOLD + max(GAP, LEAD) + LEAD = 160, which 170 covers and 150 does not.
+        def lead(per_char: int, lead_ms: int) -> list[str]:
+            row = station(type_in={"dialect": "cbm-basic", "perCharMs": per_char})
+            row["runtime"]["stationEnv"]["SH_KEY_MOD_LEAD_MS"] = str(lead_ms)
+            return errors_for([row])
+
+        self.assertEqual(lead(170, 40), [])
+        errors = lead(150, 40)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("(160 ms/char", errors[0])
+        # a lead longer than the gap replaces it rather than adding to it twice
+        self.assertIn("(220 ms/char", lead(200, 80)[0])
+
     def test_refuses_a_station_whose_drain_rate_is_undeclared(self) -> None:
         errors = errors_for([station(type_in={"dialect": "cbm-basic", "perCharMs": 170}, hold=None, gap=None)])
         self.assertEqual(len(errors), 1)

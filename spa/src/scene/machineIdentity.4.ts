@@ -17,4 +17,10 @@ export const EXHIBIT_IDENTITIES_4 = {
     caseTint: '#cdc7b6', accentTint: '#376ca8', tintMix: 0.4,
     badge: 'PHILIPS NMS 8250', spec: 'Z80 • 512K • SYMBOS 2025', kit: 'eightBit',
   },
+  // The same brown breadbin as c64; the accent is the BASIC screen's own light
+  // blue (VIC-II colour 14), which is also the station's registry accent.
+  c64basic: {
+    caseTint: '#8b6746', accentTint: '#6c5eb5', tintMix: 0.45,
+    badge: 'COMMODORE 64', spec: 'BASIC V2 • 1982', kit: 'eightBit',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

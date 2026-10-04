@@ -52,7 +52,7 @@
 #
 # UNLIKE THE MAME BUILDER THERE ARE NO LOOSE PATCHES. Every kernel-hive change
 # to VICE is a commit on the published fork (github.com/Wnt/vice, branch
-# kernel-hive/integrated, ten commits on upstream tag 3.10.0), carried as the
+# kernel-hive/integrated, fifteen commits on upstream tag 3.10.0), carried as the
 # third_party/vice-kernel-hive submodule. Note the tag has NO leading `v`, and
 # the VICE mirror tags every SVN revision as rNNNNN, so a --depth 1 clone will
 # NOT contain it — this script never shallow-clones.
@@ -84,16 +84,19 @@ die() {
   exit 1
 }
 
-# The pin. Ten commits on upstream tag 3.10.0 (4d283a2e7dd59b7e378524878e81
-# ecc7826b700c): shmfb (3), vicectl (6) and the CRTC restore fix. The four from
-# 2026-08-17 are the two key-order defects (a release outranks a deferred
-# press; a modifier is a barrier in both directions), the checkpoint pair —
-# CRTC canvas growth on restore, and SAVEST/LOADST from a CPU trap — and
-# VICE_SHM_CHIP, which lets a two-canvas machine (x128: VICII + VDC) CHOOSE the
-# published chip instead of racing for it.
+# The pin. Fifteen commits on upstream tag 3.10.0 (4d283a2e7dd59b7e378524878e81
+# ecc7826b700c): the headless shm publisher and keymap, vicectl, shmfb,
+# soundfifo and two CRTC restore fixes. The vicectl ones are the two key-order
+# defects (a release outranks a deferred press; a modifier is a barrier in both
+# directions), SAVEST/LOADST from a CPU trap, and the shift staging of
+# 2026-10-04 (VICE_CTL_KEY_MOD_LEAD: the Shift level a key needs goes into the
+# matrix a lead before the key, never in the same latch; it also adds the
+# read-only keyboard_keysym_shift_flags() to keyboard.c). VICE_SHM_CHIP lets a
+# two-canvas machine (x128: VICII + VDC) CHOOSE the published chip instead of
+# racing for it.
 VICE_FORK_URL="${VICE_FORK_URL:-https://github.com/Wnt/vice.git}"
 VICE_FORK_BRANCH=kernel-hive/integrated
-VICE_FORK_PIN=d518f3dbc56e5aec6f8744562cb95bbacc337d4e
+VICE_FORK_PIN=a1cb4b5c8d348eb5a37d7a65460d1a712b68991f
 SUBMODULE="$REPO_ROOT/third_party/vice-kernel-hive"
 
 # ---------------------------------------------------------------------------
@@ -290,11 +293,11 @@ say "building VICE with $JOBS jobs"
 # rewriting upstream to reach zero is not this campaign's job; every warning
 # from a file the fork touches is.
 say "warning gate: the fork's own files must compile clean"
-OURWARN="$(grep -E '^(.*/)?(vicectl\.c|keymap\.c|crtc/crtc\.[ch]|crtc/crtc-snapshot\.c|arch/headless/[^:]*)(\.[ch])?:[0-9]+:[0-9]+: warning:' "$WORK/make.log" || true)"
+OURWARN="$(grep -E '^(.*/)?(vicectl\.c|keymap\.c|keyboard\.c|crtc/crtc\.[ch]|crtc/crtc-snapshot\.c|arch/headless/[^:]*)(\.[ch])?:[0-9]+:[0-9]+: warning:' "$WORK/make.log" || true)"
 [ -z "$OURWARN" ] || die "the fork's files produced warnings:
 $OURWARN
   fix them on the fork (they are commits, not loose patches), then move the pin."
-echo "  clean: no warnings from vicectl.c, keymap.c, src/crtc/ or src/arch/headless/"
+echo "  clean: no warnings from vicectl.c, keymap.c, keyboard.c, src/crtc/ or src/arch/headless/"
 
 say "installing to $OUT"
 rm -rf "$OUT"

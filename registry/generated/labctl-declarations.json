@@ -416,6 +416,24 @@
       "udp_port": 54114,
       "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/c64/sta/golden.vsf. KEYBOARD-ONLY: the bridged station's COMM 1351 mouse is NOT wired on this path — vice_sock.rs and vicectl both lack a pointer verb — so drive GEOS with labctl type/key and read it with labctl shot."
     },
+    "c64basic": {
+      "dir": "/data/vms/streamhost/stations/c64basic",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54226,
+      "notes": "HOST-NATIVE: VICE x64sc runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (IFB1), keys vicectl + the shared us-layout keysym table, audio -sounddev fifo -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/c64basic/sta/golden.vsf. Same x64sc as the c64 (GEOS) station, in its own asset dir. Keyboard-only: drive it with labctl type/key, read it with labctl shot."
+    },
     "cbm2": {
       "dir": "/data/vms/streamhost/stations/cbm2",
       "qmp": null,

@@ -178,10 +178,15 @@ its own before/after, not to zero.
 - `direct-stream-proof.mjs <signaling.json> <out-prefix> [hex-scancodes]` —
   catalog-free WebTransport decode, non-black framebuffer, and reliable-key
   proof for a throwaway tile that must not enter the live lineup.
-- `key-burst-proof.mjs <signaling.json> <text-file> [--pace-ms N]` — types a
-  whole text through the daemon's REAL key receive path (WebTransport,
-  `ICLASS_KEY` stream) with no pacing, the AutoHotkey-paste shape; judge the
-  result on the framebuffer (`fb-wait.py --shm … --out`). How the 2026-10-04
+- `key-burst-proof.mjs <signaling.json> <text-file> [--pace-ms N] [--char-ms N]` —
+  types a whole text through the daemon's REAL key receive path (WebTransport,
+  `ICLASS_KEY` stream) with no pacing, the AutoHotkey-paste shape; or, with
+  `--char-ms N`, at the type-in editor's cadence (one character's edges, then
+  N ms; `--line-ms`/`--enter-ms` default to the editor's 260/600). Judge the
+  result on the framebuffer (`fb-wait.py --shm … --out`) or from a snapshot.
+  The page must come from the LAN origin (`GALLERY_URL=https://<lab IP>:8443/`):
+  Chrome refuses WebTransport from the public gallery origin to a private
+  address, and says only "Opening handshake failed". How the 2026-10-04
   long-input fix was proven (`docs/guests/vic20.md` "Long input");
   `key-replay.py` writes the emulator's socket directly and cannot see a
   daemon-side loss.

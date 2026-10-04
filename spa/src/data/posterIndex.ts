@@ -72,6 +72,9 @@ const POSTER_INDEX = {
   "c64": {
     "hero": "/posters/c64/desktop.webp"
   },
+  "c64basic": {
+    "hero": "/posters/c64basic/desktop.webp"
+  },
   "cbm2": {
     "hero": "/posters/cbm2/desktop.webp"
   },

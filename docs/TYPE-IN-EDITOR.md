@@ -24,9 +24,9 @@ typing engine is `typeLines()` in
 The opt-in is DATA: a station gets the editor if its registry entry has a
 `typeIn` block, and for no other reason. There are no id checks in the SPA.
 
-| In (18) | Why |
+| In (19) | Why |
 |---|---|
-| vic20 pet2001 cbm8032 c128 plus4 cbm2 | Commodore BASIC at power-on |
+| vic20 c64basic pet2001 cbm8032 c128 plus4 cbm2 | Commodore BASIC at power-on (c64basic is the C64 that stops at READY; the GEOS `c64` stays out) |
 | bbcmicro armeval | BBC BASIC (armeval: ARM BASIC on the tube) |
 | msx2 svi728 svi328 | MSX-BASIC / SV BASIC at power-on |
 | amstradcpc | Locomotive BASIC |
@@ -40,7 +40,8 @@ The opt-in is DATA: a station gets the editor if its registry entry has a
 | zxspectrum, zx81 | **Keyword entry.** One key *is* a keyword (P gives PRINT), so ASCII typed letter by letter arrives as garbage. The demo listing types keystroke form (`10 b1`) for exactly this reason. Supporting them needs a keyword transcoder, which is a follow-up; its measured design is [below](#keyword-transcoder-for-zxspectrum-and-zx81-measured-not-built). |
 | svi328cpm, svi738 | Boot to CP/M; MBASIC has to be loaded first (their demo listings do that with a 20 s settle). |
 | atari800xl, apple2e | Boot to a menu or a DOS, not to an interpreter. |
-| c64, apple2, msxturbor | Boot to GEOS / MSX View desktops. |
+| c64 | Boots to the GEOS deskTop, not to BASIC. The C64 with the editor is its sibling [`c64basic`](guests/c64basic.md): the same x64sc binary, stopped at the BASIC V2 READY prompt. |
+| apple2, msxturbor | Boot to GEOS / MSX View desktops. |
 
 **A station without validated pacing never gets the editor.** The validator
 refuses a `typeIn` block on a station whose env does not declare
@@ -64,10 +65,10 @@ nothing to validate the editor's pace against.
 | `perCharMs` | **Required.** The wait after every typed character. Must be ≥ hold+gap (`scripts/stations_registry/validate_typein.py`). It is never defaulted: the demo may fall back to the SPA's 70 ms, but the editor may not. |
 | `lineDelayMs` / `enterDelayMs` | The pause before a line's ENTER and the settle after it, for BASIC to tokenise. They default to the demo typist's 260 / 600 ms. **These three numbers are the tuning surface for long listings.** Change them here, never in a component. |
 | `case` | How letters become keystrokes (below). |
-| `maxLineChars` | The machine's logical line length. The editor strikes through what the screen editor would cut off. Declared only where the number is certain (VIC-20 88, PET/8032 80, C128 160). |
+| `maxLineChars` | The machine's logical line length. The editor strikes through what the screen editor would cut off. Declared only where the number is certain (VIC-20 88, PET/8032 80, C64 80, C128 160). |
 | `hint` | One sentence above the Type button, for a step the machine needs first. |
 | `settleAfter` | A longer ENTER settle after a named direct command, keyed by the whole line in upper case. On samcoupe, `{"NEW": 2000}`: `NEW` redraws the MGT banner, and that eats the next key. With the default 600 ms, line 10 was lost in 4 of 7 runs; with 1.5 s it was lost in 1 of 7 (examples-sinclair rig, `tl-06…08.png`). The SAM demo listing waits 2 s after its own `NEW` (`demoProgram.enterDelayMs: [2000]`). |
-| `unreachable` | Printable ASCII that the station's keymap cannot produce. On samcoupe these are `< > ? [ ] { } \` and the vertical bar. The editor paints these red and blocks typing, exactly as it does for non-ASCII. The examples validator refuses them too. |
+| `unreachable` | Printable ASCII that the station's keymap cannot produce. On samcoupe these are `< > ? [ ] { } \` and the vertical bar; on c64basic `{ }` (VICE's C64 keymap has no braces, and they vanish). The editor paints these red and blocks typing, exactly as it does for non-ASCII. The examples validator refuses them too. |
 
 `stations-registry.py new --like` does **not** copy `typeIn`. The dialect and
 case rule are facts about the sibling's interpreter, so a new machine opts in
@@ -80,7 +81,7 @@ wrong on most of these machines:
 
 | `case` | What reaches the guest | Stations |
 |---|---|---|
-| `unshifted` | every letter goes down unshifted | vic20 pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos (CAPS LOCK on at reset: every letter arrives upper case whichever way it is sent, so unshifted is simply the demo listings' proven path; lower case inside a string is out of reach either way); dragon32 mpf2 (no lower case) |
+| `unshifted` | every letter goes down unshifted | vic20 c64basic pet2001 c128 plus4 (Shift+letter is a graphics glyph); bbcmicro armeval oricatmos (CAPS LOCK on at reset: every letter arrives upper case whichever way it is sent, so unshifted is simply the demo listings' proven path; lower case inside a string is out of reach either way); dragon32 mpf2 (no lower case) |
 | `code-lower` | letters outside strings, REM and DATA go down unshifted; literals keep the visitor's case | cbm8032 cbm2 (business keyboard, text mode: unshifted is lower case, and BASIC wants it) |
 | `code-upper` | code is upper-cased, literals kept | msx2 svi728 svi328 (the proven demo path) |
 | `as-typed` (default) | unchanged | amstradcpc sinclairql samcoupe kc854 |
@@ -194,60 +195,153 @@ A second run pressed Stop during line 2. The framebuffer right after Stop and
 Stop. The run ended with the visitor's Restore to golden, and the framebuffer
 returned to the clean READY screen.
 
-### Known defect: shifted punctuation on the VICE stations
+### Shifted characters: the modifier lead
 
-**Open as of 2026-10-04.** On the VICE machines, a character that needs Shift
-on a US keyboard but is an unshifted key on a Commodore (`:` and `*`) sometimes
-arrives with the Commodore Shift still applied, or not at all. `:` becomes `[`
-on the VIC-20 and C128 and `*` on the 8032, and a `*` occasionally vanishes.
-The rate is about 1 in 50, so most multi-statement listings meet one.
+`typeText()` sends a shifted character as Shift down, key down, key up, Shift
+up, back to back, and the daemon forwards those edges unchanged. Until
+2026-10-04 both emulator key modules then put Shift and the key into the
+emulated keyboard **at the same instant**, which a person never does: their
+Shift goes down tens of milliseconds before the key. Two machines failed on
+that one shape in two different ways. Both modules now hold a key press until
+the Shift level in front of it has been visible to the machine for a
+**modifier lead**, declared per station as `SH_KEY_MOD_LEAD_MS` in the station
+env. The launchers pass it to the module as `MAME_CTL_KEY_MOD_LEAD` or
+`VICE_CTL_KEY_MOD_LEAD`; unset or 0 is the old engine, byte for byte. The
+validator counts the lead in the drain rate: a shifted character costs at most
+HOLD + max(GAP, LEAD) + LEAD, and `perCharMs` must cover that.
 
-It was measured on sandbox rigs of the stations' own binaries. Keys went
-through the `vicectl` module at the stations' 60/60 pacing, and each listing
-was read back byte for byte from a `SAVEST` snapshot, tokenised with VICE's
-`petcat`. The test was a 6-line stress listing with 11 such characters a line,
-typed three times on each rig:
+**The QL, MAME `ctlsock`: the key vanished.** The module applied Shift and the
+key in the same drain pass. A trace shows `:Y7|SHIFT=1` and `:Y3|=  +=1` both
+applied at emulated 53.894 s. The QL's 8049 IPC then never reports the key, so
+every capital and every shifted symbol was lost: `print 1+2` landed as
+`print 12`, `10 REMark Sunburst` as `10 ark unburst`. With the lead, a
+non-modifier press waits that many emulated milliseconds after the last
+applied Shift or Ctrl edge, press or release. The test was a 12-line
+SuperBASIC listing with 251 shifted characters, typed with the editor's edges
+at its 400 ms per character into a rig of the station's own binary, golden and
+40/40 pacing. It was then LISTed and compared pixel for pixel, line by line,
+with a reference typed with Shift held 150 ms ahead by hand:
 
-| Path | vic20 | c128 | cbm8032 |
-|---|---|---|---|
-| Shift_L press, then the shifted keysym (what the daemon forwards) | 3 of 198 | 5 of 198, plus one line lost whole | 3 of 198 |
-| The keysym alone, no Shift edge (control) | 0 of 198 | 0 of 198 | 0 of 198 |
-
-A module trace (`VICE_CTL_TRACE=1`) shows a failing `:` with exactly the same
-edge order and spacing as the good ones: Shift down, `:` down three frames
-later, `:` up, Shift up. The queue is not the cause. The fault is VICE's
-deshift of a held host Shift racing the KERNAL's matrix scan, so the fix
-belongs in the module or the sink, not the pacing. A visitor typing `:` on
-the physical keyboard holds Shift too, so this is not only the editor's
-problem.
-
-### Known defect: every shifted character is lost on the QL
-
-**Open as of 2026-10-04.** This was measured on a sandbox rig with
-sinclairql's live configuration: the same MAME 0.289 `ql` binary, the
-`ctlsock` module at the station's 40/40 hold/gap, and `MAME_CTL_KEY_EXCL=:Y`.
-Keys were sent with the edges `typeText()` produces: Left Shift down, key
-down, key up, Left Shift up, back to back. The daemon forwards them unchanged.
-The module applies Shift and the key in the **same drain pass**. The QL's 8049
-keyboard processor then never reports the key at all. Capitals and all shifted
-punctuation (`" : ( ) + * & $ !`) vanish, while unshifted keys land:
-
-| Edges sent | Result on the framebuffer |
+| Lead | Listing lines exact |
 |---|---|
-| `typeText()` style, `print 1+2` | `print 12` |
-| `typeText()` style, `PRINT "AB"` | nothing |
-| `typeText()` style, `10 REMark Sunburst` | `10 ark unburst` |
-| Shift released 120 ms late, pressed with the key | nothing |
-| Shift pressed 60 ms before the key | `PRINT "PRE"`, intact |
-| Shift 60 ms early, module's 40 ms key hold, a 195-character listing | 2 lost (one `*`, one ENTER) |
-| Shift 100 ms early, keys held 100 ms, about 1,000 characters | 0 lost |
+| 0, the old engine | 0 of 12: every line `bad line` |
+| 1 ms, one module tick | 3 of 12 |
+| 2, 5, 10 ms | 12 of 12 |
+| 20 ms | 12 of 12 in three runs |
+| 40, 60 ms | 12 of 12 (three runs at 40) |
 
-The QL needs Shift down at least one keyboard scan **before** the key. The fix
-belongs in the module or the sink, which should give a modifier press a lead
-before the next key press. Pacing is not the fix. It affects everything typed
-through `typeText()` on the QL, including its demo listing. The QL example
-programs were proven with the 100/100 timing. A visitor's physical typing is
-not affected, because a person presses Shift well before the letter.
+The threshold is between 1 and 2 ms, and sinclairql ships 20 ms, ten times
+that. The lead is emulated time, so host load cannot eat it. It costs a
+shifted character at most 40 ms against the editor's 400.
+
+**The Commodores, VICE `vicectl`: the scan tore the latch.** VICE resolves a
+keysym through the machine's `.vkm` keymap, and on a VIC-20 `:` `*` `+` `@`
+are Shift+key on a US keyboard but unshifted keys (the keymap's *deshift*),
+while `'` `[` `]` are the other way round (*virtual shift*). VICE applies each
+host key event at its own random point 1 to 2 frames later. A key whose keymap
+entry changes the emulated SHIFT therefore flips SHIFT and sets the key in ONE
+copy of the matrix. The KERNAL reads the matrix column by column over about
+1,000 cycles of its jiffy interrupt. When that copy lands mid-scan, the guest
+reads SHIFT from before it and the key from after it: `:` became `[` (VIC-20,
+C128) or `*` (8032), and on the C128 a `*` vanished outright. The trace of a
+failing `:` is indistinguishable from a good one, because the race is inside
+VICE.
+
+With a lead, the module **stages the Shift level**. The visitor's Shift edges
+set a level and are no longer passed to VICE directly. Before each press the
+module gives VICE the host Shift that key needs: none for a deshift key, Shift
+for a virtual-shift key, and the visitor's own level otherwise. It then holds
+the press until that level has been visible for the lead, and hands the
+visitor's level back once nothing is down. VICE's keymap then finds the level
+already in place, so nothing changes SHIFT in the key's own latch. The
+three barrier rules of `key_drain()` are unchanged, and the lead is one more
+dwell gate, cleared by time alone. A `:` typed with Shift held never touches
+VICE's Shift at all.
+
+The test was a 12-line stress listing with 122 level-changing characters a
+pass (`:` `*` `+` `'`, among `"` `( )` `$` `=`). It was typed with the
+editor's edges at 170 ms per character, then read back byte for byte from a
+`SAVEST` snapshot and tokenised with VICE's `petcat`:
+
+| Station | Old binary | New binary, lead 40 ms (2 frames) |
+|---|---|---|
+| vic20 | 4 bad lines in 3 passes | 0 in 3 (and 0 in 3 at 1 frame, 0 in 2 at 3 frames) |
+| cbm8032 | 5 bad lines in 3 passes | 0 in 3 |
+| c128 | 6 bad lines in 3 passes | 0 in 3 |
+
+The C64 is exposed the same way, at a higher rate. On c64basic (2026-10-04,
+a rig of the station's own x64sc and golden) a 10-line stress listing with 44
+such characters a pass lost about one in 20 at 60/60 (12 bad lines of 60), and
+still 10 of 30 at 100/100, while the same keysyms sent without a Shift edge
+lost none. Slowing the pacing down does not help, because the tear is not a
+pacing fault. c64basic needs the same binary and knob, and has neither yet.
+Through the real editor on the live station it hit once in four listing runs:
+a `+` in Quick Draw's line 40 arrived as the shifted-`+` graphics glyph, and
+RUN stopped with `?SYNTAX ERROR IN 40`
+([`guests/c64basic.md`](guests/c64basic.md#verification-2026-10-04-live)).
+
+Two frames is the shipped value because it is the smallest one that is safe by
+construction rather than by luck. VICE latches an event at most about a frame
+and 1,000 cycles after it is pushed, so with a two-frame lead a whole frame
+always separates the Shift latch from the key's latch. One jiffy scan cannot
+straddle both. A visitor typing `:` on a physical keyboard got the same
+`[`, and is fixed by the same change.
+
+VICE's own 8-slot `kbd_queue`, which drops silently when full, cannot overflow
+from this module. Under `VICE_CTL_KEY_EXCL=1`, which every VICE station runs,
+a frame's drain applies at most one press, one release and one edge per
+modifier key, and the queue empties within about a frame.
+
+**Proof through the real daemon.** `scripts/e2e/key-burst-proof.mjs --char-ms`
+types with the editor's own edges and cadence over a WebTransport session into
+a sandbox daemon in front of a rig. On the old binaries this reproduces the
+loss: sinclairql 0 of 12 lines, vic20 and cbm8032 11 of 12, and oricatmos one
+line in two runs. On the new ones, sinclairql, vic20, cbm8032 and oricatmos
+were all byte-exact. vic20's three examples were typed exactly as the editor
+types them, `NEW` first, ten times each through the daemon at 40 ms: 30 of 30
+byte-exact, with `dropped=0 overflow=0` throughout. Evidence is in
+`/data/vms/streamhost/stations/{sinclairql,vic20}/evidence/shift-lead-2026-10-04/`.
+
+**Live since 2026-10-04 on sinclairql and vic20 only.** Both run the new
+binary with their lead, and both goldens restore unchanged under it: the
+frames are pixel-identical to the old binary's, and the QL's savestate
+signature is the same. `typein-editor-probe.mjs` then typed two lines dense in
+shifted characters through the real editor on each live station, and RUN
+printed exactly what the listing says. The old binaries are kept beside the
+new ones as `ql.pre-shiftlead-20261004` and `vice-native.pre-shiftlead-20261004`.
+
+**Which other stations are exposed.** Every MAME keyboard station applied
+Shift and the key in one drain pass before this, by construction. How much that
+costs depends on how the machine scans its keyboard. Each station was measured
+on a rig of its live binary, typing a 16-line listing with 176 shifted
+characters through its own editor rules (`survey` frames in the evidence):
+
+| Station | Shifted characters lost on the old binary |
+|---|---|
+| sinclairql | all of them (fixed, 20 ms) |
+| oricatmos | 6 in 5 passes, e.g. `(` -> `9`, `$` -> `4`, `*` -> `8`; 0 in 6 with the new binary at 20 ms, not deployed |
+| apple2e | `PRINT 6502*2` arrived as `650282` (seen by the Acorn examples agent, not measured here) |
+| bbcmicro, dragon32, samcoupe, svi728, mpf2 | 0 in one pass |
+| msx2 | 0 in lines 2 to 16 of three passes (line 1: see below) |
+| zxspectrum, zx81 | 0 in 60 and 40 Symbol Shift / SHIFT chords |
+
+msx2 loses keys at the start of its first line in every run, old binary or new
+(`10 PRINT` arrives as `10 NT`). That is not Shift: the lead does not change
+it. On the VICE side, c64basic is exposed (above) and has no fix yet. The
+QEMU/dbus pacer in the daemon (`key_quirks.rs` `KeyHold`) also sends Shift and
+the key back to back by design, and amstradcpc once dropped the Shift of a `)`
+there. That needs the same lead in the daemon and is not part of this change.
+
+**A visitor's own keys reach the guest during a run.** The editor does not
+take the keyboard away while it types. On 2026-10-04 the operator's run of
+vic20's Colour Squares came out with `GOSUB 100` as `GOS` plus six graphics
+glyphs. The SPA's key recorder (`serve/key-trace.py`, session `9061260b`) shows
+why: a physical Shift (`0x2a`) and Left-GUI (`0xe05b`) went down mid-run,
+148 ms after the `s`, off the typist's 171 ms cadence. That is Cmd+Shift, the
+macOS screenshot shortcut. The guest then typed `u b space 1 0 0` shifted,
+until the typist's next `:` released Shift. Replaying exactly those recorded
+edges into a rig reproduces line 50. The modules are not at fault: a held
+Shift is a Shift. Keeping the visitor's keys out of a run is an editor change.
 
 ### SAM Coupé: what the typist cannot reach, and what NEW does
 

@@ -37,6 +37,9 @@ const KEYBOARDS = {
       "*": "\""
     }
   },
+  "c64basic": {
+    "letterCase": "upper-only"
+  },
   "domainos": {
     "charMap": {
       "\"": "@",

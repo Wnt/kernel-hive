@@ -187,6 +187,7 @@ and should be stated in the conversion runbook.
 | `VICE_CTL_KEY_HOLD` | 60 ms | press → its own release dwell |
 | `VICE_CTL_KEY_GAP` | 60 ms | release → its own re-press dwell |
 | `VICE_CTL_KEY_EXCL` | 0 | 1 ⇒ serialize non-modifier presses (**set it**, §4) |
+| `VICE_CTL_KEY_MOD_LEAD` | 0 | ms; > 0 ⇒ stage the Shift level a key needs and hold the press this long behind it (§4.1). Stations set it as `SH_KEY_MOD_LEAD_MS` |
 | `VICE_CTL_TRACE` | 0 | one stderr line per applied edge |
 
 Pacing is enforced in *frames* (the dwell converted via
@@ -251,6 +252,28 @@ an age-based deadline cost a visitor most of a pasted listing on 2026-10-04,
 `scripts/dev/emu-key-pacing-bisect.py` already records "the VICE tiles' 40/60/80"
 from the bridged path; those numbers should be re-bisected against this engine
 before the wave, not assumed.
+
+### 4.1 The Shift level is staged, not latched with the key
+
+Feeding host keysyms has one cost that only shows at typing speed. VICE
+applies each host event at its own random point 1–2 frames later, and a key
+whose keymap entry changes the emulated SHIFT (*deshift*: `:` `*` `+` `@` on a
+VIC-20 are Shift+key on a US keyboard but plain keys; *virtual shift*: `'` `[`
+`]` the reverse) flips SHIFT and sets the key in ONE copy of the matrix. When
+that copy lands inside the KERNAL's column scan, the guest reads SHIFT from
+before it and the key from after it, so `:` arrives as `[`. With
+`VICE_CTL_KEY_MOD_LEAD` set, `vicectl` keeps the visitor's Shift as a level and
+presents to VICE the host Shift that the next key needs, a lead ahead of the
+key. It looks up which keymap entry VICE will use through
+`keyboard_keysym_shift_flags()`, a read-only helper added to `keyboard.c`. Two
+frames is safe by construction: an event latches at most about a frame plus
+1,000 cycles after its push, so a whole frame always separates the two latches.
+Measurement and the per-station values:
+[`../../TYPE-IN-EDITOR.md`](../../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead).
+
+The 8-slot `kbd_queue` in §1 cannot overflow from `vicectl` under
+`VICE_CTL_KEY_EXCL=1`. One frame's drain applies at most one press, one release
+and one edge per modifier key, and VICE empties the queue within about a frame.
 
 ---
 
