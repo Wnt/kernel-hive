@@ -313,8 +313,16 @@ def tile_facts(sh_tile, c, warn):
         )
     launcher = launcher_text(tile_dir)
     disk, snapshots = disk_facts(boot_disk(tile_dir, launcher), warn)
-    suite, is_bridge = suite_facts(sh_tile, disk["backing"], launcher, warn)
     x11 = is_x11_tile(c)
+    # A host-native tile (SH_STATION_RUNTIME=x11) has no kiosk, whatever the
+    # bridge ledger still records: converted stations stay in bridge-suites.json's
+    # `tiles` map as their migration record (its _notes say so), and
+    # fleet_table.py tests the runtime BEFORE the ledger. So does this; until
+    # 2026-10-04 every de-bridged station read "kind: bridge" and "DETACHED".
+    if x11:
+        suite, is_bridge = None, False
+    else:
+        suite, is_bridge = suite_facts(sh_tile, disk["backing"], launcher, warn)
     if is_bridge:
         kind, evidence = "bridge", "emulator inside a captured Debian kiosk on the shared bridge base"
     elif x11:

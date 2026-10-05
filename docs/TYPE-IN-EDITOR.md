@@ -125,9 +125,12 @@ field go through `physicalTypist` (`spa/src/three/physicalCharMap.ts`). The
 order is fixed: the case rule above first (which character the visitor
 means), then the charMap (which US key makes it on the guest), the order the
 typists use too. A held key's keyup releases the scancode its press sent.
-cpm22 (a German CP/M, `docs/guests/cpm22.md`) is the only station with it on
-(2026-10-04); each other charMap station is rechecked before it gets the flag,
-because a map written for the typists can be wrong for a visitor's keys.
+cpm22 (a German CP/M, `docs/guests/cpm22.md`) and amstradcpc (the CPC's
+UK-style layout, `docs/guests/amstradcpc.md`) have it on (2026-10-04); each
+other charMap station is rechecked before it gets the flag, because a map
+written for the typists can be wrong for a visitor's keys. amstradcpc's was
+checked against its keymap for all 95 printable ASCII characters: each lands
+as itself but `~`, which has no CPC key.
 
 ## Example programs and manual links
 
@@ -318,7 +321,7 @@ cell; two boots each, within 0.2 s of each other):
 |---|---|---|---|
 | bbcmicro | `>` | 0.4 | 3 (was 8 wall) |
 | zx81 | `K` cursor | 0.5 | 3 (was 8) |
-| amstradcpc | `Ready` | 1.0 | measured; 4 to apply with its host-native conversion (still 8 wall) |
+| amstradcpc | `Ready` | 1.0 (0.84 / 0.90 on its own rig) | 4 (was 8 wall) |
 | zxspectrum | © 1982 screen | 1.7 | 4 (was 8) |
 | kc854 | CAOS 4.2 menu | 1.8 | 4 (was 8) |
 | svi328cpm | `A>` | 4.3 | 7 (was 12) |
