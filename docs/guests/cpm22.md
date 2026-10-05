@@ -119,6 +119,16 @@ Shift+2, `+` sends the bare `]` key, `y` sends the Z key. cpm22 was the first
 station with `physical` set; every station whose layout differs from a US PC
 has it since 2026-10-05 ([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md)).
 
+**`:` and drive letters (2026-10-05).** Rechecked on the live station through
+the real SPA keyboard: `dir b:` listed drive B, and `a:b;c:d"e:f` arrived exactly,
+with `:` typed both with Shift held and as a bare resolved key. `labctl type` is
+different: on this host-native station it posts text through MAME's natural
+keyboard, which uses MAME's US key legends and ignores `SH_KEY_MAP`, so
+`labctl type cpm22 "x:y;z"` arrived as `xzy` (`:` and `;` lost, y and z
+swapped). OPEN: labctl needs to send key edges through the keymap and
+`SH_KEY_MAP` on x11 stations that carry a map. Evidence:
+`/data/vms/streamhost/stations/cpm22/evidence/physical-charmap-2026-10-05/`.
+
 **Unreachable on this disk:** ``# @ [ \ ] ^ ` { | } < >``. No key produces
 them. A visitor who types one gets whatever the US key makes here: `@` gives
 `"`, `]` gives `+`, `\` gives `'`. cpm22 has no type-in editor, so there is

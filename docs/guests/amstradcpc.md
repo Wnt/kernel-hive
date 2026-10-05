@@ -194,6 +194,13 @@ On the visitor's keys, `print "<(1)*2+3=>";"@[]\|{}'_?";5^2;7\2` echoed exactly
 and printed `<(1)*2+3=>@[]\|{}'_? 25  3`. The daemon counted no dropped,
 overflowed or refused key. Frames and the probe log are in `evidence/cpc-native-2026-10-04/live/`.
 
+Rechecked by the physical-charmap wave (2026-10-05), keys only: on the visitor's
+keyboard, Shift held as a person holds it,
+`PRINT "!#$%&'()*+,-./:;<=>?@[\]^_`{|}";1+2*3` printed every symbol (the CPC
+draws `^` as `↑`) and 7, and `PRINT "Hello World"` kept its case. `~`, the one
+character with no CPC key, was left out. Evidence:
+`/data/vms/streamhost/stations/amstradcpc/evidence/physical-charmap-2026-10-05/live/`.
+
 ## Ports
 
 - streamhost UDP (WebTransport): **54119** (slot 119). UI web port 8119.

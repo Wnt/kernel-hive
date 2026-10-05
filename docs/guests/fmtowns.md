@@ -117,6 +117,9 @@ The Towns's CAP key is its own, so a visitor's Caps Lock inverts letter case
 (`Hello World` arrived as `hELLO wORLD`, docs/TYPE-IN-EDITOR.md). At `Q>` the
 shell reads `|` as a pipe. Evidence:
 `/data/vms/streamhost/stations/fmtowns/evidence/physical-charmap-2026-10-05/`.
+**Live since 2026-10-05** (keymap and `SH_KEY_MAP` re-emitted): at `Q>` the
+visitor's keys typed `!"#$%&'()*+,-./:;<=>?@[¥]^=`{|}‾ Hello World 123`: every
+character its own code but `_`, `]` and `}` on the rebound key.
 
 **Live since 2026-10-04** (final-patch binary, `:key`, 20 ms; savestate
 signature `1ebe131a` unchanged, golden pixel-identical but for the guest's

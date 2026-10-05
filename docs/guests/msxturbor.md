@@ -101,6 +101,12 @@ gives `=`. The Japanese font draws code 92 as `¥` and 126 as `‾`, so `\` and 
 look like that on screen. The FS-A1GT's CAPS key is its own, so a visitor's
 Caps Lock inverts letter case (docs/TYPE-IN-EDITOR.md). Evidence:
 `/data/vms/streamhost/stations/msxturbor/evidence/physical-charmap-2026-10-05/`.
+**Live since 2026-10-05, in MSX View.** 道具 (Tools) → TED opens ViewTED 1.1.
+It starts in kana input, so the first keys arrive as kana from their JIS
+positions (`1` gives ぬ); the かな key, which this station puts on Right Alt,
+switches to ASCII. Then the visitor's keys typed
+``!"#$%&'()*+,-./:;<=>?@[¥]^=`{|}~`` (the `_` gives `=`, as above) and
+`Hello World 123` in mixed case. Restore brought back VSHELL.
 
 ## Reset and isolation
 
