@@ -452,12 +452,14 @@ const TYPE_IN = {
   "armeval": {
     "dialect": "bbc-basic",
     "perCharMs": 170,
-    "case": "unshifted"
+    "case": "unshifted",
+    "unreachable": "\\`|"
   },
   "bbcmicro": {
     "dialect": "bbc-basic",
     "perCharMs": 170,
-    "case": "unshifted"
+    "case": "unshifted",
+    "unreachable": "\\`|"
   },
   "c128": {
     "dialect": "cbm-basic",

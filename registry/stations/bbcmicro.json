@@ -173,7 +173,8 @@
   "typeIn": {
     "dialect": "bbc-basic",
     "perCharMs": 170,
-    "case": "unshifted"
+    "case": "unshifted",
+    "unreachable": "\\`|"
   },
   "museum": {
     "id": "bbcmicro",

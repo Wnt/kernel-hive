@@ -41,7 +41,7 @@
   "render": {
     "signalOrder": 114,
     "stationsManifestOrder": 93,
-    "stationsManifestPrelude": "\n# msxturbor \u2014 Panasonic FS-A1GT / MSX View, host-native openMSX.\n",
+    "stationsManifestPrelude": "\n# msxturbor — Panasonic FS-A1GT / MSX View, host-native openMSX.\n",
     "bringUpGroup": 6,
     "bindingOrder": 121,
     "bindingPrelude": "",
@@ -88,7 +88,7 @@
       "SH_HASH_FILE": "/data/vms/streamhost/stations/msxturbor/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/msxturbor/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": "\":@,&:^,':&,(:*,):(,%3A:',*:\",+:%3A,=:_,@:[,[:],]:\\,^:=,`:{,\\:`,|:~"
+      "SH_KEY_MAP": "\":@,&:^,':&,(:*,):(,%3A:',*:\",+:%3A,=:_,@:[,[:],]:\\,^:=,`:{,\\:`,|:~,{:},}:|,~:+"
     },
     "vmidLabel": 220,
     "bringUpOrder": 121,
@@ -139,13 +139,13 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#376ca8",
-    "eraLabel": "Early 1990s \u00b7 Panasonic FS-A1GT \u00b7 MSX View"
+    "eraLabel": "Early 1990s · Panasonic FS-A1GT · MSX View"
   },
   "museum": {
     "id": "msxturbor",
     "displayName": "MSX turbo R",
     "year": 1991,
-    "lineage": "MSX \u2192 MSX2 \u2192 MSX2+ \u2192 MSX turbo R",
+    "lineage": "MSX → MSX2 → MSX2+ → MSX turbo R",
     "arch": "R800 and Z80; Yamaha V9958 VDP",
     "ramMB": 0,
     "ramKB": 512,
@@ -156,15 +156,15 @@
       "MSX-DOS 2",
       "MSX-BASIC 4.1"
     ],
-    "periodBrowser": "None \u2014 offline",
+    "periodBrowser": "None — offline",
     "iconicApps": [
       "MSX View",
       "View Draw",
       "View Paint",
       "View text editor"
     ],
-    "blurb": "Panasonic\u2019s FS-A1GT brings a faster R800 processor and the mouse-driven MSX View desktop to the MSX family.",
-    "notes": "Panasonic FS-A1GT with its original Japanese MSX View interface. Open Tools (\u9053\u5177) for drawing and writing applications. Reset discards saved work and restores the original disks and settings."
+    "blurb": "Panasonic’s FS-A1GT brings a faster R800 processor and the mouse-driven MSX View desktop to the MSX family.",
+    "notes": "Panasonic FS-A1GT with its original Japanese MSX View interface. Open Tools (道具) for drawing and writing applications. Reset discards saved work and restores the original disks and settings."
   },
   "emulator": {
     "family": "openMSX",
@@ -204,7 +204,11 @@
       "^": "=",
       "`": "{",
       "\\": "`",
-      "|": "~"
-    }
+      "|": "~",
+      "{": "}",
+      "}": "|",
+      "~": "+"
+    },
+    "physical": true
   }
 }
