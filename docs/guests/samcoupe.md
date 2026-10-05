@@ -146,6 +146,32 @@ run rather than reaching the expected circles + `SAM COUPE 1989` — see
 `docs/lab/SAMCOUPE-WAVE.md` §OPEN, not investigated further here as it is
 outside this station doc's ownership of the `auto.bas` menu fix.
 
+**The visitor's keys use the charMap (`keyboard.physical`, 2026-10-05).** The
+SAM's layout differs from a PC's in 13 places, and the registry's
+`keyboard.charMap` (the typists' map) now applies to the visitor's own keys and
+the on-screen keyboard too. Measured first, with every US key bare and shifted
+typed at its US position on a rig of this station's binary and golden, after
+`B` at the menu:
+
+| US key | bare | Shift | | US key | bare | Shift |
+|---|---|---|---|---|---|---|
+| `1`..`0` | digits | `! @ # $ % & ' ( ) ~` | | `\` | (none) | (none) |
+| `-` | `-` | `/` | | `;` | `;` | `;` |
+| `=` | `+` | `*` | | `'` | `:` | `:` |
+| `[` | `=` | `_` | | `` ` `` | (none) | (none) |
+| `]` | `"` | `©` | | `,` `.` | `,` `.` | `,` `.` |
+| | | | | `/` | INV | `\` |
+
+`/` is the SAM's INV key (inverse video), and its shifted character is `\`,
+which the map did not have: `\` now goes out as Shift+`/`. Every other entry was
+already right. Typed through the SPA's real key path, `PRINT` lines with every
+reachable character printed them exactly, `\` included, and case is the
+visitor's (`abABC xyz`). `typeIn.unreachable` is now ``<>?[]{}|^` ``: those are
+SYMBOL-key characters (SYMBOL is Left Ctrl here, a chord the charMap cannot
+express) or absent. `\` left that list. A visitor who types one gets the US
+key's SAM character (`[` gives `=`, `?` gives `\`) or nothing.
+Evidence: `/data/vms/streamhost/stations/samcoupe/evidence/physical-charmap-2026-10-05/`.
+
 ## §Checkpoint
 Captured on a sandbox rig (never the station dir), `MAME_NATIVE_CHECKPOINT=1`
 (`samcoupe` has `MACHINE_SUPPORTS_SAVE`, so the shared launcher's checkpoint

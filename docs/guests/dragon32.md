@@ -174,10 +174,21 @@ dragon_keyboard`, lines 332–399):
 | `@` | `[` | |
 
 Letters are **unshifted capitals** (`keyboard.letterCase: "upper-only"` in the
-registry): Shift+letter is the Dragon's lower case, which the MC6847 can only
-render as inverse video. The map is declared once in the registry entry's
+registry). The map is declared once in the registry entry's
 `keyboard.charMap`; `SH_KEY_MAP` in `station.env.fixture` is the same map joined,
 because labctl drives QMP directly and cannot read the registry.
+
+**The visitor's own keys use the map too** (`keyboard.physical`, 2026-10-05).
+Checked on the frame: every printable ASCII character typed through the SPA's
+real key path (a US visitor's keys, Shift held) on a rig of this station's
+binary and golden arrived as itself at the `OK` prompt, except the ten the
+Dragon has no key for, `typeIn.unreachable` ``[\]^_`{|}~``. A visitor who types
+one gets whatever that US key makes here (`[` gives `@`, `^` gives `&`) or
+nothing. Capitals typed with Shift held arrive as the same capitals (the
+lower-case mode is SHIFT+0's toggle, not Shift+letter); a capital from Caps
+Lock is the bare letter key (the case rule). The Dragon has no Caps Lock key,
+so the visitor's has no effect on it. Evidence:
+`/data/vms/streamhost/stations/dragon32/evidence/physical-charmap-2026-10-05/`.
 
 Two encoding details that bit during the add:
 

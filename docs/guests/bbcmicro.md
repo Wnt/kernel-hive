@@ -186,7 +186,8 @@ Derived from the driver's own `PORT_CHAR` table (`src/mame/acorn/bbc_kbd.cpp`,
 the `bbc_keyboard` port) with `scripts/dev/mame-keymap.py`, not guessed.
 Thirteen characters sit on different keys from a US PC; the map is declared once
 in `registry/stations/bbcmicro.json` (`keyboard.charMap`, mirrored to `SH_KEY_MAP`
-for labctl) and used by the UI typist and by the builder's proof:
+for labctl) and used by the UI typists, the builder's proof and, since
+2026-10-05 (`keyboard.physical`), the visitor's own keys and on-screen keyboard:
 
 | BBC character | send this US key |
 |---|---|
@@ -203,6 +204,22 @@ for labctl) and used by the UI typist and by the builder's proof:
 
 Untranslated, `=` and every bracket land one key over and a BASIC listing is
 quietly corrupt — the symptom reads exactly like dropped keystrokes.
+
+**Checked on the frame, 2026-10-05.** Every printable ASCII character typed
+through the SPA's real key path (a US visitor's keys, Shift held) on a rig of
+this station's binary, read in MODE 4: each arrives as itself except three,
+which are `typeIn.unreachable`:
+
+- `\` and `|`: the BBC's `\ |` key has no host key in `bbcmicro.keymap` (every
+  US key already drives a BBC key, and the BBC has one more); a visitor's `\`
+  or `|` gives `@`.
+- `` ` ``: the BBC has no backtick. Its code 96 is the `£` on the `_ £` key, and
+  the visitor's `` ` `` gives `_`.
+
+Letters are upper case whatever the visitor's Shift does (CAPS LOCK, below).
+Caps Lock is the BBC's own CAPS LOCK key: pressed, it turns the MOS's CAPS LOCK
+off, and letters then arrive in lower case. Evidence:
+`/data/vms/streamhost/stations/bbcmicro/evidence/physical-charmap-2026-10-05/`.
 
 **The MOS enables CAPS LOCK at reset**, so letters arrive upper case, which is
 what BBC BASIC's tokeniser requires. That holds whether or not Shift is held.

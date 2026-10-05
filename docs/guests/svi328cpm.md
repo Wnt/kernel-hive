@@ -104,6 +104,15 @@ Colon and semicolon require the registry character-map swap; quotes, comma,
 asterisk and Control use the generated matrix. Ctrl+C interrupts CP/M;
 Ctrl+End is SV STOP. Finnish characters are not claimed.
 
+The visitor's own keys and the on-screen keyboard use the charMap too
+(`keyboard.physical`, 2026-10-05). Checked on the frame at `A>` with every
+printable ASCII character typed through the SPA's real key path on a rig of this
+station's binary: CP/M 2.24 reads the keyboard as SV BASIC does, and each
+character arrives as itself except `` ` `` and `|`, which the SV-328 has no key
+for (the US `` ` `` key is not wired; `|` gives `~`). `~` is Shift+`\` here and is
+now in the map. Evidence:
+`/data/vms/streamhost/stations/svi328cpm/evidence/physical-charmap-2026-10-05/`.
+
 The Type program launches MBASIC from `A>`, clears program memory and enters
 an original numbered loop. RUN prints **SPECTRAVIDEO CP/M** and the five
 squares **1 1**, **2 4**, **3 9**, **4 16**, **5 25**; LIST permits editing,

@@ -85,9 +85,9 @@ So the station carries `keyboard.charMap` (guest character -> the US key
 that makes it) and `SH_KEY_MAP` (the same map for labctl), and
 `keyboard.physical: true` applies the map to the **visitor's own keys**
 too (`spa/src/three/physicalCharMap.ts`): a US visitor typing `"` sends
-Shift+2, `+` sends the bare `]` key, `y` sends the Z key. cpm22 is the first
-station with `physical` set. The other charMap stations still map only the
-typists until each is rechecked.
+Shift+2, `+` sends the bare `]` key, `y` sends the Z key. cpm22 was the first
+station with `physical` set; every station whose layout differs from a US PC
+has it since 2026-10-05 ([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md)).
 
 **Unreachable on this disk:** ``# @ [ \ ] ^ ` { | } < >``. No key produces
 them. A visitor who types one gets whatever the US key makes here: `@` gives

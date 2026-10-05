@@ -89,7 +89,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/atari800xl/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/atari800xl/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": "\":@,':&,&:^,@:*,<:-,>:=,-:[,_:{,=:],|:},+:',\\:\",*:\\,^:|,[:<,]:>"
     },
     "vmidLabel": 186,
     "bringUpOrder": 90,
@@ -184,5 +185,26 @@
     "scaffolded from apple2 on 2026-09-08 (--like apple2, registry-to-native.py --engine=mame); the native shape is apple2e's",
     "spine 2026-09-08: device set a800xlp (Atari 800XL PAL — a130xe is MACHINE_NOT_WORKING in 0.289, a800xl NTSC is the same driver), -sio a1050 (`-flop1..4` .atr/.xfd), -ctrl1 joy (CX40 joystick on port 1, driven from the keyboard's arrow keys + a fire key through keymap override rows), cartslot empty (built-in BASIC)",
     "golden5 stream 2026-09-08: XBASIC.XEX removed from the menu -- RETURN on it never reached a BASIC READY prompt (three DOSINI/DOSVEC fixes tried by golden4, all worse than or equal to a plain return-to-menu), so it does not ship. demoProgram and keyboard.charMap/SH_KEY_MAP were added only to type into that XBASIC prompt and are removed with it -- the '=' key mapping (host `]` -> guest `=`) is now unproven and unshipped; see docs/lab/ATARI800XL-WAVE.md OPEN items."
-  ]
+  ],
+  "keyboard": {
+    "charMap": {
+      "\"": "@",
+      "'": "&",
+      "&": "^",
+      "@": "*",
+      "<": "-",
+      ">": "=",
+      "-": "[",
+      "_": "{",
+      "=": "]",
+      "|": "}",
+      "+": "'",
+      "\\": "\"",
+      "*": "\\",
+      "^": "|",
+      "[": "<",
+      "]": ">"
+    },
+    "physical": true
+  }
 }

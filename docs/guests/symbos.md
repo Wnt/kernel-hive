@@ -80,6 +80,20 @@ legends differ from MAME's Dutch machine labels: scancode 0x2b uses KEY1
 25-byte string `Hello from SymbOS! 2+2=4.`; natural-keyboard CODE is for DOS,
 not the desktop's matrix scanner.
 
+**Two key pairs are swapped, so the station has a charMap (2026-10-05).**
+Measured in Notepad with every US key bare and shifted typed at its US position
+on a rig of this station's binary and disk: SymbOS's own layout table puts `` ` ``
+on the key a US board labels `'` and `'` on the `` ` `` key, and likewise `~` on
+Shift+`'` and `"` on Shift+`` ` ``; every other key is US. A visitor's `"` therefore
+arrived as `~`. `keyboard.charMap` swaps the two pairs (`SH_KEY_MAP` for labctl)
+and `keyboard.physical` applies it to the visitor's own keys and the on-screen
+keyboard. Typed through the SPA's real key path afterwards, all 95 printable
+ASCII characters arrived as themselves in Notepad (`^` and `*` are distinct, if
+small, glyphs in its font), and so did a mixed-case line. The nms8250's CAPS key
+is its own, so a visitor's Caps Lock inverts letter case there
+(docs/TYPE-IN-EDITOR.md). Evidence:
+`/data/vms/streamhost/stations/symbos/evidence/physical-charmap-2026-10-05/`.
+
 Mouse input uses the actual joystick-port-1 mouse fields, including left/right
 buttons and X/Y axes. The published 1024×768 framebuffer contains a 964×572
 active raster at (30,103), mapping a 512×212 guest desktop. Measured gain is

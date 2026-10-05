@@ -89,8 +89,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/domainos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/domainos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": "\":@,&:^,':&,(:*,):(,%3A:',*:\",~:`"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 192,
     "bringUpOrder": 96,
@@ -192,18 +191,6 @@
     ],
     "runCommand": "",
     "perCharMs": 380
-  },
-  "keyboard": {
-    "charMap": {
-      "\"": "@",
-      "&": "^",
-      "'": "&",
-      "(": "*",
-      ")": "(",
-      ":": "'",
-      "*": "\"",
-      "~": "`"
-    }
   },
   "listing": {
     "state": "hidden",

@@ -125,12 +125,49 @@ field go through `physicalTypist` (`spa/src/three/physicalCharMap.ts`). The
 order is fixed: the case rule above first (which character the visitor
 means), then the charMap (which US key makes it on the guest), the order the
 typists use too. A held key's keyup releases the scancode its press sent.
-cpm22 (a German CP/M, `docs/guests/cpm22.md`) and amstradcpc (the CPC's
-UK-style layout, `docs/guests/amstradcpc.md`) have it on (2026-10-04); each
-other charMap station is rechecked before it gets the flag, because a map
-written for the typists can be wrong for a visitor's keys. amstradcpc's was
-checked against its keymap for all 95 printable ASCII characters: each lands
-as itself but `~`, which has no CPC key.
+
+It is on for every station whose layout differs from a US PC: amstradcpc,
+armeval, atari800xl, bbcmicro, cpm22, dragon32, fmtowns, kc854, mpf2,
+msxturbor, samcoupe, svi328, svi328cpm and symbos. A map written for the
+typists can be wrong for a visitor's keys, so each one was checked before it
+got the flag: on a rig of the station's own binary, through a sandbox daemon,
+with the keys a US keyboard sends for every printable ASCII character (the
+SPA's real `sendKeyEvent`, the visitor's Shift held as a person holds it), and
+the frame read character by character (amstradcpc by the cpc-native wave
+against its keymap). Each guest doc's keyboard section has the station's
+table. What the check changed (2026-10-05):
+
+- **Re-derived.** fmtowns carried samcoupe's map entry for entry; its JIS map
+  now comes from the machine, and the PC `` ` `` key drives the Towns's `] }`
+  key (it was a second ESC). symbos (SymbOS swaps `'` with `` ` `` and `"`
+  with `~`) and atari800xl (16 entries) had no map. domainos's map was wrong
+  on today's binary: its keyboard answers as a US one, so the map is gone and
+  the station has no flag.
+- **Completed.** samcoupe `\` (Shift+INV), svi328 and svi328cpm `~`, msxturbor
+  `{` `}` `~`. mpf2 sends the 26 capitals as their bare keys: on that
+  upper-only machine Shift+letter is a symbol (`+` is Shift+P), so a capital
+  typed with Shift arrived as a symbol or as nothing.
+- **kc854's case.** The KC's plain letter row is upper case, so its map swaps
+  all 52 letters, and the PC's Caps Lock is no longer bound to the KC's Shift
+  Lock (`kc854.keymap`). The browser already folds Caps Lock into the
+  character, and a Shift Lock toggled by the same key inverted it again
+  (`PRINT` typed with Caps Lock on arrived as `print`). The visitor gets the
+  character on their keycap in the case they typed, with or without Caps Lock.
+
+A character a machine has no key for goes in `typeIn.unreachable` (or in the
+guest doc, for a station without an editor), never into the map as a
+look-alike. A visitor who types one gets whatever that US key makes there, as
+before.
+
+**Caps Lock elsewhere is the guest's own (OPEN).** The SPA forwards the Caps
+Lock key, so on a guest that has one (fmtowns, samcoupe, the SVIs, the MSXs,
+the PCs) the guest's lock goes on with the visitor's. The browser has also
+folded Caps Lock into the character, so letters come out inverted: `Hello
+World` with Caps Lock on arrived on the fmtowns rig as `hELLO wORLD`. That is
+not the charMap (a station without one does the same); the fix is a fleet
+decision about who owns letter case, the browser or the guest. On bbcmicro and
+armeval the key toggles the BBC's CAPS LOCK, which the MOS turns on at reset,
+so a visitor's Caps Lock gives lower case there.
 
 ## Example programs and manual links
 
