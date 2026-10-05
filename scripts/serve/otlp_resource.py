@@ -39,8 +39,8 @@ Hive" to report:
                         `streamhost-<gitsha>`.
 
 WHY THE DAEMON VERSION IS TIME-GATED. The symlink says what the station runs
-NOW; a span was produced at some point in the past, and the forwarder reads the
-tree minutes to hours later. Claiming the current artifact for a span that
+NOW; a span was produced at some point in the past, and an export reads the
+tree minutes to days later. Claiming the current artifact for a span that
 predates a canary swap would be a fabricated fact of exactly the kind
 `service.version` exists to prevent. So the link's own mtime is compared against
 the span's start: a link installed AFTER the span cannot be what produced it,

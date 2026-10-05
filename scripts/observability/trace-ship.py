@@ -40,7 +40,7 @@ oneshot unit cannot overlap itself, and a tick during a run is dropped rather
 than queued). It keeps no watermark to lose across a restart — the spool
 directory IS the state, and a batch is deleted only after the store says it
 took it. Installing the unit does not start it; enabling it is an operator
-decision, spelled out in docs/lab/INSTANA-VIEW-INVENTORY.md §2.
+decision.
 
 ONLY COMPLETE FILES ARE EVER READ. The daemon publishes with tmp+rename, so a
 name matching `*.json` in the spool is finished by construction and a partial

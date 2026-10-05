@@ -1,57 +1,40 @@
-"""Stored vitals rows -> OTLP/JSON `resourceMetrics`, one entity per station.
+"""Stored vitals rows -> OTLP/JSON `resourceMetrics`, one resource per station.
 
 THE SIBLING OF `logs_otlp.py` and `traces_otlp.py`: same hand-rolled OTLP/JSON,
-same no-dependency posture, same `export(rows, host_id=...)` shape. It reuses
-`traces_otlp`'s value/attribute/nanosecond encoders rather than growing a second
-set — an OTLP `KeyValue` is an OTLP `KeyValue` whichever signal carries it.
+same no-dependency posture, same `export(rows)` shape. It reuses `traces_otlp`'s
+value/attribute/nanosecond encoders rather than growing a second set — an OTLP
+`KeyValue` is an OTLP `KeyValue` whichever signal carries it.
 
     COUPLING, stated for the merge: this module imports `_attrs` and `_nanos`
     from `traces_otlp`. They are the only names it takes, neither is touched
     here, and a rename on that side is a one-line fix here.
 
-WHY THIS MAKES EACH STATION AN ENTITY, which is the whole reason the export
-exists in this shape. Instana builds a first-class monitored entity out of OTLP
-METRICS ALONE — no spans required:
-
-    "Instana creates an OpenTelemetry entity from the metrics data.
-     OpenTelemetry spans automatically link to this entity by using the
-     `service.name` and `service.instance.id` resource attributes... Correlation
-     chain: OpenTelemetry span > OpenTelemetry entity > Host entity"
-        — 0311-...-infrastructure-correlation.md:236-248
-
-So the resource envelope below puts THE STATION ID in `service.instance.id`, and
-that one choice is what turns 71 exhibits into 71 entities rather than one
-service with a station label. They are reachable at Infrastructure > Analyze
-infrastructure > OpenTelemetry, or by Dynamic Focus `entity.type:opentelemetry`
-(0307-opentelemetry-signals.md:87-89).
+WHY EACH STATION IS ITS OWN RESOURCE, which is the whole reason the export
+exists in this shape. The resource envelope below puts THE STATION ID in
+`service.instance.id`, and that one choice is what turns 71 exhibits into 71
+producers rather than one service with a station label — the same identity the
+daemon's spans carry (`traces_otlp.py`), so a consumer that joins spans to
+metrics by `service.instance.id` lands on the right machine.
 
 SESSION IS A DATA-POINT ATTRIBUTE, NOT PART OF THE RESOURCE, and that is a
 cardinality decision rather than a stylistic one. A session id is unbounded over
-time; putting it in the resource would mint a new OpenTelemetry ENTITY for every
-tab that ever opened a station, and entities are the thing an infrastructure
-backend keeps forever. As an attribute it is a dimension on a point, which is
-what it actually is.
+time; putting it in the resource would mint a new resource for every tab that
+ever opened a station, and resources are the thing an infrastructure backend
+keeps forever. As an attribute it is a dimension on a point, which is what it
+actually is.
 
-THE INSTRUMENT KINDS ARE THE CATALOGUE'S, not this file's. Instana's acceptor
-takes Gauge, Sum and Histogram (0307:90-94), and `vitals_schema.CATALOGUE` says
-which each vital is. A cumulative counter exported as a gauge would render as a
-line that only goes up and mean nothing; the catalogue is where that is decided
-and this file only obeys it.
+THE INSTRUMENT KINDS ARE THE CATALOGUE'S, not this file's. OTLP has Gauge, Sum
+and Histogram, and `vitals_schema.CATALOGUE` says which each vital is. A
+cumulative counter exported as a gauge would render as a line that only goes up
+and mean nothing; the catalogue is where that is decided and this file only
+obeys it.
 
 TEMPORALITY: `aggregationTemporality: 2` (CUMULATIVE) on every Sum, with
 `isMonotonic: true`. That is the truth about these counters — the browser adds
 to them from session start and never resets — and it is what lets a backend
 compute a rate from two points. DELTA temporality would require this file to
 diff consecutive samples, which it cannot do correctly across the page
-boundaries the forwarder ships in.
-
-ONE TIMESTAMP CAVEAT THAT IS NOT OURS TO FIX. "The metric timestamp that is
-recorded for OpenTelemetry metrics is the timestamp of ingestion into Instana"
-(0307:98) — our `timeUnixNano` is sent, correctly, and Instana replaces it with
-its own. That is why the forward CADENCE matters more than this file does, and
-why the vitals leg runs on its own short timer instead of riding the five-minute
-trace forwarder; see `scripts/observability/instana_vitals.py`. Our own store
-keeps the honest producer clock either way, which is the point of having one.
+boundaries an export is cut at.
 """
 
 from __future__ import annotations
@@ -87,7 +70,7 @@ def _points(rows: list[dict], column: str) -> list[dict]:
                 # the spec. We do not know the session start from a row, and a
                 # wrong start time makes a backend compute a wrong first rate,
                 # so both are the sample time: a consumer that needs a rate
-                # takes it from consecutive points, which is what Instana does.
+                # takes it from consecutive points.
                 "startTimeUnixNano": _nanos(r["tsMs"]),
                 "timeUnixNano": _nanos(r["tsMs"]),
                 "asDouble": float(v),
@@ -97,7 +80,7 @@ def _points(rows: list[dict], column: str) -> list[dict]:
     return out
 
 
-def export(rows: list[dict], host_id: str | None = None) -> dict:
+def export(rows: list[dict]) -> dict:
     """`{"resourceMetrics": [...]}` for a page of stored samples.
 
     Grouped by (station, build) — the tuple that defines the RESOURCE, i.e. the
@@ -124,19 +107,14 @@ def export(rows: list[dict], host_id: str | None = None) -> dict:
             continue
         res = {
             "service.name": SERVICE_NAME,
-            # THE LINE THAT MAKES A STATION AN ENTITY. See the module docstring.
+            # THE LINE THAT MAKES A STATION ITS OWN RESOURCE. See the module
+            # docstring.
             "service.instance.id": station,
             "telemetry.sdk.name": "kernel-hive",
             "telemetry.sdk.language": "webjs",
         }
         if build != "unknown":
             res["service.version"] = build
-        if host_id:
-            # The other half of the identity Instana requires. Gated by the
-            # caller on the DESTINATION: the local host agent supplies host
-            # identity itself, and a second, differently-derived one would be a
-            # claim we cannot back. Same rule as the trace and log legs.
-            res["host.id"] = host_id
         out.append(
             {
                 "resource": {"attributes": _attrs(res)},

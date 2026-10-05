@@ -76,8 +76,6 @@ def route(store, leaf: str, body: dict, reply) -> None:
         # The export boundary, same contract as the trace and log lanes': run
         # the SAME query the UI ran and render the matches as OTLP/JSON, so
         # what you hand another system is exactly the set you were looking at.
-        # It is also how an operator answers "are the numbers Instana is
-        # showing the numbers we sent" without reading the forwarder's logs.
         import vitals_otlp
 
         found = store.series(**{**filters(body), "limit": 5000})

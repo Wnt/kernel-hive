@@ -10,13 +10,13 @@ SPLIT OUT OF `logs.py` for the same reason `traces_schema.py` is split out of
     is exactly what happened on 2026-09-01. Indexes over migrated columns are
     created by the migration, after the ALTER, on every path.
 
-WHY `seq INTEGER PRIMARY KEY AUTOINCREMENT` AND NOT A PLAIN ROWID. `seq` is the
-watermark the Instana forwarder resumes from. A plain rowid is "one more than
-the current maximum", so deleting the newest rows (which `prune()` never does,
-but a size backstop or a manual repair might) hands the same number out twice —
-and a duplicate watermark is silent data loss, the exact defect the trace
-store's `ingest_seq` was invented to fix. AUTOINCREMENT costs one extra table
-(`sqlite_sequence`) and buys monotonicity that survives any delete.
+WHY `seq INTEGER PRIMARY KEY AUTOINCREMENT` AND NOT A PLAIN ROWID. `seq` is a
+record's identity — the tiebreak in every ordering and the id a reader quotes.
+A plain rowid is "one more than the current maximum", so deleting the newest
+rows (which `prune()` never does, but a size backstop or a manual repair might)
+hands the same number out twice, and two records then answer to one id.
+AUTOINCREMENT costs one extra table (`sqlite_sequence`) and buys an id that is
+never reused after any delete.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS log (
   -- opens with. OTel calls the pair Timestamp / ObservedTimestamp.
   ts_ms INTEGER NOT NULL, observed_ms INTEGER NOT NULL,
   -- OTel severity, both halves: the text is what a human filters on, the
-  -- number is what sorts and what Instana falls back to (0307:333).
+  -- number is what sorts and what a reader falls back to.
   severity TEXT NOT NULL, sev_num INTEGER NOT NULL,
   -- WHO. service is the producer plane; instance is the station, the tab or
   -- the host within it. Together they are the resource identity an OTLP

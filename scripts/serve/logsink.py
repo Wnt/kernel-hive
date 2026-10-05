@@ -16,7 +16,7 @@ TWO TRAPS THIS FILE EXISTS TO CLOSE.
    stored record automatically — `tracing.current()` is the thread-local
    innermost span, and the HTTP instrumentation has already opened one for the
    request in flight — so a slow span and the lines emitted during it are one
-   query apart in both our store and Instana.
+   query apart in our store.
 
 THE FILE IS THE FALLBACK, NOT THE FORMER PATH. Every line still goes to stderr
 even when the store accepts it. A store that is full, locked or absent must not
@@ -121,11 +121,11 @@ def write(msg: str, severity: str = "INFO", attrs: dict | None = None, ts_ms: in
 
 
 def exception(msg: str, err: BaseException, attrs: dict | None = None) -> None:
-    """An ERROR record carrying the stack, under the attribute names Instana
-    documents support for (`exception.type`, `exception.message`,
-    `exception.stacktrace` — 0307:337). The trace store refuses stacks by
-    policy; the log store is where they were always supposed to live, and it
-    is why `clientlog.jsonl` had to exist."""
+    """An ERROR record carrying the stack, under the OTel semantic-convention
+    attribute names (`exception.type`, `exception.message`,
+    `exception.stacktrace`). The trace store refuses stacks by policy; the log
+    store is where they were always supposed to live, and it is why
+    `clientlog.jsonl` had to exist."""
     import traceback
 
     a = dict(attrs or {})

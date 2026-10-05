@@ -2,7 +2,8 @@
 """Every route that INGESTS our own telemetry must be a known telemetry path.
 
 This has been missed before: `/logs` was added with the log plane and not to
-the list, so a telemetry endpoint generated telemetry about itself.
+the list, so every log upload was itself traced — a telemetry endpoint
+generating telemetry about itself.
 
 The list is the single source (`telemetry_paths.TELEMETRY_PATHS`, mirrored
 from the SPA's `KH_TELEMETRY_PATHS`), so the failure mode is always the same:
@@ -27,7 +28,7 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 TS_SOURCE = REPO / "spa" / "src" / "analytics" / "telemetryPaths.ts"
 
 #: Routes the dispatcher serves that are READS, not ingest. A report a human
-#: opens is ordinary traffic and should stay visible in both planes.
+#: opens is ordinary traffic and should stay traced.
 READ_ROUTES = {"/analytics/report.json", "/coverage/report.json", "/usage/stations.json"}
 
 
@@ -45,8 +46,8 @@ class TelemetryPathsAreComplete(unittest.TestCase):
             missing,
             [],
             f"ingest route(s) {missing} are not in TELEMETRY_PATHS — the browser will "
-            f"trace them, so telemetry measures itself. "
-            f"Add them to spa/src/analytics/telemetryPaths.ts's KH_TELEMETRY_PATHS and to "
+            f"trace them, so telemetry measures itself. Add them to "
+            f"spa/src/analytics/telemetryPaths.ts's KH_TELEMETRY_PATHS and to "
             f"scripts/serve/telemetry_paths.py.",
         )
 
@@ -55,10 +56,6 @@ class TelemetryPathsAreComplete(unittest.TestCase):
         # finds nothing, this test would pass vacuously forever.
         self.assertIn("/traces", ingest_routes())
         self.assertIn("/logs", ingest_routes())
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 def ts_paths() -> list[str]:
@@ -71,10 +68,10 @@ def ts_paths() -> list[str]:
 class TheTwoCopiesAgree(unittest.TestCase):
     """The list exists twice, in two languages, and cannot be shared.
 
-    The Python copy is in another process entirely. Sharing them would need a
-    build step neither currently has, so instead they are pinned equal here.
+    The Python copy is in another process entirely, and sharing them would need
+    a build step neither currently has, so instead they are pinned equal here.
     `/logs` was once added to one and not the other, and the symptom appeared
-    far from any test.
+    in a trace view rather than in a test.
     """
 
     def test_the_typescript_and_python_lists_are_identical(self):
@@ -86,3 +83,7 @@ class TheTwoCopiesAgree(unittest.TestCase):
         got = ts_paths()
         self.assertIn("/traces", got)
         self.assertGreater(len(got), 3)
+
+
+if __name__ == "__main__":
+    unittest.main()

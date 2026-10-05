@@ -1,10 +1,10 @@
-"""Stored log rows -> OTLP/JSON `resourceLogs`, for the Instana logs leg.
+"""Stored log rows -> OTLP/JSON `resourceLogs`, the logs export boundary.
 
 THE SIBLING OF `traces_otlp.py`, deliberately: same hand-rolled OTLP/JSON, same
-no-dependency posture, same `export(rows, host_id=...)` signature shape. It
-reuses that module's value/attribute/nanosecond encoders rather than growing a
-second set — an OTLP `KeyValue` is an OTLP `KeyValue` whichever signal carries
-it, and two encoders would drift.
+no-dependency posture, same `export(rows)` signature shape. It reuses that
+module's value/attribute/nanosecond encoders rather than growing a second set —
+an OTLP `KeyValue` is an OTLP `KeyValue` whichever signal carries it, and two
+encoders would drift.
 
     COUPLING, stated for the merge: this module imports `_any_value`, `_attrs`
     and `_nanos` from `traces_otlp`. They are the only names it takes, none of
@@ -13,21 +13,18 @@ it, and two encoders would drift.
 FIELD MAPPING — store column -> OTLP LogRecord field:
 
     ts_ms        -> timeUnixNano            (producer clock)
-    observed_ms  -> observedTimeUnixNano    (ours; Instana timestamps on
-                                             ingest anyway — 0307:332)
-    severity     -> severityText            (Instana's PRIMARY level source)
-    sev_num      -> severityNumber          (its documented fallback, 0307:333)
-    body         -> body.stringValue        ("incorporated without any
-                                             alterations" — 0307:331)
-    trace_id     -> traceId  }  the join. Instana takes both unaltered
-    span_id      -> spanId   }  (0307:331); so does every OTel backend.
-    attrs        -> attributes             ("supported as key-value pairs
-                                             through the Custom Tags", 0307:336)
-    service      -> resource service.name  (what Instana correlates a log to a
-                                            SERVICE with — 0307:1693)
-    instance     -> resource service.instance.id (one of the identifiers
-                                            Instana accepts as the required
-                                            host/entity identity — 0307:338-352)
+    observed_ms  -> observedTimeUnixNano    (ours: when the store took it)
+    severity     -> severityText
+    sev_num      -> severityNumber          (what sorts, and the fallback
+                                             when the text is unrecognised)
+    body         -> body.stringValue        (unaltered)
+    trace_id     -> traceId  }  the join, unaltered; every OTel backend
+    span_id      -> spanId   }  correlates a log to its span on these two.
+    attrs        -> attributes
+    service      -> resource service.name  (what a log is correlated to a
+                                            SERVICE with)
+    instance     -> resource service.instance.id (WHICH producer of that
+                                            service — a tab, the box, a station)
 
 `flags` is set to 1 (SAMPLED) on any record that carries a trace id, because a
 LogRecord whose TraceFlags say "not sampled" invites a backend to treat the
@@ -44,8 +41,8 @@ SERVICE_DEFAULT = "kernel-hive-serve"
 SCOPE_NAME = "kernel-hive"
 
 #: `service.name` suffix -> `telemetry.sdk.language`. Same table as the trace
-#: exporter's, kept explicit because a wrong language tag sends an Instana
-#: operator looking for a Python stack in a browser's log.
+#: exporter's, kept explicit because a wrong language tag sends an operator
+#: looking for a Python stack in a browser's log.
 _LANG = {"kernel-hive-serve": "python", "kernel-hive-daemon": "rust", "kernel-hive-spa": "webjs"}
 
 
@@ -75,7 +72,7 @@ def record_to_otlp(r: dict) -> dict:
     return out
 
 
-def export(rows: list[dict], host_id: str | None = None) -> dict:
+def export(rows: list[dict]) -> dict:
     """`{"resourceLogs": [...]}` for a page of stored rows.
 
     Grouped by (service, instance, build) — the tuple that defines a resource.
@@ -94,16 +91,9 @@ def export(rows: list[dict], host_id: str | None = None) -> dict:
             "telemetry.sdk.language": _LANG.get(service, "python"),
         }
         if instance != "unknown":
-            # REQUIRED, not decorative: "Host or entity identification is
-            # required for Instana to accept OpenTelemetry logs"
-            # (0307:338-352), and `service.instance.id` is on its accepted
-            # list. `host.id` below is the other half, for the direct-to-SaaS
-            # leg whose accepted set is narrower (0308:205).
             res["service.instance.id"] = instance
         if build != "unknown":
             res["service.version"] = build
-        if host_id:
-            res["host.id"] = host_id
         out.append(
             {
                 "resource": {"attributes": _attrs(res)},

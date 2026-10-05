@@ -5,13 +5,12 @@ Everything here is about identity and fidelity instead: which language a service
 reports, which build produced a span, which of sixty-one daemons it was, and
 whether the attributes a consumer renders actually survive our own intake to
 reach the wire. Each test below corresponds to something that was measured wrong
-against a live tenant on 2026-09-01, not to a hypothetical.
+in a live export on 2026-09-01, not to a hypothetical.
 """
 
 from __future__ import annotations
 
 import os
-import re
 import sys
 import tempfile
 import unittest
@@ -20,7 +19,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent / "serve"))
 
 import otlp_resource  # noqa: E402
-import telemetry_paths  # noqa: E402
 import traces  # noqa: E402
 import traces_otlp  # noqa: E402
 
@@ -115,7 +113,6 @@ class ExportCase(unittest.TestCase):
         )
         return traces_otlp.export(
             [self.store.trace(T1)],
-            host_id="labhost",
             host_name="labhost",
             builds=self.box.builds(),
         )
@@ -202,9 +199,8 @@ class VersionTest(ExportCase):
 
 
 class InstanceTest(ExportCase):
-    """`service.instance.id` is on Instana's consumed list and was absent. Sixty
-    one daemons merged into one node is a service map that cannot say which
-    machine was asleep."""
+    """`service.instance.id` was absent. Sixty one daemons merged into one node
+    is a service map that cannot say which machine was asleep."""
 
     def test_each_service_names_the_instance_that_produced_the_span(self):
         by_service = resources(self.three_plane_trace())
@@ -232,85 +228,41 @@ class InstanceTest(ExportCase):
         }
         self.assertEqual(stations, {"irix", "beos"})
 
-    def test_the_host_is_named_for_instana_to_correlate(self):
+    def test_the_serving_plane_names_its_host(self):
         by_service = resources(self.three_plane_trace())
         self.assertEqual(by_service["kernel-hive-serve"]["host.name"], "labhost")
-        self.assertEqual(by_service["kernel-hive-serve"]["host.id"], "labhost")
 
 
-class InstanaAttributeTest(ExportCase):
-    """THE BROADER ASK. Instana's documented consumed set is the PREVIOUS
-    generation of the HTTP conventions; this plane emits the current ones. The
-    bridge is additive and lives at the export boundary — and it is only worth
-    anything if the attributes it derives from survived our own intake."""
+class AttributeFidelityTest(ExportCase):
+    """An export is a faithful rendering of the store: the attributes a
+    producer set reach the wire under exactly the names it used, nothing is
+    renamed and nothing is invented — and that is only worth anything if they
+    survived our own intake first."""
 
-    def entry_span(self, **attrs):
-        base = {
-            "kh.service": "kernel-hive-serve",
-            "http.request.method": "GET",
-            "http.route": "/station/{id}/signal",
-            "server.address": "gallery.example.com",
-            "http.response.status_code": 200,
-        }
-        base.update(attrs)
-        self.store.record(batch([span(S1, name="serve.signal", kind="server", a=base)]))
+    ENTRY = {
+        "kh.service": "kernel-hive-serve",
+        "http.request.method": "GET",
+        "http.route": "/station/{id}/signal",
+        "server.address": "gallery.example.com",
+        "http.response.status_code": 200,
+    }
+
+    def entry_span(self):
+        self.store.record(batch([span(S1, name="serve.signal", kind="server", a=dict(self.ENTRY))]))
         doc = traces_otlp.export([self.store.trace(T1)], builds=self.box.builds())
         return span_attrs(doc, "serve.signal")
 
-    def test_the_entry_spans_attributes_reach_the_wire_in_both_spellings(self):
+    def test_the_entry_spans_attributes_reach_the_wire_unchanged(self):
         a = self.entry_span()
-        self.assertEqual(a["http.request.method"], "GET")  # ours, untouched
-        self.assertEqual(a["http.method"], "GET")  # Instana's
-        self.assertEqual(a["http.status_code"], "200")
-        self.assertEqual(a["http.host"], "gallery.example.com")
+        self.assertEqual(a["http.request.method"], "GET")
+        self.assertEqual(a["http.response.status_code"], "200")
+        self.assertEqual(a["server.address"], "gallery.example.com")
         self.assertEqual(a["http.route"], "/station/{id}/signal")
 
-    def test_a_server_spans_own_address_is_not_reported_as_the_peer(self):
-        """On an entry span `server.address` is OUR authority. Calling it
-        `net.peer.name` would name the wrong machine on every service map."""
-        self.assertNotIn("net.peer.name", self.entry_span())
+    def test_the_export_adds_no_attribute_the_producer_did_not_set(self):
+        self.assertEqual(set(self.entry_span()), set(self.ENTRY))
 
-    def exit_span(self):
-        self.store.record(
-            batch(
-                [
-                    span(
-                        S1,
-                        name="http.client.request",
-                        kind="client",
-                        a={
-                            "http.request.method": "POST",
-                            "url.path": "/walkin/claim",
-                            "url.scheme": "https",
-                            "server.address": "gallery.example.com",
-                            "server.port": 443,
-                            "http.response.status_code": 200,
-                        },
-                    )
-                ]
-            )
-        )
-        doc = traces_otlp.export([self.store.trace(T1)], builds=self.box.builds())
-        return span_attrs(doc, "http.client.request")
-
-    def test_an_exit_span_carries_the_peer_attributes_a_service_map_needs(self):
-        a = self.exit_span()
-        self.assertEqual(a["net.peer.name"], "gallery.example.com")
-        self.assertEqual(a["net.peer.port"], "443")
-        self.assertEqual(a["http.host"], "gallery.example.com")
-        self.assertEqual(a["peer.service"], "kernel-hive-serve")
-        self.assertEqual(a["http.target"], "/walkin/claim")
-        self.assertEqual(a["http.scheme"], "https")
-
-    def test_http_url_is_populated_and_carries_no_query_string(self):
-        """`traces.py` BANNED_ATTRS refuses `url.full` and `url.query` outright,
-        so Instana's `http.url` pane can only be filled from parts. What it
-        costs is exactly the query string, and that is the intended trade."""
-        url = self.exit_span()["http.url"]
-        self.assertEqual(url, "https://gallery.example.com/walkin/claim")
-        self.assertNotIn("?", url)
-
-    def test_the_banned_attributes_still_cannot_reach_the_wire(self):
+    def test_a_credential_in_a_url_still_cannot_reach_the_wire(self):
         self.store.record(
             batch(
                 [
@@ -333,120 +285,7 @@ class InstanaAttributeTest(ExportCase):
         self.assertEqual(a["url.full"], "https://x/y?ticket=REDACTED")
         self.assertEqual(a["url.query"], "ticket=REDACTED")
         self.assertNotIn("secret", a["url.full"])
-        self.assertEqual(a["http.target"], "/y")
-
-    def test_a_producers_own_value_is_never_overwritten_by_the_bridge(self):
-        self.assertEqual(self.entry_span(**{"http.method": "PATCH"})["http.method"], "PATCH")
-
-    def test_the_browser_client_span_emits_the_parts_the_bridge_needs(self):
-        """The bridge can only derive from what `spa/src/analytics/khFetch.ts`
-        actually sets. Pinned here in Python because the cost of the TypeScript
-        quietly dropping one of these is an empty pane nobody notices."""
-        src = (Path(__file__).resolve().parents[1] / "spa" / "src" / "analytics" / "khFetch.ts").read_text()
-        for attr in ("http.request.method", "url.path", "url.scheme", "server.address", "server.port"):
-            self.assertIn(f"'{attr}'", src, f"khFetch.ts no longer sets {attr}")
-
-
-class SyntheticTest(ExportCase):
-    """Analytics -> Calls was 896 calls in an hour and almost all of them ours:
-    `serve.clientcmd`, `serve.clientlog`, `serve.analytics`. Instana's own
-    Synthetic mechanism hides those by default and keeps them one switch away;
-    the mark belongs on the WIRE and never in the store."""
-
-    def exported(self, route, name, kind="server"):
-        self.store.record(
-            batch([span(S1, name=name, kind=kind, a={"kh.service": "kernel-hive-serve", "http.route": route})])
-        )
-        doc = traces_otlp.export([self.store.trace(T1)], builds=self.box.builds())
-        return span_attrs(doc, name)
-
-    def test_the_polling_plane_is_marked_synthetic(self):
-        for route, name in (
-            ("/clientcmd", "serve.clientcmd"),
-            ("/clientlog", "serve.clientlog"),
-            ("/analytics", "serve.analytics"),
-            ("/usage", "serve.usage"),
-        ):
-            with self.subTest(route=route):
-                self.tearDown()
-                self.setUp()
-                self.assertTrue(self.exported(route, name)["synthetic"])
-
-    def test_serve_signal_is_never_marked_it_is_a_visitor_opening_a_station(self):
-        """The boundary that matters most. `/signal/{station}.json` is the first
-        thing that happens when somebody opens a machine; hiding it would hide
-        the gallery's own front door."""
-        self.assertNotIn("synthetic", self.exported("/signal/{station}.json", "serve.signal"))
-
-    def test_the_read_side_of_a_telemetry_subtree_stays_visible(self):
-        """Somebody has /admin open and is waiting. Exact matching, not a prefix
-        test, is what keeps these out of the hidden set."""
-        for route, name in (
-            ("/analytics/report.json", "serve.analytics.report.json"),
-            ("/coverage/report.json", "serve.coverage.report.json"),
-            ("/usage/stations.json", "serve.usage.stations.json"),
-        ):
-            with self.subTest(route=route):
-                self.tearDown()
-                self.setUp()
-                self.assertNotIn("synthetic", self.exported(route, name))
-
-    def test_only_entry_spans_are_marked(self):
-        self.assertNotIn("synthetic", self.exported("/clientcmd", "serve.clientcmd", kind="internal"))
-
-    def test_the_mark_is_on_the_wire_and_not_in_the_store(self):
-        """Rule four of the brief, as an assertion: our own plane keeps these
-        spans first-class. A `synthetic` attribute in traces.db would leak a
-        vendor's presentation vocabulary into /admin/observability."""
-        self.store.record(
-            batch(
-                [
-                    span(
-                        S1,
-                        name="serve.clientcmd",
-                        kind="server",
-                        a={"kh.service": "kernel-hive-serve", "http.route": "/clientcmd"},
-                    )
-                ]
-            )
-        )
-        stored = self.store.trace(T1)["spans"][0]["attributes"]
-        self.assertNotIn("synthetic", stored)
-        doc = traces_otlp.export([self.store.trace(T1)], builds=self.box.builds())
-        self.assertTrue(span_attrs(doc, "serve.clientcmd")["synthetic"])
-
-    def test_the_mark_is_a_boolean_not_the_string_true(self):
-        """OTLP AnyValue types are load-bearing: `"true"` is a string and would
-        not satisfy "annotated with synthetic with the value true"."""
-        self.store.record(
-            batch(
-                [
-                    span(
-                        S1,
-                        name="serve.clientcmd",
-                        kind="server",
-                        a={"kh.service": "kernel-hive-serve", "http.route": "/clientcmd"},
-                    )
-                ]
-            )
-        )
-        doc = traces_otlp.export([self.store.trace(T1)], builds=self.box.builds())
-        for rs in doc["resourceSpans"]:
-            for sp in rs["scopeSpans"][0]["spans"]:
-                for a in sp["attributes"]:
-                    if a["key"] == "synthetic":
-                        self.assertEqual(a["value"], {"boolValue": True})
-                        return
-        raise AssertionError("no synthetic attribute was exported")
-
-    def test_the_python_list_mirrors_the_typescript_one(self):
-        """One source of truth, two languages. A path added to the SPA's
-        `KH_TELEMETRY_PATHS` and forgotten here would keep polling the tenant's
-        call list forever, which is the drift this test exists to prevent."""
-        src = (Path(__file__).resolve().parents[1] / "spa" / "src" / "analytics" / "telemetryPaths.ts").read_text()
-        body = src.split("export const KH_TELEMETRY_PATHS = [", 1)[1].split("]", 1)[0]
-        typescript = set(re.findall(r"'([^']+)'", body))
-        self.assertEqual(typescript, set(telemetry_paths.TELEMETRY_PATHS))
+        self.assertEqual(a["url.path"], "/y")
 
 
 if __name__ == "__main__":

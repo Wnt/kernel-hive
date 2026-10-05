@@ -40,9 +40,8 @@ def load_tests(loader, tests, pattern):  # noqa: ARG001 - the unittest protocol'
         # loaded AS the package they live in — `serve/` on the path, not this
         # file's. APPENDED, never prepended: `scripts/serve/` holds `tracing.py`,
         # `probes.py` and friends whose names collide with modules `scripts/`
-        # tests import, and putting it first silently resolved three unrelated
-        # suites (fleet_rollout, instana_destination, trace_ship) against the
-        # serving copy instead. `scripts/` stays ahead of it; nothing in
+        # tests import, and putting it first silently resolved unrelated suites
+        # (fleet_rollout, trace_ship) against the serving copy instead. `scripts/` stays ahead of it; nothing in
         # `scripts/` is named `walkin`, so the adopted package still resolves.
         sys.path.append(str(SERVE))
     suite = unittest.TestSuite()

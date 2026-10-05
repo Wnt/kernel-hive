@@ -23,23 +23,17 @@ lands inside the very trace it is delivering, where it reads as work the
 visitor's journey did).
 
 THE RETURN LEG. A traced response carries its own span back to the caller in
-two headers, written at one choke point (`end_headers`, wrapped below) so that
+one header, written at one choke point (`end_headers`, wrapped below) so that
 every reply shape the stdlib can produce — 200, 304, 206, 416, HEAD, an error
-page, a streamed body — gets them without any handler knowing they exist:
+page, a streamed body — gets it without any handler knowing it exists:
+`traceresponse: 00-<trace-id>-<span-id>-01`, W3C Trace Context Level 2's
+response header and the mirror of the inbound `traceparent`. The browser reads
+it in `khFetch.ts` and records the id on its client span, so
+`/admin/observability` can walk from a click to the server trace.
 
-  * `traceresponse: 00-<trace-id>-<span-id>-01` — W3C Trace Context Level 2's
-    response header, the mirror of the inbound `traceparent`. This is OUR
-    plane's mechanism: the browser reads it in `khFetch.ts` and records the id
-    on its client span, so `/admin/observability` can walk from a click to the
-    server trace with no vendor in the loop.
-  * `Server-Timing: intid;desc=<trace-id>` — the vendor bridge. Instana's EUM
-    agent parses exactly this token and sets it as the beacon's
-    `backendTraceId`. It is emitted because it is free, not because anything
-    here depends on it.
-
-Both come from `tracecontext.response_headers()`, which returns `{}` for a
-NOOP span, so an UNTRACED route emits neither header, by construction rather
-than by a second copy of the allowlist.
+It comes from `tracecontext.response_headers()`, which returns `{}` for a NOOP
+span, so an UNTRACED route emits no header, by construction rather than by a
+second copy of the allowlist.
 
 THE ROUTE, NOT THE PATH. `http.route` is a low-cardinality TEMPLATE
 (`/signal/{station}.json`), which is what the OTel convention means by it and
@@ -201,18 +195,18 @@ def _status_of(handler) -> tuple:
 
 def set_response_trace(handler, span) -> None:
     """Name `span` as the span THIS response reports back — the ONE writer of
-    the return-leg headers.
+    the return-leg header.
 
-    Nothing else in the serving plane may put `traceresponse` or
-    `Server-Timing` on a response. They wait here, on the handler, until
-    `end_headers` writes them (see `_wrap_end_headers`), and the last caller
-    wins rather than appending — which is what makes "one response, one pair"
-    a property of the code rather than of every caller remembering.
+    Nothing else in the serving plane may put `traceresponse` on a response.
+    It waits here, on the handler, until `end_headers` writes it (see
+    `_wrap_end_headers`), and the last caller wins rather than appending —
+    which is what makes "one response, one header" a property of the code
+    rather than of every caller remembering.
 
     It was NOT a property of the code until 2026-09-01. `static_files.py`
-    merged its own copy of the same two headers into the `extra` dict of the
+    merged its own copy of the return-leg headers into the `extra` dict of the
     index.html reply, so a request that BOTH matched the route allowlist AND
-    fell through to the SPA fallback emitted two pairs naming two different
+    fell through to the SPA fallback emitted two of them naming two different
     spans. Every `/auth/*` and `/walkin/*` path on the ungated LAN listener is
     exactly that request: `auth_routes.dispatch` runs only when `self.public`,
     so on LAN those paths are answered with index.html. Two writers, no

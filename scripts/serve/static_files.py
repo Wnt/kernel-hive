@@ -117,16 +117,16 @@ def _traceparent_meta(handler) -> bytes | None:
     """The `<meta name="traceparent" content="00-...-...-01">` tag for THIS
     request, or None.
 
-    The exact tag name/attribute and the 4-part `00-<32hex>-<16hex>-<2hex>`
-    shape are not documented by Instana anywhere — they come from reading the
-    vendor's own minified website-monitoring agent, which looks for exactly
-    `document.querySelector('meta[name="traceparent"]')` and silently ignores
-    anything else. See docs/lab/TRACE-CONTEXT.md §8.
+    The reader is `spa/src/analytics/pageLoadLink.ts`, which looks for exactly
+    `document.querySelector('meta[name="traceparent"]')` and remembers the page
+    load's span, so every later action in the tab can link back to it. The
+    4-part `00-<32hex>-<16hex>-<2hex>` shape is the W3C `traceparent` value.
+    See docs/lab/TRACE-CONTEXT.md §4.
 
     The id is a REAL span, recorded in our own store (traces.db), not merely
     stamped into a page and never seen again. That is what lets an operator
     find this page load in /admin/observability by the same id the tag
-    advertises to Instana.
+    advertises.
 
     IT IS THE REQUEST'S SPAN WHENEVER THERE IS ONE. `tracing.current()` is the
     root span `tracing_http` opened for this request, and a fresh `serve.page`
@@ -166,12 +166,12 @@ def _traceparent_meta(handler) -> bytes | None:
             span.end("ok", {"http.response.status_code": 200})
         header = tracecontext.format(span.trace_id, span.span_id)
         # The SAME span, also handed back in the response headers (§4 of
-        # docs/lab/TRACE-CONTEXT.md): the meta tag is what a vendor agent reads
-        # out of the DOM, `traceresponse`/`Server-Timing` is what any HTTP
-        # client — ours included — can read without parsing HTML. Handed to
-        # `tracing_http`, the single writer of those two headers, rather than
-        # returned into this response's `extra` dict — see its
-        # `set_response_trace` for the two-writer bug that cost.
+        # docs/lab/TRACE-CONTEXT.md): the meta tag is what the page reads out
+        # of the DOM, `traceresponse` is what any HTTP client — ours included —
+        # can read without parsing HTML. Handed to `tracing_http`, the single
+        # writer of that header, rather than returned into this response's
+        # `extra` dict — see its `set_response_trace` for the two-writer bug
+        # that cost.
         tracing_http.set_response_trace(handler, span)
         return f'<meta name="traceparent" content="{header}">'.encode("ascii")
     except Exception:  # noqa: BLE001 - telemetry must never break the page
@@ -352,11 +352,11 @@ def serve_static(handler, path):
             # stale id into the artifact, because there is nothing to bake:
             # the id is minted fresh per request, right here).
             # Header AND tag, from the one span: a page load correlates for a
-            # reader that never touches the DOM. The headers do NOT go in
+            # reader that never touches the DOM. The header does NOT go in
             # `extra` — `_traceparent_meta` hands the span to
-            # `tracing_http.set_response_trace`, and `end_headers` writes them,
-            # which is what keeps ONE response to ONE pair of them. Empty (so:
-            # no headers) when the injection declined for any reason — tracing
+            # `tracing_http.set_response_trace`, and `end_headers` writes it,
+            # which is what keeps ONE response to ONE of them. Empty (so: no
+            # header) when the injection declined for any reason — tracing
             # unbound, a <head>-less document, anything raising — which keeps
             # the two channels from ever disagreeing about whether a span exists.
             data = _inject_traceparent(handler, target, data, (st.st_mtime_ns, size))

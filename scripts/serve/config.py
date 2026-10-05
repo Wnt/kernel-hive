@@ -57,12 +57,10 @@ TRACE_RETENTION_DAYS = int(os.environ.get("TRACE_RETENTION_DAYS", "14"))
 # row is roughly an order of magnitude more voluminous than a trace row at this
 # box's traffic (~20 MB/day against ~2 MB/day), and giving it its own file
 # means its retention, its WAL and its runaway backstop can be tuned without
-# touching the store the Applications view reads.
+# touching the store /admin/observability reads traces from.
 LOGS_DB = Path(os.environ.get("LOGS_DB", str(_HERE / "logs.db")))
-# SEVEN days, half the trace window. Two reasons, both defensible on one box:
-# a log row costs ~10x a trace row, and 7 days is Instana's own default log
-# retention ("All the collected logs are kept for 7 days", 0321-policies.md),
-# so both stores answer a question for the same window.
+# SEVEN days, half the trace window: a log row costs ~10x a trace row, and a
+# week still covers any incident somebody is going to come back to.
 LOG_RETENTION_DAYS = int(os.environ.get("LOG_RETENTION_DAYS", "7"))
 # The VITALS lane — continuous stream health as a time series, its own file for
 # the same reason logs.db is: a different shape, a different volume curve and a
@@ -136,15 +134,6 @@ CLIENTLOG_BODY_MAX = 16 * 1024  # request-body cap (shared by /clientcmd/admin)
 WEBRTC_OFFER_BODY_MAX = 128 * 1024
 WEBRTC_BRIDGE_UPSTREAM = os.environ.get("WEBRTC_BRIDGE_UPSTREAM", "http://127.0.0.1:18080").rstrip("/")
 WEBRTC_ICE_SERVERS_FILE = Path(os.environ.get("WEBRTC_ICE_SERVERS_FILE", str(_HERE / "webrtc-ice-servers.json")))
-# The Instana EUM beacon proxy's ONE upstream (scripts/serve/eum_proxy.py): a
-# single-line file holding the tenant's reporting URL. A FILE rather than an
-# environment variable because the systemd unit is committed to a public repo
-# with placeholder addresses in it and the tenant URL is not publishable — the
-# same reason WEBRTC_ICE_SERVERS_FILE is a file with a committed `.example`
-# beside it. scripts/serve-https-spa.sh publishes it from registry/local.env at
-# deploy time, alongside the vendor agent itself. Absent means the proxy is not
-# configured and POST /eum 404s, which is what a fresh clone must look like.
-INSTANA_EUM_UPSTREAM_FILE = Path(os.environ.get("INSTANA_EUM_UPSTREAM_FILE", str(_HERE / "instana-eum-upstream.txt")))
 CLIENTCMD = Path(os.environ.get("CLIENTCMD", str(_HERE / "clientcmd.json")))
 CLIENTCMD_TOKEN = Path(os.environ.get("CLIENTCMD_TOKEN", str(_HERE / "pki" / "clientcmd.token")))
 # Append-only record of every command an operator ISSUED. Deliberately NOT

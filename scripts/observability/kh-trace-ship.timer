@@ -3,15 +3,11 @@ Description=kernel-hive: periodic daemon span spool ship (every 2 min)
 Documentation=file:///data/kernel-hive/docs/ANALYTICS.md
 
 [Timer]
-# THIS PERIOD IS LOAD-BEARING FOR THE FORWARDER, which is why it is not a free
-# knob: instana_backlog.QUIET_MS is derived from it (DAEMON_CARRIER_MS + margin)
-# so that a trace is never declared quiet before its daemon half can have been
-# carried, and scripts/test_instana_forward.py reads OnUnitActiveSec out of this
-# file and fails if the two drift apart. Lengthening it therefore lengthens how
-# stale the tenant is; shortening it is free. Correctness never depended on the
-# race — the forwarder's ingest watermark re-selects a trace a late batch
-# touches — but a trace shipped in two pieces mis-correlates in Instana, whose
-# assembly window is about two seconds.
+# The period bounds how long a daemon span or log record waits in its station
+# spool before /admin/observability can show it. Shortening it is free: an
+# empty spool is a directory listing and nothing else. Correctness never
+# depends on it — a batch is deleted only after the store took it, and both
+# stores are idempotent on a re-ship (see trace-ship.py).
 OnBootSec=90s
 OnUnitActiveSec=2min
 AccuracySec=15s

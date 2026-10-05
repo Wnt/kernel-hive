@@ -44,11 +44,11 @@ class SchemaAndMigration(unittest.TestCase):
             self.assertIn(col, have)
         s.close()
 
-    def test_catalogue_kinds_are_only_what_instana_accepts(self):
-        """Gauge and Sum. Histogram is legal too (0307:90-94) and unused here;
-        anything else — an exponential histogram in particular, which the docs
-        are silent on — would be accepted by our store and dropped by the
-        acceptor, which is the worst of both."""
+    def test_catalogue_kinds_are_only_gauge_and_sum(self):
+        """Gauge and Sum, the two kinds `vitals_otlp.py` renders correctly: it
+        writes NumberDataPoints, which a histogram's points are not. Anything
+        else would be accepted by our store and refused by whatever reads the
+        export, which is the worst of both."""
         for _, name, unit, kind in vitals_schema.CATALOGUE:
             self.assertIn(kind, ("gauge", "sum"), name)
             self.assertTrue(unit, name)
@@ -204,10 +204,9 @@ class OtlpExport(unittest.TestCase):
             },
         ]
 
-    def test_each_station_is_its_own_entity(self):
-        """THE POINT OF THE WHOLE EXPORT. `service.instance.id` is what Instana
-        builds an OpenTelemetry entity from (0311:236-248); one resource per
-        station is one entity per exhibit."""
+    def test_each_station_is_its_own_resource(self):
+        """THE POINT OF THE WHOLE EXPORT. `service.instance.id` names the
+        producer; one resource per station is one producer per exhibit."""
         doc = vitals_otlp.export(self.rows)
         ids = [
             {a["key"]: a["value"]["stringValue"] for a in rm["resource"]["attributes"] if "stringValue" in a["value"]}[
@@ -219,7 +218,7 @@ class OtlpExport(unittest.TestCase):
 
     def test_session_is_a_point_attribute_and_never_part_of_the_resource(self):
         """A session id is unbounded over time. In the resource it would mint a
-        new ENTITY for every tab that ever opened a station."""
+        new resource for every tab that ever opened a station."""
         doc = vitals_otlp.export(self.rows)
         for rm in doc["resourceMetrics"]:
             keys = {a["key"] for a in rm["resource"]["attributes"]}
@@ -243,13 +242,6 @@ class OtlpExport(unittest.TestCase):
         doc = vitals_otlp.export(self.rows)
         names = {m["name"] for rm in doc["resourceMetrics"] for sm in rm["scopeMetrics"] for m in sm["metrics"]}
         self.assertNotIn("kh.stream.audio.underruns", names)
-
-    def test_host_id_is_stamped_only_when_asked(self):
-        with_host = vitals_otlp.export(self.rows, host_id="labhost")
-        keys = {a["key"] for a in with_host["resourceMetrics"][0]["resource"]["attributes"]}
-        self.assertIn("host.id", keys)
-        without = vitals_otlp.export(self.rows)
-        self.assertNotIn("host.id", {a["key"] for a in without["resourceMetrics"][0]["resource"]["attributes"]})
 
     def test_export_is_json_serialisable(self):
         json.dumps(vitals_otlp.export(self.rows))

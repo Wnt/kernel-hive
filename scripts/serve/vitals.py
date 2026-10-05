@@ -5,8 +5,8 @@ a question about a call or an event, so neither the trace lane nor the log lane
 answers it, and `analytics.db` cannot either — its counters have no per-sample
 timestamp, only a day bucket, which is honest for "how many restores yesterday"
 and a lie at any finer resolution. This store holds timestamped samples at
-sub-minute resolution, and it is the thing that survives dropping Instana: an
-OTLP export is a CONSUMER of it (`vitals_otlp.py`), never its purpose.
+sub-minute resolution, and it is the product: an OTLP export is a CONSUMER of
+it (`vitals_otlp.py`), never its purpose.
 
 WHAT IT IS NOT FOR. Discrete degradations — a stall, a decode error, an ABR
 downshift, blocked audio — are EVENTS, and they belong on the log and event
@@ -104,7 +104,7 @@ class VitalsStore:
     """Timestamped stream-health samples. Safe from any thread."""
 
     def __init__(self, path: Path, read_only: bool = False):
-        """`read_only` is for a REPORT or for the forwarder — same seam, same
+        """`read_only` is for a REPORT or an exporter — same seam, same
         reason, as `traces.TraceStore` and `logs.LogStore`: opening the live
         store the normal way runs DDL and a migration against the file the
         serving plane is writing, and a script whose whole job is to read a
@@ -211,29 +211,25 @@ class VitalsStore:
         read as "the most recent N"; a time series is read as a line, and a
         reader that has to reverse every page before plotting it will one day
         forget to.
-
-        `order="ingest"` walks by `seq` instead, which is what the forwarder's
-        watermark needs.
         """
         where, args = [], []
         for col, key in (("station", "station"), ("session_id", "session"), ("source", "source"), ("build", "build")):
             if f.get(key):
                 where.append(f"{col}=?")
                 args.append(str(f[key])[:64])
-        for col, key, op in (("ts_ms", "since_ms", ">="), ("ts_ms", "until_ms", "<="), ("seq", "since_seq", ">")):
+        for col, key, op in (("ts_ms", "since_ms", ">="), ("ts_ms", "until_ms", "<=")):
             if f.get(key) is not None:
                 where.append(f"{col}{op}?")
                 args.append(int(f[key]))
         sql = " WHERE " + " AND ".join(where) if where else ""
         limit = max(1, min(int(f.get("limit") or 500), 5000))
         offset = max(0, int(f.get("offset") or 0))
-        order = "seq ASC" if f.get("order") == "ingest" else "ts_ms ASC, seq ASC"
         cols = "seq,ts_ms,observed_ms,station,session_id,source,build," + ",".join(COLUMNS)
         with self._lock:
             cur = self._db.cursor()
             total = cur.execute(f"SELECT COUNT(*) FROM vital{sql}", args).fetchone()[0]
             rows = cur.execute(
-                f"SELECT {cols} FROM vital{sql} ORDER BY {order} LIMIT ? OFFSET ?", (*args, limit, offset)
+                f"SELECT {cols} FROM vital{sql} ORDER BY ts_ms ASC, seq ASC LIMIT ? OFFSET ?", (*args, limit, offset)
             ).fetchall()
         return {"samples": [self._row(r) for r in rows], "total": total, "limit": limit, "offset": offset}
 
