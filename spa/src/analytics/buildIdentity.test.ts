@@ -1,14 +1,12 @@
 // Which BUNDLE is this client running — proven end to end on our own plane.
 //
 // The question that bought this file: on 2026-09-01 a phone's visit was
-// recorded in full by our own telemetry and not at all by the vendor's, and
-// "was that phone on the shell we deployed?" had exactly one possible source of
-// an answer — a vendor beacon's `kh.bundle` meta. There were no beacons, so
-// there was no answer. The build id therefore now rides OUR OWN spans, on the
-// RESOURCE envelope rather than on every span, which is where OTLP puts a fact
-// about the producer. serve/traces.py stores it on the trace row and
-// traces_otlp.py exports it as `service.version` — the Python side of the same
-// contract is pinned by scripts/test_traces.py.
+// recorded in full by our own telemetry, and "was that phone on the shell we
+// deployed?" still had no answer — nothing recorded the build. The build id
+// therefore rides OUR OWN spans, on the RESOURCE envelope rather than on every
+// span, which is where OTLP puts a fact about the producer. serve/traces.py
+// stores it on the trace row — the Python side of the same contract is pinned
+// by scripts/test_traces.py.
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAnalytics } from './index';

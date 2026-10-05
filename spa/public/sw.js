@@ -19,8 +19,8 @@
  * whose key DIFFERS from the current one — so the cached shell entry survived
  * every deploy indefinitely and a single failed navigation on a flaky mobile
  * network could pin a client to an HTML shell from any earlier build, forever.
- * (An HTML shell is not inert: it carries the inline bootstraps — the vendor
- * telemetry config, the session-id minting, the boot error reporter — so an old
+ * (An HTML shell is not inert: it carries the inline bootstraps — the
+ * session-id minting, the build id, the boot error reporter — so an old
  * shell means old boot behaviour even when the hashed bundle it names is still
  * on the box.) The name is now derived from the `?build=` the registration
  * carries (spa/src/main.tsx passes the bundle id vite baked in), so:

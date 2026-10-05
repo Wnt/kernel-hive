@@ -14,29 +14,25 @@
 //
 //  THE SHAPE. One call — `emitStreamEvent(name, attrs, value)` — fans out to
 //  everything this plane already has, so nobody instruments the same fact
-//  twice and the four lanes cannot disagree about it:
+//  twice and the three lanes cannot disagree about it:
 //
 //    a PROBE   the durable two-year count: does this happen at all, and how
 //              often, per build and per client class
 //    a METRIC  the bucketed distribution of the ONE number the event carries
 //    a SPAN    named exactly as the event, opened as a child of whatever flow
 //              is live, so the event lands INSIDE the journey it happened in
-//    INSTANA   mirrored through `instanaStreamEvents.ts`, which is thin,
-//              isolated and deletable — our plane is the product, the vendor
-//              is a benchmark we intend to drop
 //
-//  ONE NUMBER PER EVENT, ON PURPOSE. `customMetric` is a single number and
-//  the bucket ladders are three (`ms`, `count`, `pct`), so an event that
-//  carried three numbers would have to pick one for the vendor and invent
-//  ladders for the rest. It picks one HERE instead, declared in the table
-//  below, and everything else numeric rides as a span attribute where it is
-//  exact rather than bucketed.
+//  ONE NUMBER PER EVENT, ON PURPOSE. The bucket ladders are three (`ms`,
+//  `count`, `pct`), so an event that carried three numbers would have to
+//  invent ladders for the rest. It picks one HERE instead, declared in the
+//  table below, and everything else numeric rides as a span attribute where it
+//  is exact rather than bucketed.
 //
 //  SAMPLING, AND THE ONE RULE THAT IS NOT NEGOTIABLE. Every event declares
 //  its own `sampleN` and the DECISION IS MADE ONCE — a sampled-away event
-//  costs one increment and reaches no lane at all, so probe, metric, span and
-//  vendor all describe the identical population and `n x sampleN` is the true
-//  count for every one of them. The default is 1-in-1 and it is the right
+//  costs one increment and reaches no lane at all, so probe, metric and span
+//  all describe the identical population and `n x sampleN` is the true count
+//  for every one of them. The default is 1-in-1 and it is the right
 //  default here: these events are RARE and DIAGNOSTIC. A quality switch, a
 //  decode error, an exhausted budget and a software-decode latch happen a
 //  handful of times per session at most, and sampling a rare event away is
@@ -44,11 +40,8 @@
 //  never sampled.** Only two events are frequent enough to need a rate, and
 //  both are levels rather than edges — see their rows.
 //
-//  PAGE BINDING (analytics/pageBinding.ts) is merged onto EVERY event here,
-//  and it is the capability we have over the vendor: Instana's browser
-//  `reportEvent` has no `viewName` — the mobile SDK has one, the browser one
-//  does not — so a custom event there correlates to a page only implicitly.
-//  Ours carries the route pattern and the page-load identity explicitly, so
+//  PAGE BINDING (analytics/pageBinding.ts) is merged onto EVERY event here:
+//  each carries the route pattern and the page-load identity explicitly, so
 //  "everything that happened on this page load" is an equality filter.
 //
 //  WHAT IS STILL NOT MEASURED HERE, and stays that way: loss, RTT, bitrate as
@@ -64,7 +57,6 @@ import { recordMetric } from './metrics';
 import { reportError } from './errors';
 import { childOfActive, type Attrs } from './trace';
 import { pageBindingAttrs } from './pageBinding';
-import { mirrorStreamEventToInstana } from './instanaStreamEvents';
 
 /** One event in the vocabulary. `what`/`when`/`attrs` are the CONTRACT — the
  *  same three sentences docs/ANALYTICS.md §5.5 states — kept beside the code
@@ -259,8 +251,8 @@ function sampled(name: StreamEventName, sampleN: number): boolean {
  * Emit one stream event into every lane at once.
  *
  * `value` is the event's ONE number, as declared by its `metric` — bucketed
- * into our own distribution, carried exact on the span, and handed to Instana
- * as `customMetric`. Events with no declared metric ignore it.
+ * into our own distribution and carried exact on the span. Events with no
+ * declared metric ignore it.
  *
  * Never throws, on any path. Instrumentation that can break a stream is worse
  * than no instrumentation.
@@ -294,9 +286,7 @@ export function emitStreamEvent(
     // A child of whatever flow is open (station.connect, session.resume,
     // stream.recover), so the event lands INSIDE the journey it happened in
     // rather than as an orphan beside it. Kind stays `internal`: this is the
-    // tab observing itself, not a call waiting on the network, and inventing
-    // an entry span to make a vendor's UI render differently is exactly the
-    // design this plane rejected.
+    // tab observing itself, not a call waiting on the network.
     const span = childOfActive(name, all, 'internal');
     span.end(spec.status ?? 'ok');
 
@@ -308,14 +298,6 @@ export function emitStreamEvent(
     if (spec.reportsError) {
       reportError({ message: String(attrs?.['error.type'] ?? name), source: name });
     }
-
-    mirrorStreamEventToInstana({
-      name,
-      timestamp: Date.now(),
-      backendTraceId: span.traceId,
-      meta: all,
-      customMetric: numeric,
-    });
   } catch {
     /* instrumentation never throws into the app */
   }

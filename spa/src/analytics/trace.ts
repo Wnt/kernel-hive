@@ -27,10 +27,9 @@
 //  exists because the open keyboard-lag investigation (a suspected pacing-queue
 //  floor in the emulator ctl module) needed an end-to-end input->pixel flame
 //  graph and nothing short of per-edge tracing draws one. It was 1-in-10 until
-//  2026-09-01, when the sampler moved to the VENDOR EXPORT — where a trace is
-//  complete and its duration is known, so the slow ones can be kept rather than
-//  thrown away by a coin the source had to flip too early
-//  (`scripts/observability/tail_sampler.py`).
+//  2026-09-01; since then every key and click edge is traced, because the
+//  source has to decide before the round trip and so cannot know which edge
+//  will turn out to be the slow one (inputTrace.ts's header has the argument).
 //
 //  What still never leaves the tab is TYPED KEYSTROKE CONTENT — the one item on
 //  the 2026-09-01 richness pass the operator has not been asked about, held
@@ -553,7 +552,7 @@ export function emitSpan(
  * there was no active span, and `traceHeaders()` handed that to every
  * telemetry POST — an id belonging to no span, by construction, on routes the
  * serving plane DOES trace: 565 such ids in six live hours, each a one-span
- * trace Instana renders as "the root call of the trace is missing". The
+ * trace whose root call never arrived. The
  * second was `khFetch.ts`'s ambient fallback, naming `currentSpan()` when the
  * call's own span came back NOOP, which pointed thousands of polls at a flow
  * root still open — 2,274 of that window's 2,839 orphans, under twelve ids.

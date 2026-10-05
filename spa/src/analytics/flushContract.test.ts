@@ -12,7 +12,7 @@
 //      the SERVER span it had already parented survived — a dangling parent
 //      forever. Measured 2026-09-01: 9 `serve.auth.state`, 23
 //      `input.dispatch` and 2 `serve.restore` spans in six hours, each a
-//      one-span trace Instana renders as rootless.
+//      one-span trace with no root.
 //
 //    * AN OPEN FLOW. Worse, and invisible to any amount of interval-shortening:
 //      a root span is buffered only when it ENDS, so a station left open holds

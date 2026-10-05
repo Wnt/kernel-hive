@@ -1,42 +1,21 @@
 // ============================================================================
-//  analytics/navigation — one router-level event, two consumers.
+//  analytics/navigation — one router-level event per page transition.
 //  ---------------------------------------------------------------------------
-//  DEFECT 4, REVISED. The original brief for this defect was "call
-//  ineum('page', ...) so Instana's Websites view has something to group by".
-//  The operator overrode that mid-implementation: Instana is a benchmark, not
-//  a dependency, and a page name our own plane cannot see without a
-//  third-party vendor loaded is not acceptable. So this file is the single
-//  source of truth for "what page is this, and did we just navigate" — ONE
-//  observer, computed ONCE per transition, in the router itself
-//  (`useNavigationTelemetry`, called from App.tsx) — and it feeds two
-//  independent consumers:
+//  The single source of truth for "what page is this, and did we just
+//  navigate": ONE observer, computed ONCE per transition, in the router itself
+//  (`useNavigationTelemetry`, called from App.tsx). Each transition becomes a
+//  real `app.page` span (`openNavigationSpan` + `finishNavigationSpan`), a
+//  bucketed `app.page.transitionMs` metric and the `app.page.viewed` probe —
+//  all through the same public API every other call site uses.
 //
-//    A. OUR OWN PLANE (`openNavigationSpan` + `finishNavigationSpan` →
-//       `reach` + `recordMetric` + a real span). Works with Instana absent
-//       entirely — verified by the unit tests in this file's `.test.ts`,
-//       which never touch `ineum`.
-//    B. INSTANA (`reportPageToInstana` + `reportTransitionDurationToInstana`
-//       → `ineum('page', ...)` + `meta`), reading the SAME event. A no-op
-//       when `window.ineum` does not exist (unconfigured build), exactly
-//       like every other call in instana.ts.
-//
-//  WHY autoPageDetection IS OFF (instana.ts sets it explicitly `false`, and
-//  says why in its own comment). Short version: this file already drives
-//  every transition, on the router's own knowledge of the route PATTERN —
-//  duplicating that with Instana's own URL-change heuristic would produce
-//  two disagreeing opinions about the same navigation and double the beacon
-//  count. The cost, paid deliberately: recent Instana agent versions are
-//  documented (inconsistently, like everything else about this vendor) to
-//  time a transition automatically under autoPageDetection — a number this
-//  integration cannot ask the agent for with it off. So this file measures
-//  its own transition duration (route commit to next paint) and keeps it
-//  durably in OUR plane; what it can pass back to Instana is limited to an
-//  ALREADY-VERIFIED call shape (`meta`, fixed by defect 1) rather than an
-//  invented, untested custom-event API — see reportPageToInstana() / reportTransitionDurationToInstana() below.
+//  THE TRANSITION IS TIMED HERE, from route commit to next paint (a
+//  double-`requestAnimationFrame` — the "two frames" heuristic browsers use
+//  elsewhere to mean "painted"), and the span's own duration IS that time, so
+//  there is no second clock to keep in sync with the metric.
 //
 //  CARDINALITY — REVISED 2026-09-01, operator decision. The page name is now
 //  the CONCRETE STATION (`/os/solaris`), with the route PATTERN kept beside
-//  it as `meta`/`kh.route.pattern`. It used to be the pattern alone.
+//  it as `kh.route.pattern`. It used to be the pattern alone.
 //
 //  Why the usual RUM convention does not apply here. Templating a page name
 //  exists to stop UNBOUNDED identifiers (user ids, order ids, cart ids) from
@@ -48,9 +27,9 @@
 //  QEMU x86 guest with a MAME-driven 8-bit micro into one number hides the
 //  order of magnitude that is the whole point of looking.
 //
-//  BOTH, NOT A SWAP. `kh.route.pattern` goes out as `meta` on the same
-//  navigation, so "how is the station page doing overall" stays one filter
-//  away — a pure swap would trade one blindness for another.
+//  BOTH, NOT A SWAP. `kh.route.pattern` rides on the same navigation span,
+//  so "how is the station page doing overall" stays one filter away — a pure
+//  swap would trade one blindness for another.
 //
 //  THE BOUND IS STILL ENFORCED, and syntactically, because this code cannot
 //  ask the registry: `STATION_ID` below. A param value that is not a plausible
@@ -68,20 +47,6 @@
 //
 //  Everything else is unchanged: never the query string, never free text,
 //  only short stable tokens — the same rule `trace.ts` and `errors.ts` state.
-//
-//  THE INITIAL LOAD IS NOT DOUBLE-REPORTED. Instana already emits its own
-//  automatic `pageLoad` beacon for the first page (unaffected by
-//  autoPageDetection, which only governs SUBSEQUENT transitions) — the
-//  `page` NAME for that beacon is set once, early, in spa/index.html's
-//  inline bootstrap (defect 2/3's fix; see that file for why it has to be
-//  set before the beacon fires). So `useNavigationTelemetry`'s first
-//  invocation (`kind: 'initial'`) reports to consumer A exactly like any
-//  other transition — useful data our own plane has no separate "page load"
-//  event to duplicate — but skips consumer B entirely: calling
-//  `ineum('page', ...)` again for the same navigation Instana is already
-//  about to name via its pageLoad beacon would be a second, redundant
-//  naming call for one navigation, which is the exact double-report this
-//  requirement forbids.
 // ============================================================================
 
 import { useEffect, useRef } from 'react';
@@ -89,33 +54,10 @@ import { useLocation, useNavigationType } from 'react-router-dom';
 import { reach, recordMetric } from './index';
 import { childOfActive, popActive, pushActive, type Span } from './trace';
 
-/** The subset of `ineum` this module calls. Declared locally (rather than
- *  importing instana.ts's private `ineum` guard) so this module has no
- *  dependency on that file beyond its exported constants — the same
- *  isolation khFetch.ts already keeps from instana.ts. */
-declare global {
-  interface Window {
-    ineum?: (...args: unknown[]) => void;
-  }
-}
-
-function ineum(...args: unknown[]): void {
-  try {
-    if (typeof window === 'undefined') return;
-    const fn = window.ineum;
-    if (typeof fn === 'function') fn(...args);
-  } catch {
-    /* never throw */
-  }
-}
-
 /**
- * The router's own route table, duplicated (deliberately, and minimally) in
- * spa/index.html's inline bootstrap to name the VERY FIRST page before any
- * module here has evaluated — see that file's comment. Keep both lists in
- * sync by hand; this one is canonical, the HTML one is the one that has to
- * run before this module can be. Order does not matter: no two patterns
- * here can both match a path of the same segment count.
+ * The router's own route table. scripts/test_page_naming_in_sync.py pins it
+ * equal to the routes spa/src/App.tsx actually declares, so a new route
+ * cannot silently report as the `*` bucket.
  */
 const ROUTES: readonly string[] = [
   '/',
@@ -149,13 +91,12 @@ const UNMATCHED_PATTERN = '*';
  * with a letter and is at most 12 characters (`aix432`, `zxspectrum`,
  * `msdoswin1`); this allows 16 for headroom. It is a SYNTACTIC bound, not a
  * registry-membership check — the browser has no synchronous list of stations
- * (the manifest is fetched, and index.html's copy of this logic runs before
- * any module evaluates, so neither can wait for one). What it buys is that a
- * page name can only ever be a short stable token: no path traversal, no
- * query string, no free text, no unbounded identifier shape.
+ * (the manifest is fetched, and a navigation cannot wait for it). What it buys
+ * is that a page name can only ever be a short stable token: no path
+ * traversal, no query string, no free text, no unbounded identifier shape.
  *
- * Duplicated by hand in spa/index.html's inline bootstrap, and pinned equal to
- * it by scripts/test_page_naming_in_sync.py.
+ * scripts/test_page_naming_in_sync.py checks every registry station id
+ * passes it.
  */
 const STATION_ID = /^[a-z][a-z0-9]{1,15}$/;
 
@@ -168,8 +109,7 @@ const STATION_ID = /^[a-z][a-z0-9]{1,15}$/;
  * keeps its `:name` placeholder, which means an unrecognised id degrades to
  * EXACTLY the old pattern-only name (`/os/:osId`) rather than to anything new.
  *
- * Exported for tests and for spa/index.html's hand-duplicated copy to be
- * checked against.
+ * Exported for tests.
  */
 export function pageName(pattern: string, params: Record<string, string>): string {
   if (pattern === UNMATCHED_PATTERN) return UNMATCHED_PATTERN;
@@ -217,16 +157,16 @@ export interface NavEvent {
   kind: NavKind;
 }
 
-/** Attribute/meta keys shared by both consumers, so the two cannot drift on
- *  spelling. Values are always short tokens — a route pattern or a station
- *  id — never free text, per this module's own header. */
+/** The navigation span's attributes. Values are always short tokens — a
+ *  route pattern or a station id — never free text, per this module's own
+ *  header. */
 function navAttrs(event: NavEvent): Record<string, string> {
   const attrs: Record<string, string> = {
     // The page NAME (`/os/beos`) and the route PATTERN (`/os/:osId`) are both
-    // carried, deliberately — the same "both, not a swap" rule this module's
-    // header states for Instana, so our own store keeps the pattern roll-up
-    // that /admin/observability and pageBinding.ts's `kh.page.pattern` group
-    // by, and gains the per-station view beside it.
+    // carried, deliberately — the "both, not a swap" rule in this module's
+    // header — so the store keeps the pattern roll-up that
+    // /admin/observability and pageBinding.ts's `kh.page.pattern` group by,
+    // and gains the per-station view beside it.
     'kh.page.name': pageName(event.pattern, event.params),
     'kh.route.pattern': event.pattern,
     'kh.route.kind': event.kind,
@@ -240,7 +180,7 @@ function navAttrs(event: NavEvent): Record<string, string> {
   return attrs;
 }
 
-/** Consumer A: our own plane. Opens a span timed from NOW (route commit) to
+/** Opens a span timed from NOW (route commit) to
  *  `finishNavigationSpan` (next paint), so the span's own duration IS the
  *  transition time — no separate clock to keep in sync with the metric
  *  below, the same discipline `metrics.ts`'s `startTiming` uses. */
@@ -273,46 +213,6 @@ export function finishNavigationSpan(span: Span, transitionMs: number): void {
     // 'app.page.viewed' — declared in catalogue/app.ts, grade 'auto'.
     reach('app.page.viewed');
   } catch { /* instrumentation never throws into the app */ }
-}
-
-/**
- * Consumer B: Instana, the page NAME half. A no-op when unconfigured (no
- * `window.ineum`), exactly like every call in instana.ts. Fires on the
- * route change itself — matching the timing Instana's own
- * `autoPageDetection` would have used, had it been left on — not after
- * paint, so it is a separate call from the duration half below rather than
- * waiting on `nextPaint()`. Skips the INITIAL navigation entirely — see this
- * module's header for why (Instana already names that one via its own
- * pageLoad beacon, set from spa/index.html's bootstrap).
- */
-export function reportPageToInstana(event: NavEvent): void {
-  if (event.kind === 'initial') return;
-  // META FIRST, PAGE LAST — and this is not stylistic. The vendor's own API
-  // reference says it outright: "Make sure to change the page name last as
-  // this immediately triggers the transition" (0250-monitoring-websites.md).
-  // `ineum('page', ...)` is what CUTS the page-transition beacon, so any meta
-  // set after it lands on the NEXT transition, not this one. This function
-  // used to call `page` first, which is why the route pattern is added here
-  // rather than tacked on at the end.
-  ineum('meta', 'kh.route.pattern', event.pattern);
-  for (const [k, v] of Object.entries(event.params)) {
-    ineum('meta', `kh.route.param.${k}`, v);
-  }
-  ineum('page', pageName(event.pattern, event.params));
-}
-
-/**
- * Consumer B, the duration half — sent once the transition's own measured
- * time is known (after `nextPaint()`), for every navigation INCLUDING the
- * initial one (Instana's own pageLoad-timing mechanism is independent of
- * autoPageDetection, so this is not the double-report `reportPageToInstana`
- * guards against). Best-effort: `meta` is an already-verified call shape
- * (defect 1's fix), used here rather than an unverified custom-event API
- * this environment has no way to test against the real agent — see this
- * module's header.
- */
-export function reportTransitionDurationToInstana(transitionMs: number): void {
-  ineum('meta', 'kh.page.transitionMs', String(Math.round(transitionMs)));
 }
 
 /** Resolves after the browser has (almost certainly) painted the current
@@ -370,18 +270,12 @@ export function useNavigationTelemetry(): void {
 
       const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
       const span = openNavigationSpan(event);
-      // Consumer B, page name: fires on the URL change itself (matching how
-      // Instana's own autoPageDetection would time it), not after paint.
-      reportPageToInstana(event);
       let done = false;
       void nextPaint().then(() => {
         if (done) return;
         done = true;
         const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-        const transitionMs = now - t0;
-        finishNavigationSpan(span, transitionMs);
-        // Consumer B, duration: best-effort, once it is actually known.
-        reportTransitionDurationToInstana(transitionMs);
+        finishNavigationSpan(span, now - t0);
       });
     } catch {
       /* instrumentation must never break navigation */

@@ -8,10 +8,6 @@ import {
   SUFFIX_LEN, maybeSampleEdge, traceSuffix, withSuffix, keyClass,
   __resetSampleCounter,
 } from './inputTrace';
-// The vendor's own accepted shape now lives beside every other fact about the
-// vendor (analytics/instana.ts), and this suite asserts against THAT rule —
-// not a looser copy, which would pass while the field is silently dropped.
-import { BACKEND_TRACE_ID_RE } from '../../analytics/instana';
 
 beforeEach(() => {
   __resetTracer();
@@ -20,23 +16,12 @@ beforeEach(() => {
   delete (globalThis as { window?: unknown }).window;
 });
 
-/** Same pattern `analytics/instana.test.ts` uses: this suite runs under the
- *  `node` vitest environment (no real DOM), so `window` itself has to be
- *  installed on `globalThis`, not merely mutated. */
-function installIneum(): { calls: unknown[][] } {
-  const calls: unknown[][] = [];
-  const fn = (...args: unknown[]) => { calls.push(args); };
-  (globalThis as { window?: unknown }).window = { ineum: fn };
-  return { calls };
-}
-
 describe('maybeSampleEdge', () => {
   // EVERY key and click edge is traced (2026-09-01). The 1-in-10 counter it
   // replaced aliased against periodic input, applied one rate to populations
   // differing by orders of magnitude, and — the fault no source-side rate can
   // fix — threw away the slow edges, which are the whole point of the
-  // measurement. The keep/drop decision moved to the vendor export, where the
-  // trace is complete and its duration is known.
+  // measurement.
   it('traces EVERY qualifying edge, with its own trace id', () => {
     const seen = new Set<string>();
     for (let i = 0; i < 30; i += 1) {
@@ -57,49 +42,6 @@ describe('maybeSampleEdge', () => {
     // bytes bought nothing at all.
     configureTracer({ enabled: false, emit: () => {} });
     expect(maybeSampleEdge('input.edge', {})).toBeNull();
-  });
-});
-
-describe('the EUM↔backend join (Instana reportEvent)', () => {
-  it('reports backendTraceId as EXACTLY 32 hex chars — the vendor silently drops anything else', () => {
-    const { calls } = installIneum();
-    const span = maybeSampleEdge('input.edge', { 'kh.input.class': 'key', 'kh.station': 'nextstep' });
-    expect(span).not.toBeNull();
-
-    const reportCalls = calls.filter(([name]) => name === 'reportEvent');
-    expect(reportCalls.length).toBe(1);
-    const [, eventName, opts] = reportCalls[0] as [string, string, {
-      backendTraceId: string;
-      meta: Record<string, string>;
-    }];
-    expect(eventName).toBe('kh.input.sampled');
-    // The load-bearing assertion: exactly 32 hex, matching the vendor's own
-    // accepted shape — a test that only checked "reportEvent was called"
-    // would pass even if this were shortened, reformatted, or upper-cased,
-    // and the beacon field would then be silently dropped in production.
-    expect(opts.backendTraceId).toMatch(/^[0-9a-f]{32}$/);
-    expect(opts.backendTraceId).toHaveLength(32);
-    expect(BACKEND_TRACE_ID_RE.test(opts.backendTraceId)).toBe(true);
-    expect(opts.backendTraceId).toBe(span!.traceId);
-    // Meta is forwarded, and never carries a key's identity — only the
-    // caller-declared coarse attrs.
-    expect(opts.meta['kh.input.class']).toBe('key');
-    expect(opts.meta['kh.station']).toBe('nextstep');
-  });
-
-  it('is a no-op with no window.ineum: our own tracing is unaffected', () => {
-    // Must not throw, and must still return a real traced span.
-    const span = maybeSampleEdge('input.edge', {});
-    expect(span).not.toBeNull();
-    expect(span!.traceId).toMatch(/^[0-9a-f]{32}$/);
-  });
-
-  it('sends nothing when tracing is disabled', () => {
-    const { calls } = installIneum();
-    // Tracing disabled entirely: no span, and nothing reported to the vendor.
-    configureTracer({ enabled: false, emit: () => {} });
-    expect(maybeSampleEdge('input.edge', {})).toBeNull();
-    expect(calls.filter(([name]) => name === 'reportEvent')).toHaveLength(0);
   });
 });
 

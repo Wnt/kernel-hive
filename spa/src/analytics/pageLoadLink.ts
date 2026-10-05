@@ -17,16 +17,17 @@
 //  means "a visit". One captured on win311 held 43 spans from three producers,
 //  spanned 15.7 s of wall clock, and was still taking writes 74 s after it
 //  started — with five separate keystrokes sitting as SIBLINGS under the page
-//  span, seconds apart. Instana assembles a trace in about two seconds, so a
-//  trace that dribbles for 74 s is fragmented by construction, and every
-//  consumer that reads a trace as a unit of work reads that one wrong.
+//  span, seconds apart. A trace that dribbles for 74 s is fragmented by
+//  construction for any consumer that assembles a trace shortly after it
+//  starts, and every consumer that reads a trace as a unit of work reads that
+//  one wrong.
 //
 //  Worse, the window made the shape NON-DETERMINISTIC. Reproduced live on the
 //  gallery in one tab in one minute: eight sampled key edges inside the window
 //  came out as children of `serve.page`, and eight click edges 15 s later came
 //  out as their own roots. Two shapes for one thing, decided by a stopwatch —
-//  and every downstream reader (the orphan report, `/admin/observability`,
-//  Instana's endpoint mapping) had to cope with both.
+//  and every downstream reader (the orphan report, `/admin/observability`)
+//  had to cope with both.
 //
 //  **A TRACE IS NOW ONE ACTION.** One input edge, one `station.connect`, one
 //  `station.restore`, one page load. Each is its own root. The relation to the
@@ -34,17 +35,15 @@
 //
 //    * an OTel SPAN LINK on the trace's entry span, naming `serve.page`'s
 //      trace and span. This is OpenTelemetry's own spelling of "caused by,
-//      not nested under", and Instana surfaces links in the call Details view
-//      (instana-docs/0307-opentelemetry-signals.md, "OpenTelemetry span events
-//      and span links");
+//      not nested under";
 //    * the `kh.page.loadId` ATTRIBUTE (`pageBinding.ts`), already minted per
 //      document.
 //
 //  BOTH, deliberately, and this is not belt-and-braces. A link is what a UI
 //  NAVIGATES — one click from a slow keystroke to the page load it happened on
 //  — and it cannot be filtered or grouped by. An attribute is what a QUERY
-//  GROUPS BY — "every action on this page load", one equality filter, in our
-//  own SQL and in Instana's Unbounded Analytics — and it cannot be navigated.
+//  GROUPS BY — "every action on this page load", one equality filter in our
+//  own SQL — and it cannot be navigated.
 //  Neither substitutes for the other, and the link also survives a consumer
 //  that has never heard of `kh.` anything.
 //

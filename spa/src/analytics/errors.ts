@@ -32,9 +32,7 @@
 //  Until 2026-09-01 this header read "NEVER THE STACK, NEVER THE URL" as a
 //  privacy rule covering the whole plane, and the trace lane obeyed it. That
 //  was an AI-invented constraint, not an operator one, and it is gone;
-//  docs/ANALYTICS.md §0 is the policy. Instana, which captures stack and page
-//  URL by its own default, is now consistent with our own planes rather than
-//  the exception it used to be described as.
+//  docs/ANALYTICS.md §0 is the policy.
 // ============================================================================
 
 import { logRecord } from './logSink';

@@ -92,7 +92,7 @@ describe('frame/mark matching', () => {
 // It replaced a SIBLING span, `client.input.roundtrip`, which carried this
 // figure beside a root whose own duration was 0-1 ms of local enqueue — so
 // every consumer that reads a root's duration (a trace list, a latency
-// percentile, Instana's endpoint view) read 1 ms for a quarter-second wait.
+// percentile) read 1 ms for a quarter-second wait.
 // ---------------------------------------------------------------------------
 describe("input.edge's duration is the round trip", () => {
   it('closes the root AT the paint of the frame that answered it', () => {

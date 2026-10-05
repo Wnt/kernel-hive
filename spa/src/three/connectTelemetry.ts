@@ -67,7 +67,6 @@
 import { accumulator, beginFlow, startTiming, type Timing } from '../analytics';
 import type { FlowHandle } from '../analytics/flows';
 import type { Attrs } from '../analytics/trace';
-import { tagInstanaStation } from '../analytics/instana';
 
 /** One attempt-sequence's telemetry. Every method is safe to call in any order
  *  and any number of times; the underlying handles settle exactly once. */
@@ -103,10 +102,7 @@ export interface ConnectTelemetry {
 
 export function connectTelemetry(stationAttrs?: Attrs): ConnectTelemetry {
   // One attempt-sequence per station OPEN (and per restore/resume rebuild —
-  // this is the natural "a station is current" edge), so this is also where
-  // Instana's session `meta` is (re)tagged with the station-type dimensions —
-  // see instana.ts's own header for why `meta`, not a per-request tag.
-  if (stationAttrs) tagInstanaStation(stationAttrs);
+  // this is the natural "a station is current" edge).
   const flow: FlowHandle = beginFlow('station.connect');
   if (stationAttrs) flow.tag(stationAttrs);
   const openMs: Timing = startTiming('station.open.toFirstFrameMs', stationAttrs);

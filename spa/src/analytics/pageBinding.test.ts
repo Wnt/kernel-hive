@@ -1,11 +1,10 @@
-// Tests for the page binding — the capability Instana's browser agent does not
-// have. What matters is that the binding is EXPLICIT (present on the event,
-// not inferred), LOW-CARDINALITY (a route pattern, never 63 station paths) and
-// SURVIVES the vendor being absent, which is the state we are building for.
+// Tests for the page binding. What matters is that the binding is EXPLICIT
+// (present on the event, not inferred) and LOW-CARDINALITY (a route pattern,
+// never 63 station paths).
 
 import { describe, expect, it, afterEach, beforeEach } from 'vitest';
 import {
-  instanaPageLoadId, pageBindingAttrs, pageLoadId, pagePattern, __resetPageBinding,
+  pageBindingAttrs, pageLoadId, pagePattern, __resetPageBinding,
 } from './pageBinding';
 
 function setWindow(w: unknown): void {
@@ -47,29 +46,12 @@ describe('pagePattern', () => {
   });
 });
 
-describe('instanaPageLoadId', () => {
-  it('is null on an unconfigured build — our own binding does not depend on it', () => {
-    setWindow({ location: { pathname: '/' } });
-    expect(instanaPageLoadId()).toBeNull();
-    const attrs = pageBindingAttrs();
-    expect(attrs['kh.page.loadId']).toBeDefined();
-    expect(attrs['kh.page.instanaLoadId']).toBeUndefined();
-  });
-
-  it('captures the vendor id when it is there, for reconciliation while it lasts', () => {
-    setWindow({
-      location: { pathname: '/fleet' },
-      ineum: (verb: string) => (verb === 'getPageLoadId' ? 'abc-123' : undefined),
+describe('pageBindingAttrs', () => {
+  it('carries exactly the pattern and this document\'s load id', () => {
+    setWindow({ location: { pathname: '/os/beos' } });
+    expect(pageBindingAttrs()).toEqual({
+      'kh.page.pattern': '/os/:osId',
+      'kh.page.loadId': pageLoadId(),
     });
-    expect(instanaPageLoadId()).toBe('abc-123');
-    expect(pageBindingAttrs()['kh.page.instanaLoadId']).toBe('abc-123');
-  });
-
-  it('ignores a non-string answer and a vendor that throws', () => {
-    setWindow({ location: { pathname: '/' }, ineum: () => 42 });
-    expect(instanaPageLoadId()).toBeNull();
-    setWindow({ location: { pathname: '/' }, ineum: () => { throw new Error('boom'); } });
-    expect(instanaPageLoadId()).toBeNull();
-    expect(() => pageBindingAttrs()).not.toThrow();
   });
 });

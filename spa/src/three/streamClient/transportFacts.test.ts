@@ -45,13 +45,13 @@ describe('transportAttrs', () => {
     expect(a['kh.wire.reliability']).toBe('stream');
   });
 
-  it('emits the endpoint in BOTH semantic-convention spellings', () => {
+  it('emits the endpoint in the current semantic-convention names only', () => {
     setTransportFacts('https://labhost:8443/wt', {});
     const a = transportAttrs('stream');
     expect(a['server.address']).toBe('labhost');
     expect(a['server.port']).toBe(8443);
-    expect(a['net.peer.name']).toBe('labhost');
-    expect(a['net.peer.port']).toBe(8443);
+    expect(a['net.peer.name']).toBeUndefined();
+    expect(a['net.peer.port']).toBeUndefined();
   });
 
   it('never claims a peer IP — the browser cannot see one', () => {

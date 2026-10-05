@@ -62,8 +62,8 @@ export const CAPS = {
 
 const HELP = `
 visitor-sim — simulate visitors clicking and typing around the kernel-hive
-public gallery, with real browsers, to populate realistic Instana/analytics
-data. See docs/lab/VISITOR-SIM.md for the full writeup.
+public gallery, with real browsers, to populate realistic analytics and
+trace data. See docs/lab/VISITOR-SIM.md for the full writeup.
 
 USAGE
   node visitor-sim.mjs --stations <id,id,...> [options]
