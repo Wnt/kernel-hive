@@ -119,11 +119,14 @@
         "--x11-runtime-file",
         "$T/mame-native/x11-runtime.sh",
         "--aux-file",
+        "$T/mame-native/media-hook.sh",
+        "--aux-file",
         "$T/cpm22/cpm22.keymap",
         "--env-append-file",
         "$T/cpm22/station.env.fixture"
       ],
       "auxFiles": [
+        "streamhost/stations/mame-native/media-hook.sh",
         "streamhost/stations/cpm22/cpm22.keymap",
         "streamhost/stations/cpm22/station.env.fixture"
       ]

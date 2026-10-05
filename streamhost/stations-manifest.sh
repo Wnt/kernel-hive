@@ -1124,22 +1124,24 @@ emit suse64 \
 emit apple2e \
   --tile apple2e --udp 54185 --x11 --x11-display :73 --capture shm --pointer \
   none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
-  "$T/mame-native/x11-runtime.sh" --aux-file "$T/apple2e/apple2e.keymap" \
-  --env-append-file "$T/apple2e/station.env.fixture"
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/mame-native/media-hook.sh" \
+  --aux-file "$T/apple2e/apple2e.keymap" --env-append-file \
+  "$T/apple2e/station.env.fixture"
 
 # samcoupe (slot 187) — SAM Coupé, host-native MAME samcoupe, boot menu of period software; samcoupe wave 2026-09-08.
 emit samcoupe \
   --tile samcoupe --udp 54187 --x11 --x11-display :75 --capture shm \
   --pointer none --input-backend mamesock --audio on --fps 60 \
   --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
-  "$T/samcoupe/samcoupe.keymap" --env-append-file \
-  "$T/samcoupe/station.env.fixture"
+  "$T/mame-native/media-hook.sh" --aux-file "$T/samcoupe/samcoupe.keymap" \
+  --env-append-file "$T/samcoupe/station.env.fixture"
 
 # atari800xl (slot 186) — Atari 800XL, host-native MAME a800xlp, boot menu of period software; atari800xl wave 2026-09-08.
 emit atari800xl \
   --tile atari800xl --udp 54186 --x11 --x11-display :74 --capture shm \
   --pointer none --input-backend mamesock --audio on --fps 60 \
   --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
+  "$T/mame-native/media-hook.sh" --aux-file \
   "$T/atari800xl/atari800xl.keymap" --env-append-file \
   "$T/atari800xl/station.env.fixture"
 
@@ -1243,16 +1245,17 @@ emit xenix \
 emit macsys1 \
   --tile macsys1 --udp 54199 --x11 --x11-display :73 --capture shm --pointer \
   abs --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
-  "$T/mame-native/x11-runtime.sh" --aux-file "$T/macsys1/macsys1.keymap" \
-  --env-append-file "$T/macsys1/station.env.fixture"
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/mame-native/media-hook.sh" \
+  --aux-file "$T/macsys1/macsys1.keymap" --env-append-file \
+  "$T/macsys1/station.env.fixture"
 
 # apple2gs (VMID 185) — TODO one line; scaffolded from apple2e.
 emit apple2gs \
   --tile apple2gs --udp 54204 --x11 --x11-display :73 --capture shm \
   --pointer none --input-backend mamesock --audio on --fps 60 \
   --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
-  "$T/apple2gs/apple2gs.keymap" --env-append-file \
-  "$T/apple2gs/station.env.fixture"
+  "$T/mame-native/media-hook.sh" --aux-file "$T/apple2gs/apple2gs.keymap" \
+  --env-append-file "$T/apple2gs/station.env.fixture"
 
 # os213 (VMID 203) — IBM OS/2 1.30.2 Standard Edition, Presentation Manager.
 #   *** TCG ONLY *** -machine isapc -cpu 486 -m 16. OS/2 1.x predates PCI: a
@@ -1277,8 +1280,9 @@ emit os213 \
 emit cpm22 \
   --tile cpm22 --udp 54206 --x11 --x11-display :73 --capture shm --pointer \
   none --input-backend mamesock --audio off --fps 60 --x11-runtime-file \
-  "$T/mame-native/x11-runtime.sh" --aux-file "$T/cpm22/cpm22.keymap" \
-  --env-append-file "$T/cpm22/station.env.fixture"
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/mame-native/media-hook.sh" \
+  --aux-file "$T/cpm22/cpm22.keymap" --env-append-file \
+  "$T/cpm22/station.env.fixture"
 
 # its — MIT ITS on a SIMH PDP-10 (KS10), contained: simulator + Xvfb + one
 # xterm on the DZ11 visitor line inside systemd-nspawn; relaunch reset from the
