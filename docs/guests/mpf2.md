@@ -193,6 +193,13 @@ nothing is lost. `labctl type` gets the same entries through `SH_KEY_MAP`.
 Measured: `PRINT "Hello, World" A=1+2*3-4 B^2 C@ Dx?` typed with Shift held
 arrived as `PRINT "HELLO, WORLD" A=1+2*3-4 B^2 C@ DX?`. Evidence:
 `/data/vms/streamhost/stations/mpf2/evidence/physical-charmap-2026-10-05/`.
+**Live since 2026-10-05** (`SH_KEY_MAP` re-emitted): the visitor's
+`PRINT "!#$%&'()*+,-./:;<=>?@^";1+2*3` printed every symbol and 7, and
+`PRINT "Hello World"` (capitals with Shift) printed `HELLO WORLD`. The editor's
+first run right after the station's restart lost the `1` of line 10 (the first
+key after NEW); the repeat was exact, LIST matching the example line for line.
+A line typed straight after a scrolling PRINT loses its first keys, as the
+scroll note above says.
 
 **Typed lines must stay within 38 characters.** The ROM paints text into the
 hires bitmap and scrolls it in software; while a scroll runs, the CPU-scanned

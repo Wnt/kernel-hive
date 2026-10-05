@@ -189,6 +189,10 @@ lower-case mode is SHIFT+0's toggle, not Shift+letter); a capital from Caps
 Lock is the bare letter key (the case rule). The Dragon has no Caps Lock key,
 so the visitor's has no effect on it. Evidence:
 `/data/vms/streamhost/stations/dragon32/evidence/physical-charmap-2026-10-05/`.
+**Live since 2026-10-05**: the real editor typed the prime-number example, LIST
+was exact, the visitor's `PRINT "!#$%&'()*+,-./:;<=>?@";1+2*3` printed every
+symbol and 7, `PRINT "Hello World"` printed `HELLO WORLD`, and Restore brought
+back the `OK` prompt.
 
 Two encoding details that bit during the add:
 

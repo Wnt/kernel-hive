@@ -93,6 +93,11 @@ small, glyphs in its font), and so did a mixed-case line. The nms8250's CAPS key
 is its own, so a visitor's Caps Lock inverts letter case there
 (docs/TYPE-IN-EDITOR.md). Evidence:
 `/data/vms/streamhost/stations/symbos/evidence/physical-charmap-2026-10-05/`.
+**Live since 2026-10-05**: in Notepad (double-click at published 75,257) the
+visitor's keys typed the symbol lines and `Ab)c (x) Hello World` exactly. The
+first key after Notepad opens can be lost while the window is still drawing, and
+one run lost the tail of a line; the daemon had accepted every edge and a rig of
+the same binary typed the same edges exactly, so that loss is not the map.
 
 Mouse input uses the actual joystick-port-1 mouse fields, including left/right
 buttons and X/Y axes. The published 1024×768 framebuffer contains a 964×572

@@ -218,7 +218,11 @@ which are `typeIn.unreachable`:
 
 Letters are upper case whatever the visitor's Shift does (CAPS LOCK, below).
 Caps Lock is the BBC's own CAPS LOCK key: pressed, it turns the MOS's CAPS LOCK
-off, and letters then arrive in lower case. Evidence:
+off, and letters then arrive in lower case. **Live since 2026-10-05**: through the
+real SPA, the editor typed *Twisted squares* and LIST was exact; then
+`PRINT "!#$%&'()*+,-./:;<=>?@[]^_{}~";1+2*3` typed on the visitor's keys
+printed every symbol (MODE 7 draws `[ ] ^ _ { } ~` as `← → ↑ — ¼ ¾ ÷`) and 7,
+and Restore brought back the cold-boot screen. Evidence:
 `/data/vms/streamhost/stations/bbcmicro/evidence/physical-charmap-2026-10-05/`.
 
 **The MOS enables CAPS LOCK at reset**, so letters arrive upper case, which is

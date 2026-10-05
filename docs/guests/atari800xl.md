@@ -176,6 +176,9 @@ Unreachable: `` ` `` `{` `}` `~` (no ATASCII key; the US `` ` `` key is not wire
 inserting them: in `a_b|c^d\e[f]g` they moved the cursor, and the line came out
 as `e[f]gbacd`. Evidence:
 `/data/vms/streamhost/stations/atari800xl/evidence/physical-charmap-2026-10-05/`.
+**Live since 2026-10-05** (`SH_KEY_MAP` re-emitted): RETURN at the menu, then in
+The Last Word the visitor's keys typed `!"#$%&'()*+,-./:;<=>?@[]` and
+`Hello World 1984` exactly; Restore brought back the MyPicoDos menu.
 
 **Golden.** Pixel-identical under the new binary, and the savestate signature
 is unchanged (`2e5e7e4d`, 1875 entries).

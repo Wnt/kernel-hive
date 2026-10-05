@@ -172,6 +172,9 @@ SYMBOL-key characters (SYMBOL is Left Ctrl here, a chord the charMap cannot
 express) or absent. `\` left that list. A visitor who types one gets the US
 key's SAM character (`[` gives `=`, `?` gives `\`) or nothing.
 Evidence: `/data/vms/streamhost/stations/samcoupe/evidence/physical-charmap-2026-10-05/`.
+**Live since 2026-10-05**: B at the menu, the editor typed *Rainbow fan* and LIST
+was exact; the visitor's `PRINT "!#$%&'()*+,-./:;=@\_~";1+2*3` printed every
+symbol, `\` included, and 7; `PRINT "Hello World"` printed it in mixed case.
 
 ## §Checkpoint
 Captured on a sandbox rig (never the station dir), `MAME_NATIVE_CHECKPOINT=1`

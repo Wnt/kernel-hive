@@ -112,6 +112,8 @@ character arrives as itself except `` ` `` and `|`, which the SV-328 has no key
 for (the US `` ` `` key is not wired; `|` gives `~`). `~` is Shift+`\` here and is
 now in the map. Evidence:
 `/data/vms/streamhost/stations/svi328cpm/evidence/physical-charmap-2026-10-05/`.
+**Live since 2026-10-05**: at `A>` the visitor's keys typed
+``!"#$%&'()*+,-./:;<=>?@[\]^_{}~ Hello World 123`` exactly.
 
 The Type program launches MBASIC from `A>`, clears program memory and enters
 an original numbered loop. RUN prints **SPECTRAVIDEO CP/M** and the five
