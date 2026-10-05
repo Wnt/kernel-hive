@@ -30,7 +30,8 @@
 // pauses the physical keyboard while it types, so the listing must still arrive
 // byte-exact (docs/TYPE-IN-EDITOR.md). `--then` plays the visitor's next keys
 // after `--run`, through the real keyboard: comma-separated steps, each a key
-// (`7`, `Enter`, `p`), `<key>*<n>` to press it n times, `@<ms>` to wait, or
+// (`7`, `Enter`, `p`), `<key>*<n>` to press it n times, `@<ms>` to wait,
+// `%<s>` to wait until the station's framebuffer has settled for s seconds, or
 // `#<label>` for a framebuffer shot (an INPUT answer, a game's keys).
 // `--first` plays steps of the same form BEFORE the editor opens: the step a
 // station's `typeIn.hint` asks the visitor for (B at the SAM's and the //e's
@@ -86,6 +87,22 @@ const fbShot = (label) => {
   }
 };
 
+// `%<s>`: wait until the station's OWN framebuffer has not changed for s seconds
+// (fb-wait.py --settle on its shm, over the `lab` door), never a guessed sleep. A
+// slow machine (armeval runs at half speed) is still drawing queued keys when
+// the editor reports done; this is how a later step waits for it.
+const settle = (s) => {
+  const shm = `/data/vms/streamhost/stations/${id}/fb.shm`;
+  try {
+    const out = execFileSync('ssh', ['-n', 'lab',
+      `python3 /data/kernel-hive/scripts/dev/fb-wait.py --shm ${shm} --settle ${s} --timeout 600`],
+    { stdio: 'pipe', timeout: 660000 });
+    console.log(`settle ${s}s: ${String(out).trim()}`);
+  } catch (e) {
+    console.log(`settle ${s}s: FAILED (${String(e.message || e).slice(0, 120)})`);
+  }
+};
+
 // `!click:X:Y` / `!dclick:X:Y` — the real SPA pointer at X,Y of the station's
 // PUBLISHED surface (the stream's own pixels), mapped through the <video>
 // element's letterboxed box. The double-click is two deliberate press/release
@@ -116,6 +133,7 @@ const play = async (page, steps) => {
   for (const step of steps) {
     if (step.startsWith('@')) await page.waitForTimeout(Number(step.slice(1)));
     else if (step.startsWith('#')) fbShot(step.slice(1));
+    else if (step.startsWith('%')) settle(Number(step.slice(1)));
     else if (/^!d?click:/.test(step)) await pointer(page, step.slice(1)); // not the `!` key
     else {
       const [key, times] = step.split('*');

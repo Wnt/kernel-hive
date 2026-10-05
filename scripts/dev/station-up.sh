@@ -85,9 +85,17 @@ tmp="./.emit-$id-once.sh"
 trap 'rm -f "$tmp"' EXIT
 # header = everything before the first `emit ` line; then this station's block.
 sed -n '1,/^emit /{/^emit /!p}' stations-manifest.sh >"$tmp"
-awk "/^emit $id /,/^\$/" stations-manifest.sh >>"$tmp"
+# The block ends at a blank line OR at the next station's `emit ` line: armeval's
+# runs straight into alto's with no blank line between, and a blank-line-only
+# range re-emitted alto too (2026-10-05, byte-identical that time, by luck).
+awk -v id="$id" '$0 ~ "^emit " id " " {on = 1; print; next} on && (/^$/ || /^emit /) {exit} on {print}' \
+  stations-manifest.sh >>"$tmp"
 grep -q "^emit $id " "$tmp" || {
   echo "emit block for $id not found" >&2
+  exit 1
+}
+[ "$(grep -c '^emit ' "$tmp")" = 1 ] || {
+  echo "emit block for $id is not exactly one station" >&2
   exit 1
 }
 echo "-- emit $id --pin-machine"

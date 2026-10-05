@@ -159,7 +159,11 @@ labctl gets the same map as `SH_KEY_MAP`, which must sit in the station's
 the registry's recorded `runtime.stationEnv`, which is never emitted, so
 `labctl type` sent US positions there. The validator now requires the fixture,
 and a value that starts with a quote or ends with a backslash (systemd's
-`EnvironmentFile` would misread both); labctl reads the value raw.
+`EnvironmentFile` would misread both); labctl reads the value raw. On a
+host-native (x11) station, though, `labctl type` posts text through MAME's
+natural keyboard, which follows MAME's key legends and ignores `SH_KEY_MAP`:
+right where the legends are the machine's own, wrong on cpm22, whose German
+BIOS reinterprets US-legend keys (`x:y;z` arrived as `xzy`). OPEN.
 
 A character a machine has no key for goes in `typeIn.unreachable` (or in the
 guest doc, for a station without an editor), never into the map as a
