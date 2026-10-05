@@ -366,6 +366,33 @@ Proven by frame, not by argument: `nag_sweep()` screendumps **30 frames at 1.5 s
 intervals across the whole cold boot** and fails on **any** red pixel in any of
 them. On the shipped build the worst red count over the sweep was **0**.
 
+## Fresh media per start (2026-10-05)
+
+The station mounts a per-start COPY of an immutable template
+(`MAME_NATIVE_DISK_TEMPLATE`, mode 444, never handed to MAME): MAME opens its
+media read-write, and before this a visitor's saved file could land in the
+shared asset and outlive Restore. A start copies
+`armevaluationsystem-disc3.adl` to `stations/armeval/media/`, and this
+station's Restore is a cold relaunch, so every Restore starts from the
+template's bytes. Mechanism: `streamhost/stations/mame-native/x11-runtime.sh`.
+
+ADFS commits a floppy write at once (the motor stops): on the rig `SAVE
+"KHPROOF"` changed the image within a second, which under the old arguments
+was the shared asset itself. The template equals the staged disc (sha256
+`c55f8a1c…`); the ADFS ROM (`-rom3`) is opened read-only and needs no copy.
+
+**Proof.** Rig: `KHPROOF` in `*CAT` (directory sequence 16) -> cold relaunch
+-> `*CAT` without it (sequence 15), image hash pristine. Live: through the
+real SPA, `SAVE CHR$75` and `LOAD CHR$75` worked and the station's copy
+changed; after the visitor's Restore `LOAD CHR$75` said *Not found* and the
+copy hashed pristine. A gallery Restore takes ~55 s at load average ~40 (BASIC
+at ~45 s, as before).
+
+Evidence:
+`/data/vms/streamhost/stations/armeval/evidence/media-reset-2026-10-05/` (rig
+frames and live frames). Rollback: `station.env.pre-mediareset-20261005` and
+`x11-runtime.sh.pre-mediareset-20261005` in the station dir.
+
 ## Cold boot
 
 `scripts/coldboot/armeval-zero-input-prep.md` and the `armeval)` arm in

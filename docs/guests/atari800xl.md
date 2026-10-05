@@ -63,7 +63,8 @@ sectors, 90 KB ceiling), 92 176 bytes, sha256
 MyPicoDos 4.06N. `hive2.atr` — same format, 92 176 bytes, sha256
 `2d68e38b3211038927b4af16587ecd5c3c22459800da00e2135cf78403ad6b4e`, no boot
 code (a plain D2: data drive, `-flop2`). Both installed at
-`/data/vms/streamhost/assets/atari800xl/media/`.
+`/data/vms/streamhost/assets/atari800xl/media/` (mode 444), the templates of
+the per-start copies (see Fresh media per start).
 
 Titles on `hive.atr`, all proven on the framebuffer from the menu:
 
@@ -237,6 +238,36 @@ Single density (90 KB/drive) is the hard ceiling — MAME's emulated 1050
 (MFM) density; **enhanced density is not modeled at all**, which is why the
 disks are single density rather than the higher-capacity format a real 1050
 also supports (see §Traps).
+
+## Fresh media per start (2026-10-05)
+
+The station mounts per-start COPIES of immutable templates
+(`MAME_NATIVE_DISK_TEMPLATE`, mode 444, never handed to MAME): MAME opens its
+media read-write, and before this a visitor's saved file landed in the shared
+asset and outlived Restore. A start copies `hive.atr` and `hive2.atr` to
+`stations/atari800xl/media/`. Restore stays the in-process `LOADST golden`,
+but LOADST restores CPU, RAM and device registers, not media (a floppy's track
+data lives in the drive's memory, a hard disk is the file), so the Restore
+path pauses MAME, has the launcher's companion `media-hook.sh` (emitted as an
+aux file, a Lua hook entering through `-pluginspath`) unload, re-copy and
+reload every image, then LOADSTs and resumes. Without the armed hook a Restore
+takes the service restart, which copies fresh media at its start: never a
+plain LOADST. Mechanism: `streamhost/stations/mame-native/x11-runtime.sh` and
+`media-hook.sh`.
+
+MAME's Atari FDC (`atarifdc.cpp`) reads each ATR into memory and never writes
+the file back, so the asset could not drift, and no title here can write at
+all: The Last Word reports *Error 130* (no `D:` handler under MyPicoDos).
+Fresh media is applied anyway, uniformly.
+
+**Proof.** Rig: Restore 175 ms, frame pixel-identical to the golden, and The
+Last Word loads identically from the reloaded disk. Live: the gallery Restore
+answered in 332 ms, in-process, with fresh media.
+
+Evidence:
+`/data/vms/streamhost/stations/atari800xl/evidence/media-reset-2026-10-05/`
+(rig frames and live frames). Rollback: `station.env.pre-mediareset-20261005`
+and `x11-runtime.sh.pre-mediareset-20261005` in the station dir.
 
 ## §Traps
 Worth knowing before touching the driver, the disk composer, or the boot

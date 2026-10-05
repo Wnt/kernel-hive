@@ -61,6 +61,36 @@ Status: **production** (Tier 1, host-native MAME `kayproii`) — cpm22 wave, 202
   station; no persistent guest state to roll back (immutable floppy media,
   relaunch resets to the golden savestate).
 
+## Fresh media per start (2026-10-05)
+
+The station mounts per-start COPIES of immutable templates
+(`MAME_NATIVE_DISK_TEMPLATE`, mode 444, never handed to MAME): MAME opens its
+media read-write, and before this a visitor's saved file landed in the shared
+asset and outlived Restore. A start copies `cpm22-boot.td0` and
+`wordstar33.imd` to `stations/cpm22/media/`. Restore stays the in-process
+`LOADST golden`, but LOADST restores CPU, RAM and device registers, not media
+(a floppy's track data lives in the drive's memory, a hard disk is the file),
+so the Restore path pauses MAME, has the launcher's companion `media-hook.sh`
+(emitted as an aux file, a Lua hook entering through `-pluginspath`) unload,
+re-copy and reload every image, then LOADSTs and resumes. Without the armed
+hook a Restore takes the service restart, which copies fresh media at its
+start: never a plain LOADST. Mechanism:
+`streamhost/stations/mame-native/x11-runtime.sh` and `media-hook.sh`.
+
+**The case only a reload catches.** MAME cannot save TD0, so writes to A: stay
+in the drive's memory and the file never changes: no hash check could see
+them. On the rig `SAVE 1 KHA.COM` was listed; after a plain `LOADST golden`
+DIR hid it (the BIOS's restored sector cache), but a warm boot (^C) brought
+`KHA.COM` back from MAME's memory. After the media Restore the same ^C + DIR
+shows no KHA.COM. Restore 313 ms, golden frame pixel-identical. Live: the
+gallery Restore answered in 520 ms, in-process. The `:` key does not reach
+this machine through the keymap (`B:` cannot be typed), a keyboard-map matter.
+
+Evidence:
+`/data/vms/streamhost/stations/cpm22/evidence/media-reset-2026-10-05/` (rig
+frames and live frames). Rollback: `station.env.pre-mediareset-20261005` and
+`x11-runtime.sh.pre-mediareset-20261005` in the station dir.
+
 ## Keyboard: a German CP/M on a US keyboard (2026-10-04)
 
 The boot disk is **KAYPRO CP/M 2.2 (GMv2.72)**, a German BIOS. MAME's

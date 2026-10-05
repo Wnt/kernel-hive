@@ -63,11 +63,30 @@ emulation or its serial clock: the Mac's poll reply for "no key" is `0x7B`,
 which decoded as a key transition is a press of keycode `0x3D`, the `]` key.
 Not verified.
 
-**OPEN: the floppies are writable.** MAME runs as root and holds both
-`.dc42` images open read-write despite their 0444 mode, so a rename a
-visitor commits (Return, or a click elsewhere) could reach the asset media
-and outlive Restore. Their mtimes (2026-09-13) show nothing has been written
-so far. Opening them read-only (or from a copy per launch) would close it.
+**Fresh media per start (2026-10-05).** The station mounts per-start COPIES of
+immutable templates (`MAME_NATIVE_DISK_TEMPLATE`, mode 444, never handed to
+MAME): MAME opens its media read-write, and before this a visitor's saved file
+landed in the shared asset and outlived Restore. A start copies both `.dc42`
+floppies to `stations/macsys1/media/`. Restore stays the in-process `LOADST
+golden`, but LOADST restores CPU, RAM and device registers, not media (a
+floppy's track data lives in the drive's memory, a hard disk is the file), so
+the Restore path pauses MAME, has the launcher's companion `media-hook.sh`
+(emitted as an aux file, a Lua hook entering through `-pluginspath`) unload,
+re-copy and reload every image, then LOADSTs and resumes. Without the armed
+hook a Restore takes the service restart, which copies fresh media at its
+start: never a plain LOADST. Mechanism:
+`streamhost/stations/mame-native/x11-runtime.sh` and `media-hook.sh`.
+
+**Proof.** Rig: renaming the selected disk to `KHPROOF` and clicking the
+desktop committed it to the image (hash changed); Restore 396 ms brought back
+Write/Paint, the golden frame pixel-identical, image hashes pristine, and the
+disk opened normally afterwards (6 items). Live: the gallery Restore answered
+in 601 ms, in-process.
+
+Evidence:
+`/data/vms/streamhost/stations/macsys1/evidence/media-reset-2026-10-05/` (rig
+frames and live frames). Rollback: `station.env.pre-mediareset-20261005` and
+`x11-runtime.sh.pre-mediareset-20261005` in the station dir.
 
 **Live since 2026-10-04.** Through the real SPA keyboard, bare characters (so
 the SPA adds a synthetic Shift, the shape that failed): the selected disk's name

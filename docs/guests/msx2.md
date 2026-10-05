@@ -118,6 +118,32 @@ The MAME binary itself: 87 354 072 bytes, sha256
   from `stations-manifest.sh`/the SPA lineup removes the station; no golden
   to retire (`resetMode=relaunch`, no checkpoint baked).
 
+## Fresh media per start (2026-10-05)
+
+The station mounts a per-start COPY of an immutable template
+(`MAME_NATIVE_DISK_TEMPLATE`, mode 444, never handed to MAME): MAME opens its
+media read-write, and before this a visitor's saved file could land in the
+shared asset and outlive Restore. A start copies `msxdos2-english.dsk` to
+`stations/msx2/media/`, and this station's Restore is a cold relaunch, so
+every Restore starts from the template's bytes. Mechanism:
+`streamhost/stations/mame-native/x11-runtime.sh`.
+
+The NMS 8250 keeps its drive motor running, so a saved file reached the image
+only on a clean MAME exit (the service stop is a SIGKILL: SIGTERM is ignored).
+The template equals the staged `msxdos2-english.zip` content (sha256
+`e00558f0…`).
+
+**Proof.** Rig: `SAVE"KHPROOF"`, a clean exit committed it (hash changed), the
+next start copied fresh media and FILES had no KHPROOF. Live through the real
+SPA: the Sunset example ran, a visitor `SAVE"KHLIVE"` was listed, the
+visitor's Restore answered in 27.9 s, and FILES afterwards had no KHLIVE;
+image hash pristine.
+
+Evidence:
+`/data/vms/streamhost/stations/msx2/evidence/media-reset-2026-10-05/` (rig
+frames and live frames). Rollback: `station.env.pre-mediareset-20261005` and
+`x11-runtime.sh.pre-mediareset-20261005` in the station dir.
+
 ## Shifted characters: the modifier lead (2026-10-04)
 
 `SH_KEY_MOD_LEAD_MS=10` in the station fixture: the `ctlsock` module holds a

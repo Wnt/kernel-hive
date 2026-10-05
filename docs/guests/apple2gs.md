@@ -123,6 +123,37 @@ is its own wave). No `rn-tapnet.sh` is committed for this station.
 `SH_RESET_MODE=relaunch`, restoring the MAME savestate captured at the Finder
 desktop. See §Checkpoint above for the measured restore numbers.
 
+## Fresh media per start (2026-10-05)
+
+The station mounts per-start COPIES of immutable templates
+(`MAME_NATIVE_DISK_TEMPLATE`, mode 444, never handed to MAME): MAME opens its
+media read-write, and before this a visitor's saved file landed in the shared
+asset and outlived Restore. A start copies `assets/apple2gs/media/hive.hdv` to
+`stations/apple2gs/media/`. Restore stays the in-process `LOADST golden`, but
+LOADST restores CPU, RAM and device registers, not media (a floppy's track
+data lives in the drive's memory, a hard disk is the file), so the Restore
+path pauses MAME, has the launcher's companion `media-hook.sh` (emitted as an
+aux file, a Lua hook entering through `-pluginspath`) unload, re-copy and
+reload every image, then LOADSTs and resumes. Without the armed hook a Restore
+takes the service restart, which copies fresh media at its start: never a
+plain LOADST. Mechanism: `streamhost/stations/mame-native/x11-runtime.sh` and
+`media-hook.sh`.
+
+The template is the staged `System_Software_6.0.1_Harddisk_1989_Apple.2mg`
+byte for byte (sha256 `1586ac07…`); the live image had never been written.
+
+**Proof.** Rig: `H`, Open-Apple-O, Open-Apple-N made an `untitled` folder (10
+items, image hash changed); Restore 350 ms, the golden frame pixel-identical,
+HARDDISK reopened with 9 items, image hash pristine. Live: the gallery Restore
+answered in 785 ms, in-process, with fresh media. Typing over the selected
+HARDDISK icon does not rename it here (unlike the Mac Finder): it selects
+icons by name.
+
+Evidence:
+`/data/vms/streamhost/stations/apple2gs/evidence/media-reset-2026-10-05/` (rig
+frames and live frames). Rollback: `station.env.pre-mediareset-20261005` and
+`x11-runtime.sh.pre-mediareset-20261005` in the station dir.
+
 ## Build status (2026-09-13)
 - Golden: cold boot reaches the Finder desktop (HARDDISK volume, Trash, full
   Finder menu bar) in 33.8 s (throttled, real time); the golden save-state
