@@ -25,7 +25,8 @@ const KEYBOARDS = {
       "+": "\"",
       "\\": "`",
       "`": "~"
-    }
+    },
+    "physical": true
   },
   "armeval": {
     "charMap": {

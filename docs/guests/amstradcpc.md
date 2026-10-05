@@ -72,8 +72,14 @@ savestate** (`MAME_NATIVE_CHECKPOINT=0`):
   without one there is no `golden.sta` that has to stay in step with the binary
   (rule 6). bbcmicro and zxspectrum run the same way for the same reason.
 
-The launcher freezes MAME 8 s after start (standby, ~0 CPU), and the daemon
-resumes it when a visitor connects.
+The launcher freezes MAME once the scene is up (standby, ~0 CPU), and the
+daemon resumes it when a visitor connects. The freeze waits 4 **emulated**
+seconds (`MAME_NATIVE_STANDBY_CLOCK=emulated`): two cold boots of this binary
+drew `Ready` by 0.84 and 0.90 s (ctlsock `STAT` and `SHOT` polled together), so
+the freeze lands on the prompt however loaded the box is. The launcher then
+writes `ready <pid>` to `scene.state`, and a Restore reports done only at that
+point, so the SPA reconnects to `Ready` and the editor's first keys cannot land
+in the boot ([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#typing-right-after-a-restore)).
 
 ## Keyboard
 
@@ -107,15 +113,16 @@ where MAME puts them on a PC keyboard. Regenerate it with
   `KEYCODE_7_PAD`, MAME's macro names, while `KEYDUMP` prints `KEYCODE_7PAD`.
   Fixed on 2026-10-04 for every station's next regeneration.
 
-**A visitor's physical keys follow the CPC's own layout.** On a CPC, Shift+2 is
-`"`, `:` and `;` are unshifted keys with `*` and `+` above them, `@` and `[` are
-unshifted, and `=` is Shift+`-`. A US-layout visitor pressing Shift+' gets `+`,
-as they would on the real machine. The type-in editor, the demo typist and
-`labctl type` translate instead: registry `keyboard.charMap` sends each of 20
-characters through the key that makes it on the CPC (`"` through Shift+2, `(`
-through Shift+8, `*` through Shift+`;`, `\` through the backtick key), and
-`SH_KEY_MAP` in the fixture is the same map for labctl. `~` has no key on the
-CPC and is `typeIn.unreachable`.
+**Characters, not key positions.** On a CPC, Shift+2 is `"`, `:` and `;` are
+unshifted keys with `*` and `+` above them, `@` and `[` are unshifted, and `=`
+is Shift+`-`. Registry `keyboard.charMap` sends each of 20 characters through
+the key that makes it on the CPC (`"` through Shift+2, `(` through Shift+8, `*`
+through Shift+`;`, `\` through the backtick key), for the type-in editor, the
+demo typist, `labctl type` (`SH_KEY_MAP` in the fixture is the same map) and,
+with `keyboard.physical`, the visitor's own keys: a visitor gets the character
+printed on their keyboard, as the Caprice32 kiosk gave them. The map was checked
+against the keymap for all 95 printable ASCII characters; each lands as itself
+except `~`, which has no key on a CPC and is `typeIn.unreachable`.
 
 ### Pacing, measured
 

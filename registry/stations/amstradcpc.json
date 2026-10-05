@@ -188,7 +188,8 @@
       "+": "\"",
       "\\": "`",
       "`": "~"
-    }
+    },
+    "physical": true
   },
   "museum": {
     "id": "amstradcpc",

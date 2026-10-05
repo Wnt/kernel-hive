@@ -21,7 +21,8 @@ against the CPC's own character ROM: every one exact, and each example ran.
 
 **What a visitor will notice:** the screen is the same Ready prompt, drawn a
 little smaller inside the CPC's blue border, and Restore starts the machine
-from cold, which takes about a second. On a physical keyboard the keys follow
-the CPC's own layout: Shift+2 is `"`, as on the real machine.
+from cold and reconnects once it is back at Ready, a few seconds later. Keys
+still type the character printed on the visitor's own keyboard, although the
+CPC's layout differs from a PC's (`"` is Shift+2 there).
 
 Links: https://kernelhive.madekivi.fi/os/amstradcpc
