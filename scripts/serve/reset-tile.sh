@@ -423,7 +423,26 @@ case "$RESETMODE" in
         fi
         echo "reset $OSID: mamectl LOADST $KHCP failed on $TILEDIR (${OUT//$'\n'/ }) — falling back to a service restart" >&2
       fi
+      # FRESH MEDIA (MAME_NATIVE_DISK_TEMPLATE): LOADST alone restores RAM and
+      # devices but leaves the visitor's disk — a saved file, a renamed icon —
+      # for the next visitor (2026-10-05). Such a station restores through the
+      # launcher's media hook (stations/mame-native/media-hook.sh
+      # --media-reset: PAUSE, fresh copies, LOADST, RESUME), and ONLY when the
+      # hook says it is armed in THIS emulator; anything else — no hook, a
+      # launcher older than it, a failed swap — takes the service restart below,
+      # whose start copies fresh media anyway. Never a plain LOADST.
+      TPL="$(envval MAME_NATIVE_DISK_TEMPLATE)"
       if [ "${INPROC:-1}" != 0 ] && [ -S "${CTL:-/nonexistent}" ] && [ -n "$DRV" ] && [ "${CKPT:-1}" = 1 ] &&
+        [ -f "$TDIR/sta/$DRV/golden.sta" ] && [ -n "$TPL" ] &&
+        [ -n "$ESTATE" ] && [ "$ESTATE" != T ] && [ "$ESTATE" != t ]; then
+        OUT="hook not armed for pid ${EPID:-?}"
+        if [ "$(cat "$TDIR/media-reset.armed" 2>/dev/null)" = "armed $EPID" ] &&
+          OUT="$(bash "$TDIR/media-hook.sh" --media-reset "$TDIR" "$CTL" golden 2>&1)"; then
+          echo "reset $OSID: OK (mamectl $OUT on $TILEDIR, in-process)"
+          exit 0
+        fi
+        echo "reset $OSID: in-process media reset unavailable on $TILEDIR (${OUT//$'\n'/ }) — falling back to a service restart" >&2
+      elif [ "${INPROC:-1}" != 0 ] && [ -S "${CTL:-/nonexistent}" ] && [ -n "$DRV" ] && [ "${CKPT:-1}" = 1 ] &&
         [ -f "$TDIR/sta/$DRV/golden.sta" ] && [ -f /root/mctl.py ] &&
         [ -n "$ESTATE" ] && [ "$ESTATE" != T ] && [ "$ESTATE" != t ]; then
         if OUT="$(python3 /root/mctl.py "$CTL" --timeout 60 LOADST golden 2>&1)"; then
