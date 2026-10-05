@@ -155,7 +155,8 @@
       "_": "`",
       ":": "'",
       "*": "\""
-    }
+    },
+    "physical": true
   },
   "demoProgram": {
     "label": "Type in a demo program",

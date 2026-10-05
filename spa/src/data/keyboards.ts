@@ -43,7 +43,8 @@ const KEYBOARDS = {
       "_": "`",
       ":": "'",
       "*": "\""
-    }
+    },
+    "physical": true
   },
   "bbcmicro": {
     "charMap": {
@@ -60,7 +61,8 @@ const KEYBOARDS = {
       "_": "`",
       ":": "'",
       "*": "\""
-    }
+    },
+    "physical": true
   },
   "c64basic": {
     "letterCase": "upper-only"
@@ -115,7 +117,8 @@ const KEYBOARDS = {
       "-": "=",
       "=": "+"
     },
-    "letterCase": "upper-only"
+    "letterCase": "upper-only",
+    "physical": true
   },
   "fmtowns": {
     "charMap": {
@@ -221,7 +224,8 @@ const KEYBOARDS = {
       "^": "K",
       "@": "L"
     },
-    "letterCase": "upper-only"
+    "letterCase": "upper-only",
+    "physical": true
   },
   "msx2": {
     "charMap": {}
@@ -263,19 +267,22 @@ const KEYBOARDS = {
       "&": "^",
       "'": "&",
       "~": ")"
-    }
+    },
+    "physical": true
   },
   "svi328": {
     "charMap": {
       ":": ";",
       ";": ":"
-    }
+    },
+    "physical": true
   },
   "svi328cpm": {
     "charMap": {
       ":": ";",
       ";": ":"
-    }
+    },
+    "physical": true
   },
   "svi728": {
     "charMap": {}

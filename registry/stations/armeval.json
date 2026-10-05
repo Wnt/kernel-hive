@@ -158,7 +158,8 @@
       "_": "`",
       ":": "'",
       "*": "\""
-    }
+    },
+    "physical": true
   },
   "demoProgram": {
     "label": "Time 20000 loops on a 1986 ARM",
