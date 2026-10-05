@@ -402,6 +402,16 @@ order and nothing is lost, but a framebuffer taken the moment the editor says
 "Typed" shows the listing still arriving. `labctl reset` waits for the scene
 too (armeval: 45.5 s).
 
+**A run that ends in `ping-timeout: tile silent for ~5100 ms` was not dropped
+by the Restore path.** Three armeval runs did that on 2026-10-05, and the
+launcher's freeze was suspected. Each was a ~5 s packet-loss burst on the home
+uplink, which silences every public session at once. A later burst hit a
+symbos session and an armeval session in the same 100 ms, and the box's own
+pings to the internet lost the same seconds. The freeze had landed 44-79 s
+earlier
+([`lab/STREAM-DEBUGGING.md`](lab/STREAM-DEBUGGING.md#ping-timeout-tile-silent-for-5100-ms-the-wan-not-the-station);
+`scripts/dev/silence-scan.py` tells the two apart from the vitals store).
+
 **Not the same bug: samcoupe** restores in process (`LOADST golden`, 0.4 s) to
 its menu, and loses the first line after `NEW` (below). A fresh restore only
 matters because pressing `B` on the menu leaves the menu program in memory,

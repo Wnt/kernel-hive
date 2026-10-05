@@ -701,6 +701,72 @@ and every ping queued behind it. win95 lost the echo for >1.8 s at 18:39:03 and
 report, or hands the record to a channel. A slow guest now delays input, and
 nothing else.
 
+### `ping-timeout: tile silent for ~5100 ms`: the WAN, not the station
+The session ends with `wt-close ping-timeout: tile silent for 5xxx ms (6
+unanswered pings)`, a `frame watchdog latched` about 3 s before it, and a bare
+`SESSION_ENDED` in the daemon journal. It looks like a frozen station. **In
+every case measured so far it was the network between the home and the edge:
+a burst of about 5 s that dropped most packets in both directions.** A frozen
+guest cannot produce this signature. The daemon answers the type-9 ping from its
+own datagram plane (`transport/datagram.rs`) whether or not the emulator is
+running, so a SIGSTOPped guest gives `fps0` with pings still answered, never
+`tile silent`.
+
+Run **`scripts/dev/silence-scan.py`** first. It reads the vitals store, where
+three fields of every session's 1 Hz row are fed by the server (`send_kbps`,
+`rtt_ms`, `path_rtt_ms`). It prints every window in which those stopped
+changing, with `fps 0`, and groups the windows that overlap. **Several
+stations silent in the same second is the path or the box.** They share no
+daemon and no guest. One station alone is UNDECIDED, and three more reads
+decide it:
+
+1. **The same client's HTTPS stalled too.** `/clientlog` and `/clientcmd`
+   arrive every ~5 s (`srvTs` in `clientlog.jsonl`, `serve.clientlog` spans in
+   the trace store). A batch 5-7 s late, in the same window, means the client's
+   TCP was stalled as well. That rules out the daemon. The osgallery-https
+   server is a different process, and a curl loop on labhost against its own
+   `https://127.0.0.1:8443/healthz` never stalled during these windows.
+2. **The keys still reached the daemon, in bursts.** The daemon's sampled
+   `input.dispatch.key` spans (server kind, `traces.db`) carry the arrival
+   time, and their parent `input.wire` span carries the send time. On the same
+   clock (CT950 and the daemon share one kernel) the lag is 3-5 ms. During
+   the silence the keys arrive in clumps up to 1.7 s late. That is QUIC
+   retransmitting into a lossy path. A dead daemon would take no keys at all.
+3. **The box's own pings to the edge lost the same seconds.** Send them
+   through the tunnel and outside it (`ping -D -i 0.2` to the edge's wg
+   address and to its public address). Neither path touches a station.
+
+Measured 2026-10-05, armeval, with captures on `wg0` and on CT950's veth: at
+08:03:53.8 a symbos session (another agent's browser) and an armeval session
+(this investigation's browser) went silent in the same 100 ms. CT950 kept
+sending 9-22 packets per 0.5 s per flow and received 0-4. `wg0` received 1-5
+of them. The box's pings to the edge lost 5 s, inside and outside the tunnel,
+with RTT rising from 4 to 25 ms just before. osgallery-https answered locally
+in 51 ms p50 and 74 ms max throughout. CT950's own scheduler was never more
+than 20 ms late during the silence. symbos crossed `SILENCE_MS` and dropped;
+armeval recovered at about 4.5 s. Over the ten days before, the scan found 63
+events in which two or three stations went silent together. Evidence:
+`/data/vms/streamhost/stations/armeval/evidence/armeval-stall-2026-10-05/`.
+
+**It is beyond the LAN.** For the next 40 minutes the box pinged the home
+router, the edge and two public DNS resolvers (Cloudflare, Quad9) at 5 Hz. At
+08:18, 08:22, 08:23 and 08:29 the edge and both resolvers lost 1-3 s together.
+The router lost nothing (max 0.85 ms), and the box was sending under 2 Mbit/s
+just before each burst. That leaves the router's WAN side or the ISP. No
+station or daemon change removes it. The SPA only decides how long a silence
+a session survives.
+
+**What it is not.** That evidence ruled out armeval's own suspects: the
+launcher's standby freeze (it landed 44-79 s before each silence, and the
+reconciler logged nothing near one), idle auto-pause, the frame publisher (a
+sandbox A/B of the new fixture against the old one ran 100 s at 26 publishes
+per second with no gap over 250 ms), the per-start media copy (MAME never
+writes the floppy back in a session; its mtime stays at the copy time), and a
+starved client. A ~5 s loss burst kills any public session on any station
+whose silence crosses `SILENCE_MS` (5 s, `streamClient/liveness.ts`). A long
+session, such as an editor run on a half-speed machine, simply has more time
+to meet one.
+
 ### The station is active and healthy and no session ever arrives
 `streamhost@<id>` active and encoding, `check-stream-tickets.py` says the ticket
 is accepted, `/signal/<id>.json` returns a valid path — and the daemon journal
