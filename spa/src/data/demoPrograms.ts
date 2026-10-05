@@ -492,7 +492,8 @@ const TYPE_IN = {
   "kc854": {
     "dialect": "kc-basic",
     "perCharMs": 260,
-    "hint": "First type BASIC and press ENTER twice to wake HC-BASIC."
+    "hint": "First type BASIC and press ENTER twice to wake HC-BASIC.",
+    "unreachable": "[\\]_`{}~"
   },
   "mpf2": {
     "dialect": "applesoft",
@@ -538,7 +539,7 @@ const TYPE_IN = {
     "enterAfter": [
       "NEW"
     ],
-    "unreachable": "<>?[]{}\\|"
+    "unreachable": "<>?[]{}|^`"
   },
   "sinclairql": {
     "dialect": "superbasic",
@@ -548,7 +549,7 @@ const TYPE_IN = {
     "dialect": "msx-basic",
     "perCharMs": 500,
     "case": "code-upper",
-    "unreachable": "`|~"
+    "unreachable": "`|"
   },
   "svi728": {
     "dialect": "msx-basic",

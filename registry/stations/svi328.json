@@ -90,7 +90,7 @@
       "SH_HASH_FILE": "/data/vms/streamhost/stations/svi328/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/svi328/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": "%3A:;,;:%3A"
+      "SH_KEY_MAP": "%3A:;,;:%3A,~:|"
     },
     "vmidLabel": 221,
     "bringUpOrder": 122,
@@ -195,12 +195,13 @@
     "dialect": "msx-basic",
     "perCharMs": 500,
     "case": "code-upper",
-    "unreachable": "`|~"
+    "unreachable": "`|"
   },
   "keyboard": {
     "charMap": {
       ":": ";",
-      ";": ":"
+      ";": ":",
+      "~": "|"
     },
     "physical": true
   }

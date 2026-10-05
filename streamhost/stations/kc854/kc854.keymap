@@ -50,7 +50,6 @@
 0x35	:keyboard:KEY6	/  ?
 0x36	:keyboard:SHIFT	Shift
 0x39	:keyboard:KEY4	Space
-0x3a	:keyboard:KEY7	Shift Lock
 0x3b	:keyboard:KEY7	F1
 0x3c	:keyboard:KEY0	F2
 0x3d	:keyboard:KEY1	F3
@@ -65,3 +64,8 @@
 0xe050	:keyboard:KEY7	Cursor Down
 0xe052	:keyboard:KEY3	Ins
 0xe053	:keyboard:KEY2	Del
+# override (physical-charmap, 2026-10-05): PC Caps Lock is NOT bound to the KC's
+# Shift Lock. The station's keyboard.physical charMap already gives a visitor's
+# letter the case the browser resolved (Caps Lock included), so a Shift Lock
+# toggled by the same key inverted it a second time: Caps Lock on + `PRINT`
+# typed `print`. docs/guests/kc854.md "Keyboard".

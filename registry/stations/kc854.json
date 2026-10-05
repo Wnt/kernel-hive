@@ -143,7 +143,8 @@
   "typeIn": {
     "dialect": "kc-basic",
     "perCharMs": 260,
-    "hint": "First type BASIC and press ENTER twice to wake HC-BASIC."
+    "hint": "First type BASIC and press ENTER twice to wake HC-BASIC.",
+    "unreachable": "[\\]_`{}~"
   },
   "keyboard": {
     "charMap": {
@@ -213,7 +214,8 @@
       "c": "C",
       "Q": "q",
       "q": "Q"
-    }
+    },
+    "physical": true
   },
   "museum": {
     "id": "kc854",

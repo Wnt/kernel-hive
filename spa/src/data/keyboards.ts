@@ -204,7 +204,8 @@ const KEYBOARDS = {
       "c": "C",
       "Q": "q",
       "q": "Q"
-    }
+    },
+    "physical": true
   },
   "mpf2": {
     "charMap": {
@@ -222,7 +223,33 @@ const KEYBOARDS = {
       "/": "?",
       "?": "/",
       "^": "K",
-      "@": "L"
+      "@": "L",
+      "A": "a",
+      "B": "b",
+      "C": "c",
+      "D": "d",
+      "E": "e",
+      "F": "f",
+      "G": "g",
+      "H": "h",
+      "I": "i",
+      "J": "j",
+      "K": "k",
+      "L": "l",
+      "M": "m",
+      "N": "n",
+      "O": "o",
+      "P": "p",
+      "Q": "q",
+      "R": "r",
+      "S": "s",
+      "T": "t",
+      "U": "u",
+      "V": "v",
+      "W": "w",
+      "X": "x",
+      "Y": "y",
+      "Z": "z"
     },
     "letterCase": "upper-only",
     "physical": true
@@ -266,21 +293,24 @@ const KEYBOARDS = {
       ")": "(",
       "&": "^",
       "'": "&",
-      "~": ")"
+      "~": ")",
+      "\\": "?"
     },
     "physical": true
   },
   "svi328": {
     "charMap": {
       ":": ";",
-      ";": ":"
+      ";": ":",
+      "~": "|"
     },
     "physical": true
   },
   "svi328cpm": {
     "charMap": {
       ":": ";",
-      ";": ":"
+      ";": ":",
+      "~": "|"
     },
     "physical": true
   },

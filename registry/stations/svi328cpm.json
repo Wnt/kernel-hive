@@ -90,7 +90,7 @@
       "SH_HASH_FILE": "/data/vms/streamhost/stations/svi328cpm/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/svi328cpm/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": "%3A:;,;:%3A"
+      "SH_KEY_MAP": "%3A:;,;:%3A,~:|"
     },
     "vmidLabel": 222,
     "bringUpOrder": 123,
@@ -199,7 +199,8 @@
   "keyboard": {
     "charMap": {
       ":": ";",
-      ";": ":"
+      ";": ":",
+      "~": "|"
     },
     "physical": true
   }
