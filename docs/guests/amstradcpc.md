@@ -175,6 +175,25 @@ last row. The rig proof is in
 `/data/vms/streamhost/stations/amstradcpc/evidence/cpc-native-2026-10-04/`
 (`INDEX.txt`, frames in `rig/`, the harness in `tools/`).
 
+## Live proof (2026-10-05)
+
+Through the real SPA on the live station
+(`scripts/e2e/typein-editor-probe.mjs amstradcpc <example> --restore-first --run
+'cls:list' --then ... --restore`): the visitor's Restore first (it reported done
+after 15.3-15.7 s, at `Ready`), then the editor typed each example at once, then
+`cls:list` and `run` went in on the visitor's own keyboard path, and a last
+Restore put the station back at its cold-boot `Ready`.
+
+| Example | Typed | LIST | RUN |
+|---|---|---|---|
+| `draw.bas` | 10 lines, 35 s | exact | the string art |
+| `input.bas` | 13 lines, 51 s | exact | 1985 -> `In Roman numerals: MCMLXXXV` |
+| `game.bas` | 17 lines, 80 s | exact | paddle and ball, `Missed! Score 0` |
+
+On the visitor's keys, `print "<(1)*2+3=>";"@[]\|{}'_?";5^2;7\2` echoed exactly
+and printed `<(1)*2+3=>@[]\|{}'_? 25  3`. The daemon counted no dropped,
+overflowed or refused key. Frames and the probe log are in `evidence/cpc-native-2026-10-04/live/`.
+
 ## Ports
 
 - streamhost UDP (WebTransport): **54119** (slot 119). UI web port 8119.
