@@ -41,7 +41,7 @@
   "render": {
     "signalOrder": 119,
     "stationsManifestOrder": 98,
-    "stationsManifestPrelude": "\n# symbos (VMID 225) \u2014 SymbOS 4.0 on Philips MSX2, a later enthusiast desktop.\n",
+    "stationsManifestPrelude": "\n# symbos (VMID 225) — SymbOS 4.0 on Philips MSX2, a later enthusiast desktop.\n",
     "bringUpGroup": 6,
     "bindingOrder": 126,
     "bindingPrelude": "",
@@ -90,7 +90,7 @@
       "SH_HASH_FILE": "/data/vms/streamhost/stations/symbos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/symbos/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": ""
+      "SH_KEY_MAP": "':`,`:',\":~,~:\""
     },
     "vmidLabel": 225,
     "bringUpOrder": 126,
@@ -135,14 +135,14 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#376ca8",
-    "eraLabel": "2025 \u00b7 SymbOS 4.0 \u2014 a modern desktop on an MSX2",
+    "eraLabel": "2025 · SymbOS 4.0 — a modern desktop on an MSX2",
     "pointerRel": false
   },
   "museum": {
     "id": "symbos",
     "displayName": "SymbOS on MSX2",
     "year": 2025,
-    "lineage": "SymbOS \u2192 MSX port (2006) \u2192 SymbOS 4.0 (2025)",
+    "lineage": "SymbOS → MSX port (2006) → SymbOS 4.0 (2025)",
     "arch": "Zilog Z80A, 3.58 MHz, Yamaha V9938 VDP (MSX2 video)",
     "ramMB": 0,
     "ramKB": 512,
@@ -155,7 +155,7 @@
       "Pocket Calculator",
       "Game of Life"
     ],
-    "periodBrowser": "None \u2014 offline",
+    "periodBrowser": "None — offline",
     "iconicApps": [
       "SymCommander",
       "Notepad",
@@ -188,6 +188,12 @@
     "Isolated station; no RetroNet."
   ],
   "keyboard": {
-    "charMap": {}
+    "charMap": {
+      "'": "`",
+      "`": "'",
+      "\"": "~",
+      "~": "\""
+    },
+    "physical": true
   }
 }

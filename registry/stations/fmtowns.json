@@ -41,7 +41,7 @@
   "render": {
     "signalOrder": 86,
     "stationsManifestOrder": 84,
-    "stationsManifestPrelude": "\n# fmtowns (VMID 196) \u2014 Fujitsu FM TOWNS, Towns OS V2.1 L51 (TownsMENU) from the System Software CD, host-native MAME.\n",
+    "stationsManifestPrelude": "\n# fmtowns (VMID 196) — Fujitsu FM TOWNS, Towns OS V2.1 L51 (TownsMENU) from the System Software CD, host-native MAME.\n",
     "bringUpGroup": 6,
     "bindingOrder": 97,
     "bindingPrelude": "",
@@ -90,7 +90,7 @@
       "SH_HASH_FILE": "/data/vms/streamhost/stations/fmtowns/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/fmtowns/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": "=:[,+:=,*:+,%3A:',\":],/:_,_:{,(:*,):(,&:^,':&,~:)"
+      "SH_KEY_MAP": "\":@,&:^,':&,(:*,):(,=:_,^:=,~:+,@:[,`:{,[:],{:},]:`,}:~,+:%3A,*:\",%3A:'"
     },
     "vmidLabel": 196,
     "bringUpOrder": 97,
@@ -135,7 +135,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#CC3D33",
-    "eraLabel": "1995 \u00b7 Towns OS V2.1 L51 \u2014 FM TOWNS (1989)",
+    "eraLabel": "1995 · Towns OS V2.1 L51 — FM TOWNS (1989)",
     "pointerRel": false
   },
   "museum": {
@@ -154,15 +154,15 @@
       "MS-DOS (Towns)",
       "CD-DA player"
     ],
-    "periodBrowser": "none \u2014 Towns OS V2.1 L51 ships no TCP/IP stack by default",
+    "periodBrowser": "none — Towns OS V2.1 L51 ships no TCP/IP stack by default",
     "iconicApps": [
       "TownsMENU",
-      "CD\u30d7\u30ec\u30fc\u30e4\u30fc",
-      "\u96fb\u5353",
+      "CDプレーヤー",
+      "電卓",
       "Free Software Collection"
     ],
-    "blurb": "Fujitsu shipped a CD-ROM drive as standard in a consumer PC in 1989, years early. Towns OS is its icon-first Japanese desktop on DOS \u2014 sprites, 16.7M-colour modes, Red Book soundtracks, sold in one country.",
-    "notes": "Host-native station: MAME's fmtowns-family driver runs on the host (drawshm frames, ctlsock keys, FIFO audio), no QEMU and no installed guest disk \u2014 the Towns System Software V2.1 L51 CD is the boot volume (-cdrom, a CHD composed by scripts/build-guests/tiles/fmtowns.sh from the bin/cue). Towns mouse on the second pad port (-pad2 mouse). See docs/lab/FMTOWNS-WAVE.md."
+    "blurb": "Fujitsu shipped a CD-ROM drive as standard in a consumer PC in 1989, years early. Towns OS is its icon-first Japanese desktop on DOS — sprites, 16.7M-colour modes, Red Book soundtracks, sold in one country.",
+    "notes": "Host-native station: MAME's fmtowns-family driver runs on the host (drawshm frames, ctlsock keys, FIFO audio), no QEMU and no installed guest disk — the Towns System Software V2.1 L51 CD is the boot volume (-cdrom, a CHD composed by scripts/build-guests/tiles/fmtowns.sh from the bin/cue). Towns mouse on the second pad port (-pad2 mouse). See docs/lab/FMTOWNS-WAVE.md."
   },
   "emulator": {
     "family": "MAME",
@@ -178,8 +178,8 @@
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "PROVEN 2026-09-13 absolute, write route (docs/lab/FMTOWNS-WAVE.md SS Pointer, \"Pointer stream 2026-09-13 #5\"): Towns OS keeps the guest cursor position in THREE mirrored 16-bit little-endian words 2 bytes apart (order=hv) -- 0x11623c is the AUTHORITATIVE position (poke it and the driver propagates it and repaints), 0x0a2034 is a copy the driver overwrites on the next poll, and 0x116240 is the ERASE position the next poll restores before drawing -- writing anything but 0x11623c alone leaves a trail of stale arrows on screen. Towns OS only redraws on a NON-ZERO poll delta, so the module writes the position pre-biased by a 1-count nudge and then issues that one count (MAME_CTL_ABS_RAM=cpu=maincpu,pts=0x11623c,order=hv,nudge=1); no MAME_CTL_GAIN_X/Y -- must never be set on this station, the acceleration curve this route bypasses. The 640x480 Towns raster is letterboxed 931x702+61+48 on the published surface (MAME_CTL_ABS_RECT=61,48,931,702, MAME_CTL_ABS_GEOM=640x480). Five targets (80,70) (960,70) (80,720) (960,720) (512,384), TWO laps, arrow re-parked between every reading: the guest's own cursor word is EXACT on all ten (0 residual); worst locator error 3 px on (80,70) in both laps identically, which is the TownsMENU bar hiding the arrow tip, not pointer error. Click/drag/window-activation proven separately in \"Pointer stream 2026-09-13 #2\" (see reset.fixture / docs/lab/FMTOWNS-WAVE.md); a plain click on a desktop icon draws nothing by TownsMENU's own design.",
-    "keyboard": "PROVEN \u2014 real ctlsock KEY path through the generated fmtowns.keymap (79/146 fields matched); Ctrl+Esc opens the guest's own Task List dialog, pressed again opens a different dialog, proving live input (docs/lab/FMTOWNS-WAVE.md Proofs)",
-    "fixture": "PROVEN \u2014 Towns OS V2.1 L51 TownsMENU desktop booted cold from the System Software CD, golden savestate captured and restore-proven pixel-identical (docs/lab/FMTOWNS-WAVE.md Proofs)"
+    "keyboard": "PROVEN — real ctlsock KEY path through the generated fmtowns.keymap (79/146 fields matched); Ctrl+Esc opens the guest's own Task List dialog, pressed again opens a different dialog, proving live input (docs/lab/FMTOWNS-WAVE.md Proofs)",
+    "fixture": "PROVEN — Towns OS V2.1 L51 TownsMENU desktop booted cold from the System Software CD, golden savestate captured and restore-proven pixel-identical (docs/lab/FMTOWNS-WAVE.md Proofs)"
   },
   "migrationExceptions": [],
   "notes": [
@@ -188,18 +188,24 @@
   ],
   "keyboard": {
     "charMap": {
-      "=": "[",
-      "+": "=",
-      "*": "+",
-      ":": "'",
-      "\"": "]",
-      "/": "_",
-      "_": "{",
-      "(": "*",
-      ")": "(",
+      "\"": "@",
       "&": "^",
       "'": "&",
-      "~": ")"
-    }
+      "(": "*",
+      ")": "(",
+      "=": "_",
+      "^": "=",
+      "~": "+",
+      "@": "[",
+      "`": "{",
+      "[": "]",
+      "{": "}",
+      "]": "`",
+      "}": "~",
+      "+": ":",
+      "*": "\"",
+      ":": "'"
+    },
+    "physical": true
   }
 }
