@@ -273,9 +273,34 @@ Restore is a cold relaunch: the screen sits at the bare `A*` supervisor while
 the launcher's `-autoboot_script` types `*LIB $` and `AB`, about 16 emulated
 seconds in (40 s after launch on a rig). Code typed into the editor before the
 `>` prompt goes to the supervisor and every line answers `Bad command (254)`.
-The first live smoke did exactly that. OPEN: Restore should wait for the
-station's ready scene (the restore-first-keys work, together with
-`bbcmicro`).
+The first live smoke did exactly that. Since the restore-first-keys work,
+Restore waits for the launcher's `ready <pid>` (23 emulated s, at the `>`
+prompt): the SPA showed the restored station live 56.5-58.6 s after the
+click in eight runs on 2026-10-05, and the first keys landed.
+
+**The guest finishes typing about 45 s after the editor does.** The module
+paces keys in emulated time, at 0.49 of real time
+([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#typing-right-after-a-restore)).
+The editor reports *Typed 13 lines* while the screen is still at line 80 of
+*Count the primes*. Nothing is lost, and RUN typed then queues behind the
+listing. A proof must see the listing finish on the framebuffer before it
+types an INPUT answer or Escape, because an Escape that arrives during the run
+breaks the program before it prints.
+
+**The stalls of 2026-10-05 were the network, not this station.** Three of
+five editor runs between 07:25 and 07:38 UTC ended in `ping-timeout: tile
+silent for ~5100 ms`. Each was a loss burst of about 5 s between the home and
+the edge: the same browser's HTTPS stalled in the same seconds, and a later
+burst, at 08:03:53, silenced a symbos session and an armeval session together.
+Neither the launcher's freeze, the media copy nor the half-speed emulator was
+involved
+([`../lab/STREAM-DEBUGGING.md`](../lab/STREAM-DEBUGGING.md#ping-timeout-tile-silent-for-5100-ms-the-wan-not-the-station)).
+None of eight further `--restore-first` runs (08:00-08:35 UTC) dropped its
+session. Three of them met a shorter burst, 2-4.5 s, and rode it out. The last
+five in a row LISTed *Count the primes* exactly, and RUN answered `1229 PRIMES
+BELOW 10000`. The first three took their LIST shot before the guest had
+finished typing (the lag above). Evidence:
+`/data/vms/streamhost/stations/armeval/evidence/armeval-stall-2026-10-05/`.
 
 **Live since 2026-10-04.** After the `>` prompt, the real editor typed *Count the
 primes*; LIST was exact, RUN answered 1000 with `168 PRIMES BELOW 1000` in
