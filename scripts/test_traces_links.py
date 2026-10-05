@@ -26,7 +26,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import traces  # noqa: E402
 import traces_otlp  # noqa: E402
 
-from test_traces import S1, S3, T1, T2, PreMigrationStoreTest, batch, span  # noqa: E402
+from test_traces import S1, S3, T1, T2, batch, span  # noqa: E402
+from test_traces_schema import PreMigrationStoreTest  # noqa: E402
 
 
 class SpanLinkTest(unittest.TestCase):
@@ -127,7 +128,7 @@ class SpanLinkTest(unittest.TestCase):
         deploy names a `links` column, and on a live db that column only exists
         if a migration put it there — without which the whole serving plane
         502s on the next span, in a restart loop. `PreMigrationStoreTest` in
-        test_traces.py was born of exactly that outage."""
+        test_traces_schema.py was born of exactly that outage."""
         path = Path(self.tmp.name) / "premigration.db"
         db = sqlite3.connect(str(path))
         db.executescript(PreMigrationStoreTest.OLD_TRACE_TABLE)

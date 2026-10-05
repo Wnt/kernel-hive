@@ -1,8 +1,8 @@
 [Unit]
 # The daemon's spooled spans, carried into the trace store. Hand-run for its
-# whole life like the forwarder, with the same consequence: a station's spans
-# sat in /data/vms/streamhost/stations/<id>/traces/ until somebody remembered,
-# and /admin/observability showed a hole where the daemon should be.
+# whole life before the timer, so a station's spans sat in
+# /data/vms/streamhost/stations/<id>/traces/ until somebody remembered, and
+# /admin/observability showed a hole where the daemon should be.
 Description=kernel-hive: ship spooled daemon spans into the trace store
 Documentation=file:///data/kernel-hive/docs/ANALYTICS.md
 After=network.target osgallery-https.service

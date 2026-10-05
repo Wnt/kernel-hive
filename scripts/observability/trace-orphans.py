@@ -7,8 +7,8 @@
     scripts/observability/trace-orphans.py --json
 
 WHY THIS IS A TOOL AND NOT A ONE-OFF QUERY. A span whose `parent_id` names
-nothing renders in Instana as "the root call of the trace is missing or has
-not yet arrived in the processing pipeline", and NOTHING ELSE SHOWS IT. Every
+nothing renders in a trace viewer as a trace whose root call is missing, and
+NOTHING ELSE SHOWS IT. Every
 individual span looks perfect, every request it describes succeeded, and only
 the join between them is broken — so the failure is invisible in the access
 log, invisible in the span list, and invisible in any latency number. It went

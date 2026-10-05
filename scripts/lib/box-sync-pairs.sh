@@ -202,7 +202,7 @@ box_sync_load_pairs() {
   # reason it exists.
   for name in clientcmd.sh osgallery-https-server.py reset-tile.sh install-https-service.sh \
     config.py clientip.py geo.py static_files.py webrtc.py clientlog.py clientcmd.py restore.py signal_route.py \
-    usage.py walkin_plane.py deploy_hint.py analytics.py probes.py linecov.py telemetry_routes.py telemetry_stores.py eum_proxy.py traces.py traces_schema.py traces_policy.py traces_otlp.py otlp_resource.py otlp_semconv.py telemetry_paths.py tracecontext.py \
+    usage.py walkin_plane.py deploy_hint.py analytics.py probes.py linecov.py telemetry_routes.py telemetry_stores.py traces.py traces_schema.py traces_policy.py traces_otlp.py otlp_resource.py telemetry_paths.py tracecontext.py \
     tracing.py tracing_http.py \
     logs.py logs_schema.py logs_otlp.py logs_read.py logsink.py \
     vitals.py vitals_schema.py vitals_otlp.py vitals_read.py; do
@@ -267,22 +267,12 @@ box_sync_load_pairs() {
   # unit (what actually runs + auto-starts on boot), like the streamhost/amiga units.
   box_sync_add_pair osgallery-https-unit scripts/serve/osgallery-https.service /etc/systemd/system/osgallery-https.service scrub repo daemon-reload
   box_sync_add_pair vm-idle-watch scripts/vm-idle-watch.sh "$BOX_ROOT/serve/vm-idle-watch.sh" exact repo
-  # The observability carriers, on timers since 2026-09-01. Both were hand-run
-  # for their whole lives, so every Instana view they feed was stale by default.
-  # Only the UNITS are paired: both scripts import from the checkout
-  # (scripts/serve/traces.py, registry/local.env), so the units run them out of
-  # /data/kernel-hive rather than from a copy that could not resolve its own
-  # imports. Landing these installs the units; ENABLING them is the operator's
-  # decision — docs/lab/INSTANA-VIEW-INVENTORY.md §2.
-  box_sync_add_pair kh-instana-forward-unit scripts/observability/kh-instana-forward.service /etc/systemd/system/kh-instana-forward.service exact repo daemon-reload
-  box_sync_add_pair kh-instana-forward-timer scripts/observability/kh-instana-forward.timer /etc/systemd/system/kh-instana-forward.timer exact repo daemon-reload
-  # The VITALS leg is a THIRD carrier and a third pair, not a flag on the first,
-  # because its cadence is different by two orders of magnitude: Instana stamps
-  # metric points at INGEST, so the tick period IS the resolution in the tenant
-  # and a five-minute batch of five-second samples would land as one instant.
-  # 10 s; the whole argument is in scripts/observability/instana_vitals.py.
-  box_sync_add_pair kh-instana-vitals-unit scripts/observability/kh-instana-vitals.service /etc/systemd/system/kh-instana-vitals.service exact repo daemon-reload
-  box_sync_add_pair kh-instana-vitals-timer scripts/observability/kh-instana-vitals.timer /etc/systemd/system/kh-instana-vitals.timer exact repo daemon-reload
+  # The daemon span/log carrier, on a timer since 2026-09-01. It was hand-run
+  # for its whole life, so /admin/observability showed a hole where the daemon
+  # should be until somebody remembered. Only the UNITS are paired: trace-ship.py
+  # reads registry/local.env from the checkout, so the unit runs it out of
+  # /data/kernel-hive rather than from a copy that could not find its config.
+  # Landing this installs the units; ENABLING them is the operator's decision.
   box_sync_add_pair kh-trace-ship-unit scripts/observability/kh-trace-ship.service /etc/systemd/system/kh-trace-ship.service exact repo daemon-reload
   box_sync_add_pair kh-trace-ship-timer scripts/observability/kh-trace-ship.timer /etc/systemd/system/kh-trace-ship.timer exact repo daemon-reload
   box_sync_add_pair solaris-cdrv streamhost/guest-agents/solaris/cdrv.py /root/cdrv.py exact repo

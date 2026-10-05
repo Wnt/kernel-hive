@@ -1,14 +1,14 @@
 """Traces: OpenTelemetry spans, stored whole, queryable, admin-only to read.
 
 WHAT THIS PLANE IS FOR: RICH TELEMETRY. The operator's standing instruction is
-that this lab submits **as rich a record as possible** to both its own
-observability plane and to Instana — stacks, URLs, the identity of the account
-that hit a fault. `docs/ANALYTICS.md` §0 is the data policy this file
-implements; read it before adding any restriction here. Only three reasons
-refuse anything, and every one of them is named at the constant that enforces
-it: SECRETS (security — a stored credential is a replayable one), VOLUME (one
-box, one disk, caps sized against measured traffic), and typed keystroke
-CONTENT, which is off behind `KH_TRACE_TYPED_TEXT` pending an operator answer.
+that this lab records **as rich a record as possible** in its own
+observability plane — stacks, URLs, the identity of the account that hit a
+fault. `docs/ANALYTICS.md` §0 is the data policy this file implements; read it
+before adding any restriction here. Only three reasons refuse anything, and
+every one of them is named at the constant that enforces it: SECRETS (security
+— a stored credential is a replayable one), VOLUME (one box, one disk, caps
+sized against measured traffic), and typed keystroke CONTENT, which is off
+behind `KH_TRACE_TYPED_TEXT` pending an operator answer.
 
 Reads stay ADMIN-ONLY (auth/routes.py); the aggregates are open, this is not.
 
@@ -210,10 +210,8 @@ class TraceStore:
         self._db = sqlite3.connect(str(self.path), check_same_thread=False)
         self._db.execute("PRAGMA journal_mode=WAL")
         self._db.executescript(traces_schema.SCHEMA)
-        traces_schema.migrate_ingest_order(self._db)
         traces_schema.migrate_build(self._db)
         traces_schema.migrate_links(self._db)
-        traces_schema.heal_unsequenced(self._db)
         self._db.commit()
         self._has_links = True
 
@@ -311,13 +309,13 @@ class TraceStore:
                     taken += 1
                     touched.add(trace_id)
             for trace_id in touched:
-                self._resummarise(cur, trace_id, session, klass, build, traces_schema.next_ingest_seq(cur))
+                self._resummarise(cur, trace_id, session, klass, build)
             if taken:
                 self._db.commit()
         return taken
 
     @staticmethod
-    def _resummarise(cur, trace_id: str, session: str, klass: str, build: str, ingest_seq: int) -> None:
+    def _resummarise(cur, trace_id: str, session: str, klass: str, build: str) -> None:
         """Rebuild one trace's summary row from the spans now present.
 
         The ROOT is the span with no parent; when several batches are in flight
@@ -339,14 +337,10 @@ class TraceStore:
         errors = sum(1 for r in rows if r[5] == "error")
         cur.execute(
             "INSERT INTO trace(trace_id,session_id,class,root_name,started_ms,ended_ms,dur_ms,"
-            "span_count,error_count,status,day,ingest_seq,updated_ms,build) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+            "span_count,error_count,status,day,build) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(trace_id) DO UPDATE SET root_name=excluded.root_name,"
             "started_ms=excluded.started_ms,ended_ms=excluded.ended_ms,dur_ms=excluded.dur_ms,"
             "span_count=excluded.span_count,error_count=excluded.error_count,status=excluded.status,"
-            # A trace that just took a span is NEWLY CHANGED, so it moves to the
-            # head of the ingest order — that is the whole point: a consumer
-            # that walked past this trace an hour ago sees it again.
-            "ingest_seq=excluded.ingest_seq,updated_ms=excluded.updated_ms,"
             # A batch that KNOWS the session names it; one that does not never
             # erases one. The serving plane (serve/tracing.py) emits spans into
             # traces the browser also contributes to, and it never learns the
@@ -377,8 +371,6 @@ class TraceStore:
                 errors,
                 root[5],
                 _day(started),
-                ingest_seq,
-                int(time.time() * 1000),
                 build,
             ),
         )
@@ -414,28 +406,13 @@ class TraceStore:
         if f.get("min_dur_ms"):
             where.append("dur_ms>=?")
             args.append(int(f["min_dur_ms"]))
-        # The two INGEST-ORDER filters. They are not "since_ms with better
-        # units": `since_seq` asks what has CHANGED since a marker, which
-        # includes a trace that started before it, and `quiet_before_ms` asks
-        # what has stopped changing. Both are meaningless against started_ms,
-        # and both are what a forwarder needs — see instana-forward.py.
-        if f.get("since_seq"):
-            where.append("ingest_seq>?")
-            args.append(int(f["since_seq"]))
-        if f.get("quiet_before_ms"):
-            where.append("updated_ms<=?")
-            args.append(int(f["quiet_before_ms"]))
         limit = max(1, min(500, int(f.get("limit") or 100)))
         offset = max(0, int(f.get("offset") or 0))
-        # The UI wants newest first; a catch-up consumer wants the order things
-        # were ingested in, oldest first, so that a watermark it advances can
-        # never skip a row it has not seen.
-        order = "ingest_seq ASC" if f.get("order") == "ingest" else "started_ms DESC"
         sql = (
             "SELECT trace_id,session_id,class,root_name,started_ms,dur_ms,span_count,"
-            "error_count,status,ingest_seq,updated_ms,build FROM trace WHERE "  # noqa: S608 - fixed names
+            "error_count,status,build FROM trace WHERE "  # noqa: S608 - fixed names
             + " AND ".join(where)
-            + f" ORDER BY {order} LIMIT ? OFFSET ?"
+            + " ORDER BY started_ms DESC LIMIT ? OFFSET ?"
         )
         cols = (
             "traceId",
@@ -447,8 +424,6 @@ class TraceStore:
             "spanCount",
             "errorCount",
             "status",
-            "ingestSeq",
-            "updatedMs",
             "build",
         )
         with self._lock:
@@ -539,16 +514,15 @@ class TraceStore:
         """How many stored spans name a parent that is not in the store.
 
         THE REGRESSION THIS EXISTS TO MAKE VISIBLE. A span whose `parent_id`
-        names nothing renders in Instana as "the root call of the trace is
-        missing or has not yet arrived", and there is no other way to notice:
-        every individual span looks perfect, the request it describes
-        succeeded, and only the JOIN is broken. It went unmeasured until
-        2026-09-01, when a hand-written query found 42.9% of the six-hour
-        window in that state. Both producers were in the browser (the tab
-        emitting a `traceparent` naming a span it had already decided not to
-        record, and a root span that never left because its flow never ended);
-        both are fixed in `spa/src/analytics/`, and this is what proves they
-        stay fixed.
+        names nothing renders in a trace viewer as a trace whose root call is
+        missing, and there is no other way to notice: every individual span
+        looks perfect, the request it describes succeeded, and only the JOIN is
+        broken. It went unmeasured until 2026-09-01, when a hand-written query
+        found 42.9% of the six-hour window in that state. Both producers were in
+        the browser (the tab emitting a `traceparent` naming a span it had
+        already decided not to record, and a root span that never left because
+        its flow never ended); both are fixed in `spa/src/analytics/`, and this
+        is what proves they stay fixed.
 
         `settle_ms` excludes the RECENT edge on purpose. A parent that is
         merely still open — a flow the visitor has not finished — is a

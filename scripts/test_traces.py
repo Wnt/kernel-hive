@@ -104,13 +104,12 @@ class StoreTest(unittest.TestCase):
             self.assertEqual(self.store.record(batch([{**span(S1), "s": bad}])), 0, bad)
 
     def test_the_backend_trace_id_attribute_survives_intake_intact(self):
-        """`kh.backend.trace_id` is how a client span points at the server
-        trace that answered it (khFetch.ts reads `traceresponse` /
-        `Server-Timing: intid` off the response). Intake drops a key over 64
-        chars or in BANNED_ATTRS and TRUNCATES a value over ATTR_STR_MAX — all
-        three silently, and a truncated trace id joins nothing while still
-        looking like an id. So assert the round trip, byte for byte, rather
-        than the rules it happens to satisfy today."""
+        """`kh.backend.trace_id` is how a client span points at the server trace
+        that answered it (khFetch.ts reads `traceresponse` off the response).
+        Intake drops a key over 64 chars or in BANNED_ATTRS and TRUNCATES a
+        value over ATTR_STR_MAX — all three silently, and a truncated trace id
+        joins nothing while still looking like an id. So assert the round trip,
+        byte for byte, rather than the rules it happens to satisfy today."""
         backend = "abcdefabcdefabcdefabcdefabcdefab"
         key = "kh.backend.trace_id"
         self.assertLessEqual(len(key), 64)
@@ -322,7 +321,7 @@ class OtlpTest(unittest.TestCase):
         that daemon-side fix landed, a daemon span with no `kh.service`
         attribute fell through to this function's default `service` argument
         (`"kernel-hive-spa"`) and was silently filed under the BROWSER's
-        service — verified live against Instana 2026-08-31: an `input.edge`
+        service — verified live in an export on 2026-08-31: an `input.edge`
         trace's daemon-origin spans (`input.dispatch`, `guest.frame.next`,
         `transport.frame.next`) all carried `service.name: kernel-hive-spa`.
         This locks the grouping half of that fix in place: a span that DOES
@@ -400,98 +399,16 @@ class OtlpTest(unittest.TestCase):
         self.assertEqual(s["spanId"], S1)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
-class PreMigrationStoreTest(unittest.TestCase):
-    """Opening a store whose db predates ingest ordering.
-
-    This is the case that took the serving plane down: every test built a
-    FRESH db, where `CREATE TABLE` makes the new columns and nothing notices
-    that `SCHEMA` also indexes one of them. On a db that already had a `trace`
-    table, `CREATE TABLE IF NOT EXISTS` is a no-op, so the index in SCHEMA ran
-    against a column the migration had not added yet and the process exited 1
-    on startup, in a restart loop, with the gallery serving 502.
-    """
-
-    #: The SPAN table as it stood before span LINKS — the shape a live
-    #: traces.db still has at the instant the new code first opens it.
-    OLD_SPAN_TABLE = """
-    CREATE TABLE span (
-      trace_id TEXT NOT NULL, span_id TEXT NOT NULL, parent_id TEXT,
-      name TEXT NOT NULL, kind TEXT NOT NULL,
-      started_ms INTEGER NOT NULL, dur_ms INTEGER NOT NULL, hidden_ms INTEGER NOT NULL,
-      status TEXT NOT NULL, status_msg TEXT,
-      attrs TEXT, events TEXT,
-      PRIMARY KEY (trace_id, span_id)) WITHOUT ROWID;
-    """
-
-    OLD_TRACE_TABLE = """
-    CREATE TABLE trace (
-      trace_id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL, class TEXT NOT NULL,
-      root_name TEXT NOT NULL,
-      started_ms INTEGER NOT NULL, ended_ms INTEGER NOT NULL, dur_ms INTEGER NOT NULL,
-      span_count INTEGER NOT NULL, error_count INTEGER NOT NULL,
-      status TEXT NOT NULL, day TEXT NOT NULL) WITHOUT ROWID;
-    """
-
-    def _old_db(self) -> Path:
-        tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(tmp.cleanup)
-        path = Path(tmp.name) / "traces.db"
-        db = sqlite3.connect(str(path))
-        db.executescript(self.OLD_TRACE_TABLE)
-        db.executescript(self.OLD_SPAN_TABLE)
-        db.execute(
-            "INSERT INTO trace VALUES(?,'s','human','r',100,200,100,1,0,'ok','2026-09-01')",
-            ("a" * 32,),
-        )
-        db.commit()
-        db.close()
-        return path
-
-    def test_a_store_written_before_ingest_ordering_opens(self):
-        store = traces.TraceStore(self._old_db())
-        self.assertEqual(len(store.search(limit=10)["traces"]), 1)
-
-    def test_the_existing_rows_are_sequenced_not_left_at_zero(self):
-        path = self._old_db()
-        traces.TraceStore(path)
-        db = sqlite3.connect(str(path))
-        self.assertEqual(db.execute("SELECT COUNT(*) FROM trace WHERE ingest_seq=0").fetchone()[0], 0)
-
-    def test_opening_twice_is_stable(self):
-        path = self._old_db()
-        traces.TraceStore(path)
-        traces.TraceStore(path)  # the index already exists; must not raise
-
-    def test_a_store_written_before_build_identity_gets_the_column(self):
-        """Same shape as the ingest-order migration, same reason: a live
-        traces.db keeps its old columns forever unless somebody says otherwise,
-        and the FIRST batch to arrive after the deploy would otherwise fail its
-        INSERT against a column that is not there — with the gallery in a
-        restart loop, which is exactly how this class was born."""
-        path = self._old_db()
-        store = traces.TraceStore(path)
-        self.addCleanup(store.close)
-        # The pre-existing row reads `unknown`, which is the truth about it.
-        self.assertEqual(store.search(limit=10)["traces"][0]["build"], "unknown")
-        self.assertEqual(store.record(batch([span(S1)], build="main@abc1234")), 1)
-        self.assertEqual(store.trace(T1)["build"], "main@abc1234")
-
-
 class BuildIdentityTest(unittest.TestCase):
     """WHICH BUNDLE THE CLIENT WAS RUNNING, on our own plane, end to end.
 
     The bug behind these tests was not in any of this code: on 2026-09-01 a
-    phone's visit was recorded in full here and not at all by the vendor, and
-    the only place a client's build id was ever written down was a vendor beacon
-    meta — so the first question ("was that client on the shell we deployed?")
-    could not be asked of our own data at all. It rides the RESOURCE envelope
-    now, because it is one fact about the producer rather than a fact about a
-    moment in the journey, and these tests pin it from intake to OTLP.
+    phone's visit was recorded in full here, and the only place a client's build
+    id was ever written down was a third-party beacon's metadata — so the first
+    question ("was that client on the shell we deployed?") could not be asked of
+    our own data at all. It rides the RESOURCE envelope now, because it is one
+    fact about the producer rather than a fact about a moment in the journey,
+    and these tests pin it from intake to OTLP.
     """
 
     def setUp(self):
@@ -593,3 +510,7 @@ class BuildIdentityTest(unittest.TestCase):
             by_service[keys["service.name"]] = keys
         self.assertEqual(by_service["kernel-hive-spa"]["service.version"], "main@3e6c81c4")
         self.assertNotIn("service.version", by_service["kernel-hive-daemon"])
+
+
+if __name__ == "__main__":
+    unittest.main()

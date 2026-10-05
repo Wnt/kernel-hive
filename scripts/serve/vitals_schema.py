@@ -6,9 +6,8 @@ question is "was the picture 30 fps and 2 Mbit/s for the last ten minutes, and
 did the audio ever run dry", which is a TIME SERIES. Spans cannot answer it —
 per-frame spans would be thousands a second — and `analytics.db`'s counters
 cannot either, because they carry no per-sample timestamp at all, only a day
-bucket (`scripts/observability/instana_metrics.py` says so in its own
-docstring). So this is a third shape beside them, and it is the ONLY store in
-the plane whose primary key question is "what was the value at time T".
+bucket. So this is a third shape beside them, and it is the ONLY store in the
+plane whose primary key question is "what was the value at time T".
 
 WIDE, NOT TALL, and that is the one design decision worth arguing here. The
 obvious shape for a metric store is `(ts, name, value)`. It was rejected:
@@ -44,8 +43,7 @@ lanes, which are built for unbounded strings. A metric label is a dimension you
 pay for forever in every backend that ingests it, ours included.
 
 `seq INTEGER PRIMARY KEY AUTOINCREMENT` for the same reason `logs_schema.py`
-gives: it is the watermark the Instana forwarder resumes from, and AUTOINCREMENT
-buys monotonicity that survives any delete.
+gives: an id that is never reused, whatever is deleted.
 """
 
 from __future__ import annotations
@@ -54,14 +52,12 @@ from __future__ import annotations
 #: in the store and in OTLP. Four fields: the store column, the OTLP metric
 #: name, its unit, and its instrument kind.
 #:
-#: KIND IS NOT DECORATION. Instana's OTLP metrics acceptor takes Gauge, Sum and
-#: Histogram and nothing else (0307-opentelemetry-signals.md:90-94; exponential
-#: histograms are not mentioned anywhere in the corpus, so they are treated as
-#: unsupported). A `gauge` is a value that means something on its own — fps is
-#: 30 now. A `sum` is a MONOTONIC CUMULATIVE COUNTER the client has been adding
-#: to since the session began — frames dropped is 41 SO FAR — and exporting one
-#: as a gauge would make "41" look like a rate. Getting this wrong is silent:
-#: both render as a line, and only the axis lies.
+#: KIND IS NOT DECORATION. Every vital is one of two OTLP instrument kinds,
+#: `gauge` or `sum`. A `gauge` is a value that means something on its own — fps
+#: is 30 now. A `sum` is a MONOTONIC CUMULATIVE COUNTER the client has been
+#: adding to since the session began — frames dropped is 41 SO FAR — and
+#: exporting one as a gauge would make "41" look like a rate. Getting this
+#: wrong is silent: both render as a line, and only the axis lies.
 #:
 #: UNITS ARE UCUM, which is what OTLP asks for: `ms`, `%`, `1` (dimensionless),
 #: `kbit/s`, `By`.
@@ -187,16 +183,15 @@ CREATE TABLE IF NOT EXISTS vital (
   ts_ms INTEGER NOT NULL, observed_ms INTEGER NOT NULL,
   -- THE THREE DIMENSIONS, and there are deliberately only three.
   -- `station` is the exhibit and becomes the OTLP `service.instance.id`, which
-  -- is what makes each station its OWN OpenTelemetry entity in Instana
-  -- (0311-...-infrastructure-correlation.md:236-248). `session` is one tab's
-  -- visit. `source` is 'spa' or 'daemon'.
+  -- is what makes each station its OWN resource in an export. `session` is one
+  -- tab's visit. `source` is 'spa' or 'daemon'.
   station TEXT NOT NULL, session_id TEXT NOT NULL, source TEXT NOT NULL,
   build TEXT NOT NULL,
   day TEXT NOT NULL"""
     + "".join(f",\n  {c} REAL" for c in COLUMNS)
     + """);
 -- The three reads this store exists to serve, in the order they are run:
--- a station's recent series, one session's series, and the forwarder's walk.
+-- a station's recent series, one session's series, and a time-window scan.
 CREATE INDEX IF NOT EXISTS vital_station ON vital(station, ts_ms DESC);
 CREATE INDEX IF NOT EXISTS vital_session ON vital(session_id, ts_ms DESC);
 CREATE INDEX IF NOT EXISTS vital_ts ON vital(ts_ms DESC);

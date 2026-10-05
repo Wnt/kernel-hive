@@ -51,10 +51,8 @@ ATTR_SOURCE = SPA / "transportFacts.ts"
 #: a root's duration read the wrong figure.
 #:
 #: `input.dispatch` gained two class-suffixed forms, which is what gives keyboard
-#: and mouse DISTINCT endpoint rows in Instana — it derives an OTLP endpoint from
-#: the entry span's name (`{otel.operation}`,
-#: instana-docs/0251-monitoring-applications.md). The bare name remains the
-#: fallback for a class neither end recognises.
+#: and mouse DISTINCT rows in any view that groups entry spans by name. The bare
+#: name remains the fallback for a class neither end recognises.
 EXPECTED_SPANS = {
     "input.edge",
     "input.wire",

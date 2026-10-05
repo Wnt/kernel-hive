@@ -129,21 +129,11 @@ OPEN_PATHS = frozenset(
 # manifest, the fleet table, station signaling, /admin, /clientcmd*).
 # /posters/ holds the captured exhibit stills. The walk-in landing page and its
 # exhibits view are built from them, and they are published art, not data.
-# /vendor/ holds the self-hosted third-party static agent (Instana EUM),
-# mirrored byte-for-byte from IBM's CDN by serve-https-spa.sh's
-# publish_instana_agent() at deploy time. spa/index.html loads it BEFORE any
-# auth decision — the earliest possible <script> in <head>, ahead of React —
-# because the whole point is a page-load beacon for the visit that is
-# happening right now, signed in or not. Gated behind a 401 it cannot get:
-# the browser never even reaches the app to authenticate, so no telemetry is
-# ever produced. It is a public, unmodified third-party script (nothing of
-# ours, nothing secret) that is already downloadable straight from IBM, so
-# publishing it here leaks nothing that gating it would have protected.
 # /boot/ holds the boot-replay videos the index above names, plus their posters
 # and thumbnail sprites. Publishing the index while gating the media it points
 # at would list films nobody may watch; these are recordings of a guest booting,
 # the same picture the landing page already streams live to strangers.
-OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/", "/posters/", "/vendor/", "/boot/")
+OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/", "/posters/", "/boot/")
 
 # Refused outright on this listener: the command ENQUEUE. Nothing a browser can
 # reach may issue a command to the server side. `clientcmd.sh` posts to
@@ -290,22 +280,10 @@ WALKIN_PATHS = frozenset(
         # different route entirely (/auth/traces/*), so a walk-in can report the
         # journey that just failed them and can see nothing.
         "/traces",
-        # The Instana EUM beacon proxy (serve/eum_proxy.py). Listed HERE and
-        # deliberately NOT in OPEN_PATHS above: it is a telemetry INGEST, so it
-        # gets exactly the fence /traces and /analytics already have — an
-        # invited session or a walk-in, never an anonymous stranger. Widening
-        # it to open would make a route that writes into a third-party tenant
-        # reachable by anyone who can reach the login page.
-        "/eum",
     }
 )
 # Prefixes: the SPA bundle, the museum's own art, and the poster heroes —
 # captured stills already published to the webroot.
-# /vendor/ is deliberately NOT listed again here: walkin_allows() checks
-# is_open() first, and /vendor/ joined OPEN_PREFIXES above, so a walk-in
-# already reaches it before this allowlist is even consulted. A stranger's
-# tab needs the telemetry agent exactly as much as an invited one does — a
-# walk-in session is not exempt from the outage this fixes.
 #
 # /staging/ is a per-session PREVIEW of the same bundle (scripts/dev/stage.sh):
 # static files only (static_files.py), every API call it makes is root-relative
@@ -347,10 +325,8 @@ WALKIN_MANIFEST_FIELDS = (
 # no prefixes whatsoever, holding only the routes the landing page cannot work
 # without. It is deliberately NOT `WALKIN_PATHS`, which has grown to cover a
 # signed-up walk-in's whole plane — the account page, the staged-bundle preview,
-# the command poll, the EUM beacon proxy. Every one of those is defensible for
-# somebody who registered and is defensible for nobody who has not, and the
-# comment on `/eum` above already said so out loud: "an invited session or a
-# walk-in, never an anonymous stranger."
+# the command poll, the span ingest. Every one of those is defensible for
+# somebody who registered and is defensible for nobody who has not.
 #
 # What a stranger gets, and why each one is here:
 #   /walkin/claim, /walkin/release   drive a machine, and switch machines.
@@ -377,7 +353,7 @@ WALKIN_MANIFEST_FIELDS = (
 #
 # NOT granted, each on purpose: /walkin/reset (a fresh machine is not something
 # an anonymous visitor needs; switching covers it), /account (they have none),
-# /clientcmd (the debug poll), /usage, /analytics, /traces, /eum, /staging/,
+# /clientcmd (the debug poll), /usage, /analytics, /traces, /staging/,
 # /walkin/play/, and every admin surface.
 ANON_PATHS = frozenset(
     {

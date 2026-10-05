@@ -1,8 +1,8 @@
 """Tests for the `<meta name="traceparent">` injection into index.html.
 
-docs/lab/TRACE-CONTEXT.md §8: a page load joins a backend trace only because
-the SERVER embeds a real, recorded span's id in the HTML it serves — Instana's
-own (undocumented) website-monitoring agent reads exactly
+docs/lab/TRACE-CONTEXT.md §4: a page load joins a backend trace only because
+the SERVER embeds a real, recorded span's id in the HTML it serves —
+`spa/src/analytics/pageLoadLink.ts` reads exactly
 `document.querySelector('meta[name="traceparent"]')`. The rules that matter:
 
   * the tag's `content` is well-formed `00-<32hex>-<16hex>-<2hex>` and names a
@@ -154,31 +154,28 @@ class TracingOnTest(Base):
         self.assertIsNotNone(TAG_RE.search(body))
 
     def test_the_document_carries_the_same_span_in_its_response_headers(self):
-        """The tag is for a vendor agent reading the DOM; the headers are for
-        every other reader, ours included. Two channels, ONE span — if they
-        could disagree, a reader would have no way to tell which one lied.
+        """The tag is for the page reading the DOM; the header is for every
+        other reader. Two channels, ONE span — if they could disagree, a reader
+        would have no way to tell which one lied.
 
-        The headers are HANDED to `tracing_http` rather than returned in this
-        reply's `extra` dict, and `end_headers` writes them: one writer, so a
-        response cannot carry two disagreeing pairs. That used not to be true —
+        The header is HANDED to `tracing_http` rather than returned in this
+        reply's `extra` dict, and `end_headers` writes it: one writer, so a
+        response cannot carry two disagreeing ones. That used not to be true —
         scripts/test_serve_return_leg.py has the bug it cost."""
         h = self._get("/")
         tag = TAG_RE.search(h.replied[1]).group(1).decode("ascii")
         self.assertNotIn("traceresponse", h.replied[4] or {})
         self.assertEqual(h._kh_trace_response["traceresponse"], tag)
-        trace_id = tag.split("-")[1]
-        self.assertEqual(h._kh_trace_response["Server-Timing"], f"intid;desc={trace_id}")
 
     def test_the_response_headers_name_a_recorded_span(self):
         h = self._get("/")
-        trace_id = h._kh_trace_response["Server-Timing"].split("=", 1)[1]
+        trace_id = h._kh_trace_response["traceresponse"].split("-")[1]
         tracing.flush()
         self.assertIsNotNone(self.store.trace(trace_id))
 
     def test_a_non_index_asset_gets_no_trace_headers(self):
         h = self._get("/assets/app-abcdef01.js")
         self.assertNotIn("traceresponse", h.replied[4] or {})
-        self.assertNotIn("Server-Timing", h.replied[4] or {})
         self.assertFalse(getattr(h, "_kh_trace_response", None))
 
     def test_repeated_requests_mint_distinct_spans(self):

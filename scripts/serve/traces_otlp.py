@@ -48,11 +48,9 @@ because `traces.py` refused them at intake. That refusal was lifted on
 store, and the store is where the content rules live. The only thing that can
 never appear here is a credential, because it can never enter the store.
 
-TWO NEIGHBOURS DO THE PARTS THAT ARE NOT SPELLING. `otlp_resource.py` answers
-WHO produced a span — the explicit service table and each plane's build id —
-and `otlp_semconv.py` adds the previous-generation attribute spellings Instana
-consumes alongside our own. Both are additive and neither renames anything this
-plane emits.
+ONE NEIGHBOUR DOES THE PART THAT IS NOT SPELLING. `otlp_resource.py` answers
+WHO produced a span — the explicit service table and each plane's build id. It
+is additive and renames nothing this plane emits.
 """
 
 from __future__ import annotations
@@ -60,8 +58,6 @@ from __future__ import annotations
 import json
 
 import otlp_resource
-import otlp_semconv
-import telemetry_paths
 
 # OTel SpanKind enum, from the protobuf definition.
 KIND_ENUM = {"internal": 1, "server": 2, "client": 3, "producer": 4, "consumer": 5}
@@ -92,52 +88,12 @@ def _nanos(ms: int) -> str:
     return str(int(ms) * 1_000_000)
 
 
-def _is_synthetic(kind: str, attrs: dict) -> bool:
-    """Is this an entry span for our OWN telemetry plane, rather than for
-    something a visitor did?
-
-    `synthetic` IS INSTANA'S VOCABULARY AND LIVES ONLY HERE. Instana marks a
-    call Synthetic when a span is "annotated with `synthetic` with the value
-    true" (instana-docs/0251-monitoring-applications.md, "Synthetic call
-    rules"), and hides Synthetic calls from Unbounded Analytics BY DEFAULT while
-    keeping them one switch away (Hidden calls -> Synthetic calls). That is
-    exactly the behaviour wanted — hidden, not deleted — so it is used rather
-    than worked around. It is applied at the EXPORT boundary and never written
-    to the store: `traces.db` and /admin/observability keep these spans
-    first-class, because a vendor's presentation default has no business
-    changing what this box records. The same rule as otlp_semconv.py, for the
-    same reason.
-
-    WHY THIS GOT WORSE BEFORE IT GOT BETTER, stated plainly because the next
-    reader will otherwise think the noise is new. These polls used to propagate
-    a `traceparent` from whatever span happened to be active, so each one hid
-    inside somebody else's trace and never appeared as a call of its own. Fixing
-    that (khFetch.ts's `outboundTraceparent`: an excluded telemetry path names
-    no parent, and the server roots its own trace) made each poll a correct
-    one-span root trace — more honest data, and a call list where
-    `serve.clientcmd`, `serve.clientlog` and `serve.analytics` crowded out
-    everything else. The mark below is the presentation half of that fix, not a
-    retreat from it.
-
-    ENTRY SPANS ONLY. A `client` span is the tab's side and is never created for
-    these paths anyway (khFetch's `IGNORE_URL_PATTERNS`), and marking an
-    internal span synthetic would say something about work, not about a call.
-    """
-    return kind == "server" and telemetry_paths.is_telemetry_route(attrs.get("http.route"))
-
-
 def span_to_otlp(s: dict) -> dict:
     """One stored span row (as traces.py `trace()` returns it) to OTLP."""
     attrs = dict(s.get("attributes") or {})
     if s.get("hiddenMs"):
         attrs["kh.hidden_ms"] = int(s["hiddenMs"])
     kind = s.get("kind", "internal")
-    name = s.get("name", "")
-    # The vendor bridge, applied HERE rather than in the store: what we keep is
-    # our own naming, what leaves also carries Instana's. See otlp_semconv.py.
-    attrs.update(otlp_semconv.instana_aliases(name, kind, attrs))
-    if _is_synthetic(kind, attrs):
-        attrs["synthetic"] = True
     out = {
         "traceId": s["traceId"],
         "spanId": s["spanId"],
@@ -164,12 +120,10 @@ def span_to_otlp(s: dict) -> dict:
         out["events"] = events
     # SPAN LINKS — OTel's "caused by, but not nested under". Since 2026-09-01 a
     # trace here is ONE ACTION, so a keystroke is no longer a child of the page
-    # load it happened on; the causal edge is a link instead, and Instana
-    # surfaces links in the call Details view
-    # (instana-docs/0307-opentelemetry-signals.md, "OpenTelemetry span events
-    # and span links"). The same fact ALSO rides as the `kh.page.loadId`
-    # attribute, deliberately: a link is what a UI navigates, an attribute is
-    # what a query groups by, and neither substitutes for the other.
+    # load it happened on; the causal edge is a link instead. The same fact
+    # ALSO rides as the `kh.page.loadId` attribute, deliberately: a link is
+    # what a UI navigates, an attribute is what a query groups by, and neither
+    # substitutes for the other.
     links = [
         {
             "traceId": link["t"],
@@ -187,7 +141,6 @@ def span_to_otlp(s: dict) -> dict:
 def export(
     traces: list[dict],
     service: str = "kernel-hive-spa",
-    host_id: str | None = None,
     host_name: str | None = None,
     builds: otlp_resource.BuildIds | None = None,
 ) -> dict:
@@ -243,12 +196,6 @@ def export(
                         {
                             "service.name": svc,
                             "session.id": session,
-                            # Instana links OpenTelemetry entities to a host by
-                            # `host.id` and refuses or orphans data without one
-                            # (or the x-instana-host header). Harmless to any
-                            # other consumer: it is a standard semantic
-                            # convention attribute.
-                            **({"host.id": host_id} if host_id else {}),
                             **({"host.name": host_name} if host_name else {}),
                             **({"service.instance.id": instance} if instance else {}),
                             **({"service.version": version} if version else {}),

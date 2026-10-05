@@ -1,11 +1,9 @@
 """What an unauthenticated browser must be able to fetch (scripts/serve/auth/gate.py).
 
-Regression coverage for the outage where /vendor/ was missing from
-OPEN_PREFIXES: the self-hosted Instana EUM agent 401'd for every signed-out
-visitor, so no page-load beacon was ever produced. spa/index.html loads the
-agent script BEFORE any auth decision (see its own comment), so anything it —
-or the built bundle — references has to be open here or the reference just
-silently 401s.
+spa/index.html is fetched BEFORE any auth decision, so anything it — or the
+built bundle — references has to be open here or the reference just silently
+401s for every signed-out visitor. A missing prefix once did exactly that to a
+script the page head loaded, and nothing but the absence of its effect said so.
 """
 
 from __future__ import annotations
@@ -22,21 +20,6 @@ sys.path.insert(0, str(ROOT / "scripts" / "serve" / "auth"))
 import gate  # noqa: E402
 
 INDEX_HTML = (ROOT / "spa" / "index.html").read_text(encoding="utf-8")
-
-
-class TestVendorIsOpen(unittest.TestCase):
-    """The regression this fix exists for."""
-
-    def test_the_instana_agent_is_open_to_a_signed_out_request(self):
-        self.assertTrue(gate.is_open("/vendor/instana-eum.min.js"))
-
-    def test_the_vendor_prefix_is_open_in_general(self):
-        self.assertTrue(gate.is_open("/vendor/anything-else.js"))
-
-    def test_a_walk_in_reaches_the_agent_too(self):
-        # walkin_allows() checks is_open() first, so /vendor/ does not need
-        # (and deliberately does not have) its own WALKIN_PREFIXES entry.
-        self.assertTrue(gate.walkin_allows("/vendor/instana-eum.min.js"))
 
 
 class TestTheLineupIsPublic(unittest.TestCase):
@@ -72,7 +55,7 @@ class TestTheLineupIsPublic(unittest.TestCase):
 
 
 class TestTheGateStillBites(unittest.TestCase):
-    """Prove the fix did not widen the fence beyond /vendor/."""
+    """The open fence stays exactly as wide as the published surface."""
 
     def test_a_genuinely_gated_surface_is_still_gated(self):
         # `/gallery-manifest.json` was in this list until 2026-09-14 and is
@@ -88,16 +71,15 @@ class TestTheGateStillBites(unittest.TestCase):
 
 
 class TestEveryPathIndexHtmlReferencesIsOpen(unittest.TestCase):
-    """The general rule, not just this one instance: `spa/index.html` names a
-    fixed set of paths an unauthenticated browser must fetch before the app
-    (or even React) has evaluated — icons, the manifest, and the vendor
-    agent. Every one of them has to answer to a signed-out request or it
-    breaks silently, exactly like /vendor/ did. Extracted straight from the
-    file with a small, permissive regex rather than a hand-maintained list,
-    so a new reference added to the head is caught here automatically."""
+    """The general rule: `spa/index.html` names a fixed set of paths an
+    unauthenticated browser must fetch before the app (or even React) has
+    evaluated — icons and the manifest. Every one of them has to answer to a
+    signed-out request or it breaks silently. Extracted straight from the file
+    with a small, permissive regex rather than a hand-maintained list, so a new
+    reference added to the head is caught here automatically."""
 
-    # href="/..." / src="/..." (an HTML attribute) OR `agent.src = '/...'`
-    # (the Instana bootstrap sets `.src` as a JS property, not a markup
+    # href="/..." / src="/..." (an HTML attribute) OR `el.src = '/...'`
+    # (an inline script setting `.src` as a JS property, not a markup
     # attribute, hence the optional whitespace around `=`) — root-relative
     # only. The module entry (`/src/main.tsx`) is a dev-server-only path
     # replaced by Vite's own build with a hashed /assets/ file, so it is

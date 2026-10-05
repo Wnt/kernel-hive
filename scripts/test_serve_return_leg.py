@@ -1,4 +1,4 @@
-"""One response, one pair of return-leg headers; one request, one server span.
+"""One response, one return-leg header; one request, one server span.
 
 THE BUG THESE PIN, measured live on 2026-09-01 against the ungated LAN
 listener:
@@ -6,26 +6,24 @@ listener:
     $ curl -sk --http1.1 -D- -o /dev/null "https://<lan>:8443/auth/state"
     Content-Type: text/html; charset=utf-8
     traceresponse: 00-1d3cdf6c...f8f9-4cb5d81e83892474-01
-    Server-Timing: intid;desc=1d3cdf6c...f8f9
     traceresponse: 00-12e6e93e...c877-3ce4fc70a19cf4fc-01
-    Server-Timing: intid;desc=12e6e93e...c877
 
-Two pairs, two UNRELATED trace ids, one request. The `text/html` is the tell:
+Two headers, two UNRELATED trace ids, one request. The `text/html` is the tell:
 `auth_routes.dispatch` runs only when `self.public`, so on the LAN listener
 every `/auth/*` and `/walkin/*` path falls through to the SPA fallback and is
 answered with index.html. That single request therefore hit BOTH span-opening
 sites — `tracing_http`'s route allowlist (`serve.auth.state`) and
 `static_files`' index.html injection (`serve.page`) — and both wrote their own
-copy of the two headers, one via the `end_headers` stash and one via the reply's
-`extra` dict. It also put both spans under the browser's ONE client span, so
-`/admin/observability` showed a document navigation and an in-page fetch sharing
-a parent they could not possibly share.
+copy of the return-leg header, one via the `end_headers` stash and one via the
+reply's `extra` dict. It also put both spans under the browser's ONE client
+span, so `/admin/observability` showed a document navigation and an in-page
+fetch sharing a parent they could not possibly share.
 
 The invariants, and each is stated so it cannot be satisfied by luck:
 
-  * a traced response carries EXACTLY ONE `traceresponse` and ONE
-    `Server-Timing`, whichever code paths ran;
-  * one request opens exactly ONE server span, so the meta tag, the headers and
+  * a traced response carries EXACTLY ONE `traceresponse`, whichever code
+    paths ran;
+  * one request opens exactly ONE server span, so the meta tag, the header and
     the recorded span all name the same id;
   * instrumenting a class twice — or a base and then a subclass — cannot double
     anything.
@@ -168,40 +166,37 @@ class Base(unittest.TestCase):
         return h
 
 
-class OnePairPerResponseTest(Base):
-    """The header count, on every shape of response that can carry them."""
+class OneHeaderPerResponseTest(Base):
+    """The header count, on every shape of response that can carry it."""
 
-    def assert_one_pair(self, h):
+    def assert_one_header(self, h):
         tr = h.header_values("traceresponse")
-        st = [v for v in h.header_values("Server-Timing") if v.startswith("intid;")]
         self.assertEqual(len(tr), 1, f"traceresponse x{len(tr)}: {h.sent}")
-        self.assertEqual(len(st), 1, f"Server-Timing x{len(st)}: {h.sent}")
-        return tr[0], st[0]
+        return tr[0]
 
-    def test_lan_auth_state_falls_through_to_the_spa_and_still_sends_one_pair(self):
+    def test_lan_auth_state_falls_through_to_the_spa_and_still_sends_one_header(self):
         """THE regression. Allowlisted route + SPA fallback = both span sites."""
         h = self.get("/auth/state")
         self.assertEqual(h.header_values("Content-Type"), ["text/html; charset=utf-8"])
-        self.assert_one_pair(h)
+        self.assert_one_header(h)
 
     def test_lan_walkin_state_too(self):
-        self.assert_one_pair(self.get("/walkin/state"))
+        self.assert_one_header(self.get("/walkin/state"))
 
-    def test_public_auth_state_is_answered_by_the_auth_plane_and_sends_one_pair(self):
+    def test_public_auth_state_is_answered_by_the_auth_plane_and_sends_one_header(self):
         h = self.get("/auth/state", public=True)
         self.assertEqual(h.header_values("Content-Type"), ["application/json"])
-        self.assert_one_pair(h)
+        self.assert_one_header(h)
 
-    def test_an_untraced_page_load_sends_one_pair(self):
+    def test_an_untraced_page_load_sends_one_header(self):
         """`/os/win95` is NOT in the allowlist: only `serve.page` exists."""
-        self.assert_one_pair(self.get("/os/win95"))
+        self.assert_one_header(self.get("/os/win95"))
 
-    def test_the_headers_agree_with_each_other_and_with_the_meta_tag(self):
+    def test_the_header_agrees_with_the_meta_tag(self):
         h = self.get("/auth/state")
-        tr, st = self.assert_one_pair(h)
+        tr = self.assert_one_header(h)
         tag = TAG_RE.search(h.body).group(1).decode("ascii")
         self.assertEqual(tr, tag)
-        self.assertEqual(st, f"intid;desc={tag.split('-')[1]}")
 
 
 class OneSpanPerRequestTest(Base):

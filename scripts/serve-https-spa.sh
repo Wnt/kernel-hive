@@ -80,25 +80,8 @@ build() {
     msg "ERROR: npm not on PATH (needed to build the SPA)"
     exit 1
   }
-  # Instana EUM (spa/index.html's bootstrap + spa/src/analytics/instana.ts) is
-  # configured entirely through build-time env: Vite only exposes/substitutes
-  # VITE_-prefixed vars (see VITE_BASE above), so the INSTANA_* keys
-  # local-env.sh already loaded from registry/local.env are re-exported under
-  # their VITE_ names here, right before the one place that invokes `vite
-  # build`. Unset on a fresh clone / CI / a contributor's build — that is not
-  # an error, it is the documented no-key fallback (index.html: no ineum stub,
-  # no script tag, nothing sent).
   msg "building SPA (npm run build) in $SPA_WEB"
-  (
-    cd "$SPA_WEB"
-    export VITE_INSTANA_WEBSITE_KEY="${INSTANA_WEBSITE_KEY:-}"
-    # The bundle gets the beacon proxy's FIRST-PARTY PATH, never the tenant URL
-    # (docs/ANALYTICS.md §8.3). `:+` not `:-`: an unset upstream still exports
-    # EMPTY, so index.html's no-url no-op is reached rather than a
-    # contributor's build pointing at a proxy they do not run.
-    export VITE_INSTANA_EUM_REPORTING_URL="${INSTANA_EUM_REPORTING_URL:+/eum}"
-    npm run build
-  )
+  (cd "$SPA_WEB" && npm run build)
   [ -f "$DIST/index.html" ] || {
     msg "ERROR: build produced no dist/index.html"
     exit 1
@@ -107,67 +90,13 @@ build() {
 }
 
 # ---------------------------------------------------------------------------
-# THE SILENT-TELEMETRY TRAP, and the guard that closes it.
-#
-# `build()` above is the ONLY place that exports VITE_INSTANA_* into `vite
-# build`. A bare `npm run build` in spa/ — which every quality-gate run, every
-# `npm test && npm run build`, and every contributor without registry/local.env
-# does — leaves the percent-delimited placeholders unsubstituted, and
-# spa/index.html's bootstrap then takes its documented no-key path: no ineum
-# stub, no vendor script tag, ZERO telemetry.
-#
-# `deploy()` does NOT rebuild. It publishes whatever dist/ happens to be there.
-# So "run the gate, then deploy" silently ships a bundle with Instana entirely
-# disabled — which happened on 2026-09-01 and cost a full debugging cycle
-# chasing missing beacons that were never sent.
-#
-# The keyless build stays legal: a contributor with no local.env must still be
-# able to build and deploy their own gallery. What must never happen is a
-# keyless dist being published by a machine that HAS the key — that is always
-# an accident, and the fix is always the same one command. So the guard asks
-# both questions, not one.
-dist_placeholder_names() {
-  # The VITE_ placeholder names still unsubstituted in the built index.html,
-  # one per line. Built with a character class rather than a literal so this
-  # very script never becomes substitution text (spa/index.html's own comments
-  # take the same precaution, for the same reason).
-  #
-  # The `|| true` is load-bearing under `set -euo pipefail`: grep exits 1 when
-  # it matches NOTHING, which is the GOOD case here, and an unguarded failure
-  # inside `$(...)` on the right of an assignment kills the script — silently,
-  # with no output at all, right before the deploy it was meant to guard.
-  # Measured, not imagined: that is exactly how the first cut of this function
-  # behaved on a correctly-built dist.
-  { grep -o "%VITE[_A-Z0-9]*%" "$DIST/index.html" 2>/dev/null || true; } | sort -u
-}
-
+# `deploy()` does NOT rebuild. It publishes whatever dist/ happens to be there,
+# so it first refuses a dist that is older than the sources it was built from.
 check_dist_is_publishable() {
-  local placeholders newer
-  placeholders="$(dist_placeholder_names)"
-
-  if [ -n "$placeholders" ] && [ -n "${INSTANA_WEBSITE_KEY:-}" ]; then
-    msg "ERROR: refusing to deploy — this dist was built WITHOUT the Instana key,"
-    msg "       but this machine HAS one (registry/local.env). Publishing it would"
-    msg "       silently disable ALL browser telemetry on the live gallery."
-    msg "       Unsubstituted placeholders in $DIST/index.html:"
-    while IFS= read -r ph; do printf '         %s\n' "$ph" >&2; done <<<"$placeholders"
-    msg "       A bare 'npm run build' in spa/ does this — only '$0 build'"
-    msg "       exports the VITE_INSTANA_* vars. Rebuild and retry:"
-    msg "         $0 build && $0 deploy"
-    exit 1
-  fi
-
-  if [ -n "$placeholders" ]; then
-    # No key configured: the documented no-key fallback. Legal, but never silent.
-    msg "NOTE: keyless build (no INSTANA_WEBSITE_KEY in registry/local.env)."
-    msg "      The deployed SPA will send no Instana beacons — this is the"
-    msg "      documented fallback, not a fault. Unsubstituted: $(echo "$placeholders" | tr '\n' ' ')"
-  fi
-
-  # Staleness: a dist older than the sources it was built from is the same
-  # class of mistake wearing different clothes (deploying yesterday's bundle
-  # and reading today's behaviour into it). Scoped to what vite actually
-  # consumes, so an unrelated docs edit never blocks a deploy.
+  local newer
+  # Deploying yesterday's bundle and reading today's behaviour into it is the
+  # mistake this catches. Scoped to what vite actually consumes, so an
+  # unrelated docs edit never blocks a deploy.
   newer="$(find "$SPA_WEB/src" "$SPA_WEB/index.html" "$SPA_WEB/package.json" \
     "$SPA_WEB/vite.config.ts" -newer "$DIST/index.html" -print -quit 2>/dev/null || true)"
   if [ -n "$newer" ]; then
@@ -202,11 +131,6 @@ deploy() {
     msg "         (cd spa && npm run build)"
     exit 1
   fi
-  # Upload this build's source maps to Instana BEFORE the maps are stripped
-  # from what actually ships (immediately below). If this is a no-op
-  # (unconfigured) or fails, it never blocks the rest of the deploy — see the
-  # function for why.
-  publish_instana_sourcemaps
   msg "deploying dist + server to $HOST:$SERVE_DIR"
   $SSH "mkdir -p $WEBROOT $HOST_PKI"
   # Timestamped safety tar of the current webroot before replacing UI entries;
@@ -228,8 +152,7 @@ deploy() {
   # docs/PUBLIC-GALLERY.md), and the source is the openly-public kernel-hive
   # GitHub repo, so a map reveals nothing the repo doesn't already. A browser
   # only fetches a .map when its devtools is open, so this costs an ordinary
-  # visitor nothing. The Instana upload just above is KEPT alongside this,
-  # not replaced by it — see publish_instana_sourcemaps for why both exist.
+  # visitor nothing.
   tar czf - -C "$DIST" . | $SSH "set -e; \
     stage=\$(mktemp -d '$SERVE_DIR/.spa-deploy.XXXXXX'); \
     trap 'rm -rf \"\$stage\"' EXIT; \
@@ -294,55 +217,8 @@ deploy() {
   $SSH "cat > $SERVE_DIR/key-trace.py" <"$REPO/scripts/serve/key-trace.py"
   publish_manifests
   publish_boot
-  publish_instana_agent
   msg "deployed."
 }
-
-# Fetch the pinned Instana EUM agent from INSTANA_EUM_SCRIPT_URL and publish it
-# self-hosted at $WEBROOT/vendor/instana-eum.min.js — spa/index.html's
-# bootstrap loads it from that path, never from IBM's CDN directly, and it is
-# NEVER committed to this public repo (gitignored on the box the same way
-# scripts/serve/pki/ is). Every other document this script publishes is
-# rendered FROM the repo; this one is fetched from a third party at deploy
-# time, and it must not fail SILENTLY — an operator who thinks Instana is live
-# while serving a 404 for the agent finds out from a support ticket.
-publish_instana_agent() {
-  if [ -z "${INSTANA_EUM_SCRIPT_URL:-}" ]; then
-    msg "INSTANA_EUM_SCRIPT_URL unset — Instana EUM not configured, skipping vendor fetch"
-    return 0
-  fi
-  msg "fetching Instana EUM agent from $INSTANA_EUM_SCRIPT_URL -> $WEBROOT/vendor/instana-eum.min.js"
-  if $SSH "set -e; mkdir -p '$WEBROOT/vendor'; tmp=\$(mktemp '$WEBROOT/vendor/.instana-eum.min.js.XXXXXX'); \
-      curl -fsSL --max-time 30 '$INSTANA_EUM_SCRIPT_URL' -o \"\$tmp\" && \
-      test -s \"\$tmp\" && \
-      mv \"\$tmp\" '$WEBROOT/vendor/instana-eum.min.js'"; then
-    msg "published Instana EUM agent"
-  else
-    # LOUD, not silent: the deploy continues (a stale-but-present agent file
-    # from a prior deploy is a fine fallback, and refusing the whole deploy
-    # over a third-party fetch would hold the rest of the UI hostage to IBM's
-    # uptime), but this line must be impossible to miss in the deploy log.
-    msg "WARNING: failed to fetch the Instana EUM agent — /vendor/instana-eum.min.js was NOT updated." >&2
-    msg "         Instana EUM will be broken (404) until this is retried: '$0 all' or rerun deploy." >&2
-  fi
-  # THE BEACON PROXY'S ONE UPSTREAM — the other half of the same artifact: the
-  # bundle posts to our own /eum and scripts/serve/eum_proxy.py forwards here.
-  # A file, not a unit Environment= line: the unit is committed to a PUBLIC
-  # repo and the tenant URL is not. Read once per process — changing it needs a
-  # restart. docs/ANALYTICS.md §8.3.
-  local up="$SERVE_DIR/instana-eum-upstream.txt"
-  if [ -n "${INSTANA_EUM_REPORTING_URL:-}" ] &&
-    printf '%s\n' "$INSTANA_EUM_REPORTING_URL" | $SSH "cat > $up && chmod 600 $up"; then
-    msg "published the EUM beacon proxy upstream"
-  else
-    msg "WARNING: no EUM beacon-proxy upstream — POST /eum will 404, beacons dropped." >&2
-  fi
-}
-
-# publish_instana_sourcemaps() lives in scripts/serve/instana-sourcemaps.sh —
-# serve-https-spa.sh was at its 600-line hard cap and could take no new line.
-# shellcheck disable=SC1091
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/serve/instana-sourcemaps.sh"
 
 # Republish the boot-replay assets (/boot/<id>/boot.mp4 … + /boot/index.json).
 # They are baked ON labhost (scripts/coldboot/, staging /data/vms/streamhost/

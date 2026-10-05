@@ -396,11 +396,7 @@ if [ "$no_spa" = 1 ]; then
   say "--no-spa: the gallery still serves the previous bundle"
 elif [ "$dry" = 1 ]; then
   say "WOULD RUN: scripts/serve-https-spa.sh build && scripts/serve-https-spa.sh deploy"
-  say "NOTE only serve-https-spa.sh build exports the VITE_INSTANA_* vars; a bare npm run build is refused by deploy"
 else
-  # A bare `npm run build` yields a keyless bundle that deploy refuses when the
-  # box has an Instana key (samcoupe landing, 2026-09-08): build through the
-  # wrapper, which exports the VITE_INSTANA_* vars from registry/local.env.
   run "$REPO_ROOT/scripts/serve-https-spa.sh" build || fail "SPA build failed"
   run "$REPO_ROOT/scripts/serve-https-spa.sh" deploy || fail "SPA deploy failed"
 fi

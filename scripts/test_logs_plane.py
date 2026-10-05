@@ -25,14 +25,12 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "serve"))
-sys.path.insert(0, str(Path(__file__).resolve().parent / "observability"))
 
 import logs  # noqa: E402
 import logs_otlp  # noqa: E402
 import logs_read  # noqa: E402
 import logsink  # noqa: E402
 import tracing  # noqa: E402
-from instana_batch import log_requests_for  # noqa: E402
 
 TRACE = "a" * 32
 SPAN = "b" * 16
@@ -230,7 +228,7 @@ class LogPlane(unittest.TestCase):
 
     # ---- OTLP export ------------------------------------------------------------
 
-    def test_otlp_carries_the_fields_instana_correlates_on(self):
+    def test_otlp_carries_the_fields_a_backend_correlates_on(self):
         store = self._store()
         store.record(
             _batch(
@@ -238,21 +236,17 @@ class LogPlane(unittest.TestCase):
                 **{"kh.bundle": "main@abc"},
             )
         )
-        doc = logs_otlp.export(store.search()["logs"], host_id="labhost")
+        doc = logs_otlp.export(store.search()["logs"])
         res = {a["key"]: a["value"]["stringValue"] for a in doc["resourceLogs"][0]["resource"]["attributes"]}
-        # "Host or entity identification is REQUIRED for Instana to accept
-        # OpenTelemetry logs" — 0307-opentelemetry-signals.md:338-352.
-        assert res["host.id"] == "labhost"
         assert res["service.instance.id"] == "labhost"
         assert res["service.name"] == "kernel-hive-serve"
         assert res["service.version"] == "main@abc"
         rec = doc["resourceLogs"][0]["scopeLogs"][0]["logRecords"][0]
-        # "The TraceId, SpanId, and Body fields are incorporated without any
-        # alterations." — 0307:331.
+        # The join: trace and span ids exactly as stored, and the body unaltered.
         assert rec["traceId"] == TRACE and rec["spanId"] == SPAN
         assert rec["body"]["stringValue"] == "boom"
-        # "The log level is determined primarily by the SeverityText field and the
-        # SeverityNumber field as a fallback." — 0307:333-334. Both are sent.
+        # Severity in both halves: the text a human filters on, the number a
+        # reader sorts by and falls back to.
         assert rec["severityText"] == "ERROR" and rec["severityNumber"] == 17
         assert rec["flags"] == 1
         assert json.dumps(doc)  # serialisable, which is what actually ships
@@ -262,28 +256,6 @@ class LogPlane(unittest.TestCase):
         store.record(_batch([{"b": "loose"}]))
         rec = logs_otlp.export(store.search()["logs"])["resourceLogs"][0]["scopeLogs"][0]["logRecords"][0]
         assert "traceId" not in rec and "spanId" not in rec and "flags" not in rec
-
-    # ---- batching ---------------------------------------------------------------
-
-    def test_the_log_planner_pages_by_bytes_and_carries_a_watermark(self):
-        rows = [{"seq": i, "body": "x" * 100} for i in range(1, 21)]
-        plan, dropped = log_requests_for(rows, max_records=1000, max_bytes=600)
-        assert not dropped
-        assert sum(len(chunk) for chunk, _ in plan) == 20
-        # Every request carries the seq of its LAST record, so a run that dies part
-        # way resumes exactly where it stopped.
-        assert [w for _, w in plan][-1] == 20
-        for chunk, watermark in plan:
-            assert watermark == chunk[-1]["seq"]
-
-    def test_one_oversized_record_is_dropped_and_the_watermark_still_moves(self):
-        # Without this the lane wedges on one bad record and every later record
-        # behind it — the failure the trace lane already paid for once.
-        rows = [{"seq": 1, "body": "x" * 10_000}, {"seq": 2, "body": "small"}]
-        plan, dropped = log_requests_for(rows, max_bytes=1000)
-        assert len(dropped) == 1
-        assert ([], 1) in plan
-        assert any(chunk and chunk[0]["seq"] == 2 for chunk, _ in plan)
 
 
 if __name__ == "__main__":

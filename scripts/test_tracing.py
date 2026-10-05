@@ -414,28 +414,26 @@ class RaisingStoreTest(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# the return leg: traceresponse + Server-Timing
+# the return leg: traceresponse
 # ---------------------------------------------------------------------------
 
 
 class ResponseHeaderTest(Base):
     """A response has to name the span that answered it, or the browser can
     only ever guess whether the id it SENT was the id the server used (it is
-    not, whenever the inbound header was malformed or absent). Two headers,
-    one span: `traceresponse` is ours, `Server-Timing: intid` is what Instana's
-    EUM agent parses into `backendTraceId`."""
+    not, whenever the inbound header was malformed or absent). `traceresponse`
+    is the W3C Level 2 response header that carries it."""
 
     def headers_of(self, handler):
         return {k.lower(): v for k, v in handler.sent_headers}
 
-    def test_a_traced_response_names_its_own_span_in_both_headers(self):
+    def test_a_traced_response_names_its_own_span(self):
         h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
         h.do_GET()
         doc = self.stored(TRACE)
         root = doc["spans"][0]
         sent = self.headers_of(h)
         self.assertEqual(sent["traceresponse"], f"00-{TRACE}-{root['spanId']}-01")
-        self.assertEqual(sent["server-timing"], f"intid;desc={TRACE}")
 
     def test_the_ids_are_the_response_span_not_the_inbound_parent(self):
         """The whole point: the caller learns the id of the span the SERVER
@@ -446,12 +444,12 @@ class ResponseHeaderTest(Base):
         sent = self.headers_of(h)
         self.assertNotIn(SPAN, sent["traceresponse"])
 
-    def test_an_untraced_route_emits_neither_header(self):
+    def test_an_untraced_route_emits_no_header(self):
         h = FakeHandler(path="/assets/app-abcdef01.js")
         h.do_GET()
         self.assertEqual(self.headers_of(h), {})
 
-    def test_an_unsampled_parent_emits_neither_header(self):
+    def test_an_unsampled_parent_emits_no_header(self):
         """Unsampled in means nothing out, headers included — there is no span
         to name, and naming one anyway would advertise a trace the store will
         never hold."""
@@ -459,7 +457,7 @@ class ResponseHeaderTest(Base):
         h.do_GET()
         self.assertEqual(self.headers_of(h), {})
 
-    def test_tracing_unbound_emits_neither_header(self):
+    def test_tracing_unbound_emits_no_header(self):
         tracing.reset_for_tests()  # no store: every span is NOOP
         h = FakeHandler()
         h.do_GET()
@@ -490,10 +488,6 @@ class ResponseHeaderTest(Base):
         h.do_GET()
         sent = self.headers_of(h)
         self.assertRegex(sent["traceresponse"], r"^00-[0-9a-f]{32}-[0-9a-f]{16}-01$")
-        self.assertRegex(sent["server-timing"], r"^intid;desc=[0-9a-f]{32}$")
-        # Instana silently DROPS a backendTraceId that is not 16 or 32 hex, so
-        # the length is the feature, not an incidental property of the format.
-        self.assertEqual(len(sent["server-timing"].split("=", 1)[1]), 32)
 
 
 if __name__ == "__main__":

@@ -2,17 +2,16 @@
 """Which live stations run a daemon binary that can JOIN an input trace.
 
 THE INCIDENT THIS EXISTS FOR (2026-09-01). A keystroke trace showed one span —
-the browser's `input.edge` — and Instana labelled the call "To input.edge of
-Unspecified". Over a six-hour window only 37% of sampled input edges had the
-daemon's `input.dispatch` beside them, which reads like a sampling bug, a lost
-spool or a broken propagation path. It was none of those. The browser samples
-once and carries the decision on the wire; every station running a binary that
-knows about the suffix joined **100%** of its edges. The 63% was ONE station —
-win95 — running a binary from before the sampled-input code existed, doing
-exactly what `input_trace.rs` documents an old daemon should do: read the
-record's fixed fields off the front, ignore the 25-byte tail, land the click,
-emit nothing. The join rate was a DEPLOYMENT-COVERAGE number wearing an
-instrumentation bug's clothes.
+the browser's `input.edge` — and no receiving side at all. Over a six-hour
+window only 37% of sampled input edges had the daemon's `input.dispatch` beside
+them, which reads like a sampling bug, a lost spool or a broken propagation
+path. It was none of those. The browser samples once and carries the decision
+on the wire; every station running a binary that knows about the suffix joined
+**100%** of its edges. The 63% was ONE station — win95 — running a binary from
+before the sampled-input code existed, doing exactly what `input_trace.rs`
+documents an old daemon should do: read the record's fixed fields off the
+front, ignore the 25-byte tail, land the click, emit nothing. The join rate was
+a DEPLOYMENT-COVERAGE number wearing an instrumentation bug's clothes.
 
 That confusion is the thing worth preventing, and it is structural, not a
 one-off: `docs/lab/TRACE-CONTEXT.md` §8 says version skew between browser and

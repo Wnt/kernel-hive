@@ -4,23 +4,19 @@ WHAT MAKES THIS WORTH BUILDING. We had traces and metrics on two planes and no
 logs on either. The value is not "log files somewhere" — it is a log record
 that carries `trace_id`/`span_id`, so an operator looking at a slow
 `station.restore` span can ask what the daemon printed *during that span*, and
-from a stack in the browser can walk back to the request that caused it. Both
-our own store and Instana join on exactly those two fields (see
-`docs/lab/research/instana-logs.md` for the quoted Instana behaviour), so the
-ids are the product and everything else here is plumbing around them.
+from a stack in the browser can walk back to the request that caused it. Our
+own store and every OTel backend join on exactly those two fields, so the ids
+are the product and everything else here is plumbing around them.
 
 POSTURE. Reads are admin-only, like the trace store's. Content rules do NOT
 inherit the trace store's `BANNED_ATTRS`: a stack trace is the single most
 useful thing a log record can carry and refusing it is what kept
 `clientlog.jsonl` alive as a parallel store. Stacks land here as the `body` or
-as `exception.stacktrace` in `attrs`, which is the attribute name Instana
-documents support for (0307:337).
+as `exception.stacktrace` in `attrs`, the OTel semantic-convention name.
 
 RETENTION is 7 days (`LOG_RETENTION_DAYS`), deliberately half the trace store's
 14. A log row is roughly an order of magnitude more voluminous than a trace at
-our traffic, and 7 days is also Instana's own default log retention, so the two
-stores answer a question for the same window. See `docs/ANALYTICS.md` for the
-measured cost per day on this box.
+our traffic. See `docs/ANALYTICS.md` for the measured cost per day on this box.
 """
 
 from __future__ import annotations
@@ -39,7 +35,7 @@ SPAN_RE = re.compile(r"^[0-9a-f]{16}$")
 IDENT_RE = re.compile(r"^[A-Za-z0-9._@/+-]{1,64}$")
 
 #: OTel SeverityNumber, the four levels we promise plus the two ends. The
-#: number is what Instana falls back to when the text is unrecognised, and what
+#: number is what a reader falls back to when the text is unrecognised, and what
 #: makes "at least WARN" a range query instead of an IN list.
 SEVERITY = {"TRACE": 1, "DEBUG": 5, "INFO": 9, "WARN": 13, "ERROR": 17, "FATAL": 21}
 DEFAULT_SEVERITY = "INFO"
@@ -235,8 +231,7 @@ class LogStore:
     # ---- reads ---------------------------------------------------------
 
     def search(self, **f) -> dict:
-        """Filtered page of records, newest first — or in ingest order when
-        `order="ingest"`, which is what the forwarder walks."""
+        """Filtered page of records, newest first."""
         where, args = [], []
         for col, key in (
             ("service", "service"),
@@ -253,7 +248,7 @@ class LogStore:
             _, num = severity_of(f["min_sev"])
             where.append("sev_num>=?")
             args.append(num)
-        for col, key, op in (("ts_ms", "since_ms", ">="), ("ts_ms", "until_ms", "<="), ("seq", "since_seq", ">")):
+        for col, key, op in (("ts_ms", "since_ms", ">="), ("ts_ms", "until_ms", "<=")):
             if f.get(key) is not None:
                 where.append(f"{col}{op}?")
                 args.append(int(f[key]))
@@ -263,13 +258,12 @@ class LogStore:
         sql = " WHERE " + " AND ".join(where) if where else ""
         limit = max(1, min(int(f.get("limit") or 100), 500))
         offset = max(0, int(f.get("offset") or 0))
-        order = "seq ASC" if f.get("order") == "ingest" else "ts_ms DESC, seq DESC"
         with self._lock:
             cur = self._db.cursor()
             total = cur.execute(f"SELECT COUNT(*) FROM log{sql}", args).fetchone()[0]
             rows = cur.execute(
                 "SELECT seq,ts_ms,observed_ms,severity,sev_num,service,instance,session_id,build,"
-                f"trace_id,span_id,body,attrs FROM log{sql} ORDER BY {order} LIMIT ? OFFSET ?",
+                f"trace_id,span_id,body,attrs FROM log{sql} ORDER BY ts_ms DESC, seq DESC LIMIT ? OFFSET ?",
                 (*args, limit, offset),
             ).fetchall()
         return {"logs": [self._row(r) for r in rows], "total": total, "limit": limit, "offset": offset}

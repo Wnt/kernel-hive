@@ -93,13 +93,11 @@ class HeaderOfTest(unittest.TestCase):
 
 class ResponseHeadersTest(unittest.TestCase):
     """The return leg. `traceresponse` is the W3C Level 2 response header and
-    is what our own browser plane reads; `Server-Timing: intid;desc=` is the
-    token Instana's EUM agent turns into a beacon's `backendTraceId`."""
+    is what our own browser plane reads."""
 
-    def test_both_headers_name_the_same_span(self):
+    def test_the_header_names_the_span(self):
         h = tc.response_headers(TRACE, SPAN)
-        self.assertEqual(h["traceresponse"], f"00-{TRACE}-{SPAN}-01")
-        self.assertEqual(h["Server-Timing"], f"intid;desc={TRACE}")
+        self.assertEqual(h, {"traceresponse": f"00-{TRACE}-{SPAN}-01"})
         # The response header parses as a trace context by the SAME parser the
         # request leg uses — one opinion about the format, not two.
         parsed = tc.parse(h["traceresponse"])
@@ -112,7 +110,7 @@ class ResponseHeadersTest(unittest.TestCase):
         # `tracing.NOOP` has empty ids, which is every untraced route.
         self.assertEqual(tc.response_headers("", ""), {})
 
-    def test_a_malformed_id_emits_nothing_rather_than_a_value_instana_drops(self):
+    def test_a_malformed_id_emits_nothing_rather_than_a_value_a_reader_must_guess_at(self):
         for trace_id, span_id in (
             (TRACE.upper(), SPAN),
             (TRACE[:-1], SPAN),

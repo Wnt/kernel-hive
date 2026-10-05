@@ -312,7 +312,7 @@ class TestAnonFence(unittest.TestCase):
         )
 
     def test_the_open_prefixes_are_untouched(self):
-        self.assertEqual(gate.OPEN_PREFIXES, ("/auth/", "/ui/", "/assets/", "/posters/", "/vendor/"))
+        self.assertEqual(gate.OPEN_PREFIXES, ("/auth/", "/ui/", "/assets/", "/posters/", "/boot/"))
 
     def test_the_command_enqueue_is_still_unreachable_from_anywhere(self):
         self.assertEqual(gate.BLOCKED_PREFIXES, ("/clientcmd/admin",))
@@ -355,13 +355,13 @@ class TestAnonFence(unittest.TestCase):
         # reach, somebody who registered may reach too — so opening this door
         # cannot have opened one the walk-in fence had shut.
         own = "/signal/walkin-os2warp-3.json"
-        probe = sorted(gate.ANON_PATHS | gate.WALKIN_PATHS | {"/", "/admin", "/fleet", "/eum", "/staging/x/", own})
+        probe = sorted(gate.ANON_PATHS | gate.WALKIN_PATHS | {"/", "/admin", "/fleet", "/staging/x/", own})
         for path in probe:
             if gate.allows(path, self.STRANGER, own_signal=own):
                 self.assertTrue(gate.allows(path, self.WALKIN, own_signal=own), f"stranger > walk-in at {path}")
 
     def test_the_surfaces_a_walk_in_earned_by_registering_stay_earned(self):
-        for path in ("/account", "/clientcmd", "/usage", "/analytics", "/traces", "/eum", "/walkin/reset"):
+        for path in ("/account", "/clientcmd", "/usage", "/analytics", "/traces", "/walkin/reset"):
             self.assertTrue(gate.allows(path, self.WALKIN), path)
             self.assertFalse(gate.allows(path, self.STRANGER), path)
 

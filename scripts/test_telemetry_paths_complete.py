@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Every route that INGESTS our own telemetry must be a known telemetry path.
 
-This has now been missed twice. `/eum` was added when the beacon proxy landed
-and had to be chased down; `/logs` was added with the log plane and was not,
-so Instana's wrapped fetch beaconed every log upload into the Page load
-Activity view — a telemetry endpoint generating telemetry about itself.
+This has been missed before: `/logs` was added with the log plane and not to
+the list, so every log upload was itself traced — a telemetry endpoint
+generating telemetry about itself.
 
 The list is the single source (`telemetry_paths.TELEMETRY_PATHS`, mirrored
 from the SPA's `KH_TELEMETRY_PATHS`), so the failure mode is always the same:
@@ -26,11 +25,10 @@ import telemetry_paths  # noqa: E402
 
 ROUTES = pathlib.Path(__file__).resolve().parent / "serve" / "telemetry_routes.py"
 REPO = pathlib.Path(__file__).resolve().parents[1]
-TS_SOURCE = REPO / "spa" / "src" / "analytics" / "instana.ts"
-HTML_SOURCE = REPO / "spa" / "index.html"
+TS_SOURCE = REPO / "spa" / "src" / "analytics" / "telemetryPaths.ts"
 
 #: Routes the dispatcher serves that are READS, not ingest. A report a human
-#: opens is ordinary traffic and should stay visible in both planes.
+#: opens is ordinary traffic and should stay traced.
 READ_ROUTES = {"/analytics/report.json", "/coverage/report.json", "/usage/stations.json"}
 
 
@@ -48,8 +46,8 @@ class TelemetryPathsAreComplete(unittest.TestCase):
             missing,
             [],
             f"ingest route(s) {missing} are not in TELEMETRY_PATHS — the browser will "
-            f"trace them and Instana will beacon them, so telemetry measures itself. "
-            f"Add them to spa/src/analytics/instana.ts's KH_TELEMETRY_PATHS and to "
+            f"trace them, so telemetry measures itself. Add them to "
+            f"spa/src/analytics/telemetryPaths.ts's KH_TELEMETRY_PATHS and to "
             f"scripts/serve/telemetry_paths.py.",
         )
 
@@ -60,10 +58,6 @@ class TelemetryPathsAreComplete(unittest.TestCase):
         self.assertIn("/logs", ingest_routes())
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 def ts_paths() -> list[str]:
     """The SPA module's list — the one khFetch derives its ignore test from."""
     src = TS_SOURCE.read_text()
@@ -71,34 +65,25 @@ def ts_paths() -> list[str]:
     return re.findall(r"'(/[^']+)'", body)
 
 
-def html_paths() -> list[str]:
-    """The inline bootstrap's copy — it runs before any module evaluates, so it
-    cannot import the constant and is duplicated by hand."""
-    src = HTML_SOURCE.read_text()
-    body = src.split("var TELEMETRY_PATHS = [", 1)[1].split("]", 1)[0]
-    return re.findall(r"'(/[^']+)'", body)
+class TheTwoCopiesAgree(unittest.TestCase):
+    """The list exists twice, in two languages, and cannot be shared.
 
-
-class TheThreeCopiesAgree(unittest.TestCase):
-    """The list exists three times, in three languages, and cannot be shared.
-
-    `index.html`'s copy runs before any module evaluates; the Python copy is in
-    another process entirely. Sharing them would need a build step none of the
-    three currently has, so instead they are pinned equal here. Both /eum and
-    /logs were added to SOME of them and not the others, and each time the
-    symptom appeared in the vendor's UI rather than in a test.
+    The Python copy is in another process entirely, and sharing them would need
+    a build step neither currently has, so instead they are pinned equal here.
+    `/logs` was once added to one and not the other, and the symptom appeared
+    in a trace view rather than in a test.
     """
 
     def test_the_typescript_and_python_lists_are_identical(self):
         self.assertEqual(sorted(ts_paths()), sorted(telemetry_paths.TELEMETRY_PATHS))
 
-    def test_the_inline_bootstrap_copy_matches_the_module(self):
-        self.assertEqual(sorted(html_paths()), sorted(ts_paths()))
-
-    def test_each_copy_actually_parsed(self):
+    def test_the_typescript_copy_actually_parsed(self):
         # Vacuous-pass guard: a restructure that defeats the parsing must fail
         # here rather than quietly asserting nothing.
-        for name, got in (("ts", ts_paths()), ("html", html_paths())):
-            with self.subTest(copy=name):
-                self.assertIn("/traces", got)
-                self.assertGreater(len(got), 3)
+        got = ts_paths()
+        self.assertIn("/traces", got)
+        self.assertGreater(len(got), 3)
+
+
+if __name__ == "__main__":
+    unittest.main()
