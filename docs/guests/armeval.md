@@ -237,12 +237,15 @@ key) and `` ` `` (code 96 is the BBC's `£`). Those three are
 `typeIn.unreachable`; [`bbcmicro.md`](bbcmicro.md#keyboard) has the detail.
 Evidence: `/data/vms/streamhost/stations/armeval/evidence/physical-charmap-2026-10-05/`.
 
-**Live (2026-10-05): the visitor's keys proven, the editor proof pending.**
-On the live station `PRINT "AB";""""` typed with `"` both as Shift+`'` and as a
-bare resolved key printed `AB"`, and the full symbol line arrived exactly. Three
-of four live editor runs that day lost the stream partway (the SPA's ping timeout:
-the tile went silent for 5 s), so the editor's LIST proof is pending the
-investigation of that stall.
+**Live since 2026-10-05.** Through the real SPA the editor typed the Mandelbrot
+example, and LIST, taken once the guest had settled (it finishes typing about
+45 s after the editor reports done, at half speed; keys queue in order and none
+are lost), matched it line for line. Then the visitor's
+`PRINT "!#$%&'()*+,-./:;<=>?@[]^_{}~";1+2*3` printed every symbol and 7, and
+`PRINT "AB";""""`, typed with `"` both as Shift+`'` and as a bare resolved key,
+printed `AB"`. Restore brought back ARM BASIC. Earlier runs that day lost the
+stream partway: ~5 s packet-loss bursts on the lab's internet uplink, not the
+station (`evidence/armeval-stall-2026-10-05/INDEX.txt`).
 
 ## Shifted characters: the modifier lead (2026-10-04)
 
