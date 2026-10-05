@@ -77,16 +77,21 @@ one character late — `echo Apollo DN3500 Domain/OS SR10.4.1` arrived as
 `APollo dN#500 - dOmain/Os sr!0.4.1`. At ~180 ms per edge the same line typed
 byte-perfect, twice.
 
-The shifted number row was measured at bring-up as **DEC-style, not US**:
-shift-2 `"`, shift-6 `&`, shift-7 `'`, shift-8 `(`, shift-9 `)`, shift-0
-nothing; the key a US board calls `'` is `:`/`*`, and the backtick key is
-`~`/`'`; `@` and `^` unavailable. The station's `keyboard.charMap` encodes
-that table. **CONTRADICTED 2026-10-04:** typed slowly (every edge 300 ms
-apart) through that charMap into the DM `Command:` bar, `PRINT
-"A+B*C:D(E)$!";1+2*3` arrived as `PRINT @A+B"C'D*E($!@;1+2"3`: shift-2 gave
-`@`, shift-8 `*`, shift-9 `(`, shift-`'` `"`, as on a US board. Re-derive the
-table and the charMap from the current keymap before anything relies on
-them (§Open).
+**The keyboard answers as a US one; the station has no charMap (2026-10-05).**
+At bring-up the shifted number row was measured as DEC-style (shift-2 `"`,
+shift-8 `(`, the US `'` key `:`/`*`) and a charMap encoded that. On today's
+binary that is wrong: typed slowly through it into the DM `Command:` bar,
+`PRINT "A+B*C:D(E)$!";1+2*3` arrived as `PRINT @A+B"C'D*E($!@;1+2"3`
+(2026-10-04). Re-derived on a rig of this station's binary and golden (F1, then
+every US key bare and shifted at its US position, 2026-10-05): bare
+`-=[];'`,./` and, where Shift landed, `_+"~>?!$^&(` all came out as on a US
+board. So the charMap and `SH_KEY_MAP` are removed rather than rewritten, and
+`keyboard.physical` stays off: the visitor's keys already reach the guest at
+their US positions, which is right here. The same run lost Shift on about half
+the shifted keys (`@` as `2`, `{` as `[`, `:` as `;`), the open Shift problem
+under §Open, so `\` `|` `{` `}` `<` `@` `#` `%` `*` `)` were not seen as
+themselves and are not proven either way. Evidence:
+`/data/vms/streamhost/stations/domainos/evidence/physical-charmap-2026-10-05/`.
 
 MAME names Backspace, Tab and Return all `"Unnamed Key"` on this driver, so
 the daemon's name-only KEY lookup sent Backspace for every Enter — fixed by
@@ -208,8 +213,8 @@ after a restore — not before.
   station's 0.838, below its own speed, so these runs do not measure the lead.
   Nothing was shipped: the live binary and env are unchanged. Evidence:
   `/data/vms/streamhost/stations/domainos/evidence/shift-lead-2026-10-04/`.
-- **The `charMap` is wrong for this build**, see §Keyboard: do not set
-  `keyboard.physical` here before it is re-derived.
+- **No charMap**: the keyboard answers as a US one on this build (§Keyboard,
+  2026-10-05). The Shift losses above leave `\ | { } < @ # % * )` unproven.
 - **Pointer**: proven root cause, proven unlock mechanism, not yet
   implemented — see §Pointer above.
 - **Clock, and the disk's shelf life**: the guest's calendar reads 2003-01-10

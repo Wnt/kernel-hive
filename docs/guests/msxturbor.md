@@ -78,6 +78,30 @@ for the real VSHELL content pane: the preceding blue BIOS screen can appear
 stable for several seconds and is not a valid readiness signal. The keymap is derived from the pinned
 `unicodemap.jp_jis`; registry punctuation remapping reflects Japanese JIS.
 
+**The visitor's keys use the JIS map (`keyboard.physical`, 2026-10-05).** The
+FS-A1GT's keyboard is JIS, so a US visitor's `"` is Shift+2 there, `@` the key
+a US board labels `[`, and so on. Measured first with every US key bare and
+shifted at its US position in MSX-DOS 2 (the same BIOS key table MSX View reads)
+on a rig of this station's own launcher, adapter and openMSX build:
+
+| US key | bare | Shift | | US key | bare | Shift |
+|---|---|---|---|---|---|---|
+| `1`..`0` | digits | `! " # $ % & ' ( )`, Shift+0 none | | `\` | `]` | `}` |
+| `-` | `-` | `=` | | `;` | `;` | `+` |
+| `=` | `^` | `~` | | `'` | `:` | `*` |
+| `[` | `@` | `` ` `` | | `` ` `` | `¥` (code 92) | `\|` |
+| `]` | `[` | `{` | | `,` `.` `/` | `,` `.` `/` | `< > ?` |
+
+The map had all of that but `{` `}` `~`, which went to US positions and came
+out as `` ` ``, nothing and `|`; they are now Shift+`]`, Shift+`\` and Shift+`=`.
+Typed through the SPA's real key path, every printable ASCII character then
+arrived as its own code except `_`: the JIS `_` key is wired only to the ISO
+key a US keyboard lacks (0x56 in `msxturbor.keymap`), so `_` is unreachable and
+gives `=`. The Japanese font draws code 92 as `¥` and 126 as `‾`, so `\` and `~`
+look like that on screen. The FS-A1GT's CAPS key is its own, so a visitor's
+Caps Lock inverts letter case (docs/TYPE-IN-EDITOR.md). Evidence:
+`/data/vms/streamhost/stations/msxturbor/evidence/physical-charmap-2026-10-05/`.
+
 ## Reset and isolation
 
 Every launch deletes only its own `work/` directory and makes fresh writable

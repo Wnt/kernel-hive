@@ -40,7 +40,7 @@
 0x26	:key2	L り
 0x27	:key2	; + れ
 0x28	:key2	: * け
-0x29	:key1	ESC
+0x29	:key2	] } む 」
 0x2a	:key3	Shift
 0x2b	:key1	￥ | -
 0x2c	:key2	Z つ っ
@@ -79,3 +79,7 @@
 0xe050	:key3	Down
 0xe052	:key3	挿入 (Insert) / DUP
 0xe053	:key3	削除 (Delete) / EL
+# override (physical-charmap, 2026-10-05): the PC ` key (0x29) drives the
+# Towns's ] } key, not a second ESC. MAME gives ESC KEYCODE_TILDE and the ] } key
+# KEYCODE_BACKSLASH, which ¥ | already took, so the generator bound 0x29 to ESC
+# (0x01 has it too) and left ] } unreachable. keyboard.charMap sends ] and } here.

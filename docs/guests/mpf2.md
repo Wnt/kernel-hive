@@ -178,6 +178,22 @@ typed text (the demo and the type-in editor); every pair was read back on the
 framebuffer on 2026-10-04, from the `PORT_CHAR` declarations in
 `src/mame/apple/tk2000.cpp`.
 
+**The visitor's own keys use the map too** (`keyboard.physical`, 2026-10-05).
+Checked on the frame with every printable ASCII character typed through the
+SPA's real key path (a US visitor's keys, Shift held) on a rig of this
+station's binary and golden: each arrives as itself except the nine
+`typeIn.unreachable` ``[\]_`{|}~``, which the machine has no key for and which
+reach it as nothing. The same check found the capitals wrong: a visitor holding
+Shift for a capital sent Shift+letter, which here is a symbol or nothing
+(`PRINT` typed with Shift arrived as `+`). The map now sends `A`..`Z` as their
+bare keys too, so a capital is the capital with Shift, with Caps Lock or
+without either (the MPF-II has no lower case and no Caps Lock key). Every
+Shift+letter symbol keeps its own key in the map (`=` `-` `+` `^` `@`), so
+nothing is lost. `labctl type` gets the same entries through `SH_KEY_MAP`.
+Measured: `PRINT "Hello, World" A=1+2*3-4 B^2 C@ Dx?` typed with Shift held
+arrived as `PRINT "HELLO, WORLD" A=1+2*3-4 B^2 C@ DX?`. Evidence:
+`/data/vms/streamhost/stations/mpf2/evidence/physical-charmap-2026-10-05/`.
+
 **Typed lines must stay within 38 characters.** The ROM paints text into the
 hires bitmap and scrolls it in software; while a scroll runs, the CPU-scanned
 keyboard is not read and keys are lost. A typed line that wraps past column 39

@@ -220,13 +220,22 @@ tell you:
   `!boot / DeBug / AB / du / fpe / link / readme / rm`. Where the language the
   visitor is typing into came from.
 
-Neither can be an on-screen **button**. `*` is not where a US PC puts it on this
+Neither is an on-screen **button**. `*` is not where a US PC puts it on this
 keyboard — `keyboard.charMap` maps it to the `"` key, i.e. Shift+apostrophe — a
 macro step is a bare keysym, and the profile invariant rightly rejects shifted
-printables because `sendKey` discards the shift flag. The charMap is applied
-only on the `demoProgram` path. A dead button is worse than a missing one, so
-they stay in the builder's gates (where `*CAT` doubles as the proof that the
-floppy is readable at all) and in this document.
+printables because `sendKey` discards the shift flag. They stay in the
+builder's gates (where `*CAT` doubles as the proof that the floppy is readable
+at all) and in this document. A visitor can type both: since 2026-10-05
+(`keyboard.physical`) the charMap applies to the visitor's own keys and to the
+on-screen keyboard's character keys, not only to the typists.
+
+**The visitor's keys, checked on the frame (2026-10-05).** The same BBC
+keyboard and keymap as `bbcmicro`, so the same result: every printable ASCII
+character typed through the SPA's real key path on a rig of this station's
+binary arrived as itself, except `\`, `|` (the BBC's `\ |` key has no host
+key) and `` ` `` (code 96 is the BBC's `£`). Those three are
+`typeIn.unreachable`; [`bbcmicro.md`](bbcmicro.md#keyboard) has the detail.
+Evidence: `/data/vms/streamhost/stations/armeval/evidence/physical-charmap-2026-10-05/`.
 
 ## Shifted characters: the modifier lead (2026-10-04)
 

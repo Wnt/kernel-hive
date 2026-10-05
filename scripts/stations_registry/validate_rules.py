@@ -224,6 +224,27 @@ def validate_keyboard_env(rows: list[dict[str, Any]], errors: list[str]) -> None
         expected = ",".join(f"{keymap_escape(g)}:{keymap_escape(h)}" for g, h in charmap.items())
         if env != expected:
             fail(errors, row, f"SH_KEY_MAP does not match keyboard.charMap (expected {expected!r}, found {env!r})")
+        # Only the fixture reaches the box: the emitter appends station.env.fixture
+        # to the live station.env, and runtime.stationEnv is a RECORD of what the
+        # emitter writes. A map recorded there and not in the fixture never reached
+        # labctl (samcoupe, svi328, fmtowns ... until 2026-10-05).
+        if "_fixtureEnv" in row and "SH_KEY_MAP" not in row["_fixtureEnv"]:
+            fail(
+                errors,
+                row,
+                "SH_KEY_MAP must be in the station.env.fixture: "
+                "runtime.stationEnv is a record and never reaches the box",
+            )
+        # systemd reads station.env as its EnvironmentFile: a value that STARTS with
+        # a quote is parsed as a quoted string, and with no closing quote it runs on
+        # into the following lines; a trailing backslash joins the next line. Order
+        # the charMap so neither end is one.
+        if env[:1] in ('"', "'"):
+            fail(errors, row, "SH_KEY_MAP starts with a quote (systemd parses it as quoted): reorder keyboard.charMap")
+        if env.endswith("\\"):
+            fail(
+                errors, row, "SH_KEY_MAP ends with a backslash (systemd joins the next line): reorder keyboard.charMap"
+            )
 
 
 def validate_fleet_encoder(globals_doc: dict[str, Any], errors: list[str]) -> None:

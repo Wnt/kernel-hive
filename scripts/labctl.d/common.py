@@ -48,6 +48,23 @@ def tile_conf(name):
     return tiles[name]
 
 
+# Values whose format is RAW by definition: the registry renders them
+# (stations-registry.py, keymap_escape) and never quotes them, so a quote at
+# either end is data. bbcmicro/armeval's SH_KEY_MAP starts with `":@` (the BBC's
+# `"` is Shift+2) and ends with `*:"`; unquoting it dropped both mappings, and
+# `labctl type` sent `"` and `*` at their US positions.
+RAW_ENV_KEYS = frozenset({"SH_KEY_MAP"})
+
+
+def unquote_env(value):
+    """One matched pair of quotes around the WHOLE value, as written by hand
+    (SH_FIXTURE_DESC="..."); anything else is left as it is."""
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        return value[1:-1]
+    return value
+
+
 def read_env(path):
     """Read simple KEY=VALUE settings without sourcing a station.env file."""
     values = {}
@@ -59,7 +76,7 @@ def read_env(path):
                     continue
                 key, value = line.split("=", 1)
                 if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
-                    values[key] = value.strip().strip("\"'")
+                    values[key] = value.strip() if key in RAW_ENV_KEYS else unquote_env(value)
     except OSError:
         pass
     return values

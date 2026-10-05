@@ -153,6 +153,30 @@ processor, and the US punctuation lands on the Atari's own layout (`"` `+` `*`
 come out as other keys), identically on the old and new binaries. The shifted
 characters that map one to one (`( ) $ ! :`) arrived right on both.
 
+**The Atari layout, mapped (2026-10-05).** The station had no charMap, so a
+visitor's `"` `+` `*` and a dozen more landed on other keys. Measured in The
+Last Word with every US key bare and shifted typed at its US position on a rig
+of this station's binary and golden (RETURN at the menu first):
+
+| US key | bare | Shift | | US key | bare | Shift |
+|---|---|---|---|---|---|---|
+| `1`..`0` | digits | `! " # $ % & ' @ ( )` | | `\` | `*` | `^` |
+| `-` | `<` | CLEAR | | `;` | `;` | `:` |
+| `=` | `>` | INSERT | | `'` | `+` | `\` |
+| `[` | `-` | `_` | | `` ` `` | (none) | (none) |
+| `]` | `=` | `\|` | | `,` `.` `/` | `,` `.` `/` | `[ ] ?` |
+
+`keyboard.charMap` is that table (16 entries: `"` is Shift+2, `@` Shift+8, `<`
+the US `-` key, `*` the US `\` key, `[` Shift+`,`, ...; `SH_KEY_MAP` for labctl),
+and `keyboard.physical` applies it to the visitor's own keys and the on-screen
+keyboard. Typed through the SPA's real key path afterwards, The Last Word showed
+`! " # $ % & ' ( ) * + , - . / : ; < = > ? @ [ ]` and mixed-case letters exactly.
+Unreachable: `` ` `` `{` `}` `~` (no ATASCII key; the US `` ` `` key is not wired).
+`_` `|` `^` `\` reach the machine but The Last Word acts on them instead of
+inserting them: in `a_b|c^d\e[f]g` they moved the cursor, and the line came out
+as `e[f]gbacd`. Evidence:
+`/data/vms/streamhost/stations/atari800xl/evidence/physical-charmap-2026-10-05/`.
+
 **Golden.** Pixel-identical under the new binary, and the savestate signature
 is unchanged (`2e5e7e4d`, 1875 entries).
 

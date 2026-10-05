@@ -142,8 +142,6 @@
   },
   "keyboard": {
     "charMap": {
-      "\"": "@",
-      "'": "&",
       "&": "^",
       "(": "*",
       ")": "(",
@@ -154,8 +152,11 @@
       "~": "+",
       "_": "`",
       ":": "'",
-      "*": "\""
-    }
+      "*": "\"",
+      "\"": "@",
+      "'": "&"
+    },
+    "physical": true
   },
   "demoProgram": {
     "label": "Type in a demo program",
@@ -172,7 +173,8 @@
   "typeIn": {
     "dialect": "bbc-basic",
     "perCharMs": 170,
-    "case": "unshifted"
+    "case": "unshifted",
+    "unreachable": "\\`|"
   },
   "museum": {
     "id": "bbcmicro",

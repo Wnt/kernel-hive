@@ -41,7 +41,7 @@
   "render": {
     "signalOrder": 115,
     "stationsManifestOrder": 94,
-    "stationsManifestPrelude": "\n# svi328 \u2014 Spectravideo SV-328, native PAL MAME, offline.\n",
+    "stationsManifestPrelude": "\n# svi328 — Spectravideo SV-328, native PAL MAME, offline.\n",
     "bringUpGroup": 6,
     "bindingOrder": 122,
     "bindingPrelude": "",
@@ -89,8 +89,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/svi328/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/svi328/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": "%3A:;,;:%3A"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 221,
     "bringUpOrder": 122,
@@ -135,11 +134,11 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#5655dd",
-    "eraLabel": "1983 \u00b7 Spectravideo SV-328 \u00b7 SV BASIC 1.1"
+    "eraLabel": "1983 · Spectravideo SV-328 · SV BASIC 1.1"
   },
   "museum": {
     "id": "svi328",
-    "displayName": "Spectravideo SV-328 \u2014 BASIC",
+    "displayName": "Spectravideo SV-328 — BASIC",
     "year": 1983,
     "lineage": "Spectravideo SV-328: before the MSX standard",
     "arch": "Zilog Z80A, 3.58 MHz; TMS9929A PAL video",
@@ -150,7 +149,7 @@
     "eraSoftware": [
       "SV Extended BASIC 1.1"
     ],
-    "periodBrowser": "None \u2014 offline",
+    "periodBrowser": "None — offline",
     "iconicApps": [
       "SV BASIC"
     ],
@@ -170,7 +169,7 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "N/A \u2014 keyboard-only exhibit",
+    "mouse": "N/A — keyboard-only exhibit",
     "keyboard": "Generated from the running driver KEYDUMP; pacing tested on the matrix. Production browser acceptance is recorded in guest documentation.",
     "fixture": "SV extended BASIC version 1.1, Copyright 1983 Microsoft, Ok."
   },
@@ -195,12 +194,14 @@
     "dialect": "msx-basic",
     "perCharMs": 500,
     "case": "code-upper",
-    "unreachable": "`|~"
+    "unreachable": "`|"
   },
   "keyboard": {
     "charMap": {
       ":": ";",
-      ";": ":"
-    }
+      ";": ":",
+      "~": "|"
+    },
+    "physical": true
   }
 }

@@ -83,9 +83,40 @@ with a sibling fixture; this machine's key ports are `:key1` to `:key4`, so it
 matched nothing and overlapping keys were lost. And Shift reached the keyboard
 in the same instant as its key. The station ships `:key` and a 20 ms lead (the
 threshold is 5 to 10 ms, as on the Macintosh's serial keyboard). The slow
-reference also shows the `charMap` is wrong here: `"` arrives as `[`, `+` as
-`^`, `*` as `‾`: it is samcoupe's map, entry for entry. Re-derive it from the keymap
-before `keyboard.physical` is considered.
+reference also showed the `charMap` was wrong here: `"` arrived as `[`, `+` as
+`^`, `*` as `‾`. It was samcoupe's map, entry for entry; it is re-derived below.
+
+### The JIS map, re-derived (2026-10-05)
+
+Measured with every US key bare and shifted typed at its US position at `Q>`
+(コマンドモード) on a rig of this station's binary and golden, through a sandbox
+daemon, and read off the frame:
+
+| US key | bare | Shift | | US key | bare | Shift |
+|---|---|---|---|---|---|---|
+| `1`..`0` | digits | `! " # $ % & ´ ( )`, Shift+0 none | | `\` | `¥` (code 92) | `\|` |
+| `-` | `-` | `=` | | `;` | `;` | `+` |
+| `=` | `^` | `‾` (code 126) | | `'` | `:` | `*` |
+| `[` | `@` | `` ` `` | | `` ` `` | ESC | ESC |
+| `]` | `[` | `{` | | `,` `.` `/` | `,` `.` `/` | `< > ?` |
+
+That is the Towns's JIS keyboard, and `keyboard.charMap` is now that table
+(`"` is Shift+2, `@` the US `[` key, `+` Shift+`;`, and so on: 17 entries). Two
+keys had no host key at all: MAME gives the Towns's ESC the token
+`KEYCODE_TILDE` and its `] }` key `KEYCODE_BACKSLASH`, which `¥ |` had already
+taken, so the keymap generator bound the PC's `` ` `` key to a second ESC and left
+`] }` unreachable. `fmtowns.keymap` now binds 0x29 to `] }` (ESC stays on Esc),
+and the map sends `]` and `}` there. `_` stays unreachable: the Towns's `_ ろ` key
+has no MAME token, and every US key is in use; a visitor's `_` gives `=`.
+
+`keyboard.physical` is on: the visitor's own keys and the on-screen keyboard go
+through the map. Typed through the SPA's real key path (Shift held), every
+printable ASCII character arrived as its own code but `_`; the Towns's font
+draws 92 as `¥`, 126 as `‾` and 39 as `´`. Case is the visitor's (`abc XYZ`).
+The Towns's CAP key is its own, so a visitor's Caps Lock inverts letter case
+(`Hello World` arrived as `hELLO wORLD`, docs/TYPE-IN-EDITOR.md). At `Q>` the
+shell reads `|` as a pipe. Evidence:
+`/data/vms/streamhost/stations/fmtowns/evidence/physical-charmap-2026-10-05/`.
 
 **Live since 2026-10-04** (final-patch binary, `:key`, 20 ms; savestate
 signature `1ebe131a` unchanged, golden pixel-identical but for the guest's

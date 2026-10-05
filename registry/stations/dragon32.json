@@ -154,7 +154,8 @@
       "-": "=",
       "=": "+"
     },
-    "letterCase": "upper-only"
+    "letterCase": "upper-only",
+    "physical": true
   },
   "demoProgram": {
     "label": "Type in a demo program",
