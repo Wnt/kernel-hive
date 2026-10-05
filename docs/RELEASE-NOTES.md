@@ -4,6 +4,54 @@ Every week, newest first.
 
 Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.madekivi.fi).
 
+<a id="week-9"></a>
+
+## Week 9 · Spectravideo and the MSX family · 2026-09-27 09:00 – 2026-10-04 09:00
+
+### Screenshots
+
+<table>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/svi328"><img src="../spa/public/posters/svi328/desktop.webp" width="200" alt="Spectravideo SV-328 — BASIC"></a><br><sub>Spectravideo SV-328 — BASIC</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/svi328cpm"><img src="../spa/public/posters/svi328cpm/desktop.webp" width="200" alt="Spectravideo SV-328 — CP/M"></a><br><sub>Spectravideo SV-328 — CP/M</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/svi728"><img src="../spa/public/posters/svi728/desktop.webp" width="200" alt="Spectravideo SVI-728 — BASIC"></a><br><sub>Spectravideo SVI-728 — BASIC</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/svi738"><img src="../spa/public/posters/svi738/desktop.webp" width="200" alt="Spectravideo SVI-738 — CP/M"></a><br><sub>Spectravideo SVI-738 — CP/M</sub></td>
+</tr>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/msxturbor"><img src="../spa/public/posters/msxturbor/desktop.webp" width="200" alt="MSX turbo R"></a><br><sub>MSX turbo R</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/symbos"><img src="../spa/public/posters/symbos/desktop.webp" width="200" alt="SymbOS on MSX2"></a><br><sub>SymbOS on MSX2</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/nokia9300"><img src="../spa/public/posters/nokia9300/desktop.webp" width="200" alt="Nokia 9300 Communicator"></a><br><sub>Nokia 9300 Communicator</sub></td>
+</tr>
+</table>
+
+### New stations
+
+<u>A visitor's memories of Spectravideo BASIC and CP/M became six new machines on a single Saturday, tracing a line of *Z80* home computers from *1983* to *2025*.</u> The [SV-328](https://kernelhive.madekivi.fi/os/svi328) switches on straight into Microsoft's **SV Extended BASIC**. [The same computer, expanded](https://kernelhive.madekivi.fi/os/svi328cpm) with two 5¼-inch floppy drives and a green-screen 80-column card, boots **CP/M** instead. The [SVI-728](https://kernelhive.madekivi.fi/os/svi728) is Spectravideo joining the shared *MSX* standard, and the [SVI-738 X'Press](https://kernelhive.madekivi.fi/os/svi738) folds a 3½-inch drive and 80-column text into the case and runs CP/M on it. Then the family grows up: Panasonic's [FS-A1GT](https://kernelhive.madekivi.fi/os/msxturbor), a *1991* *MSX turbo R*, opens its Japanese **MSX View** desktop, and [SymbOS 4.0](https://kernelhive.madekivi.fi/os/symbos), written by enthusiasts and released in *2025*, gives a *1987* Philips MSX2 overlapping windows and preemptive multitasking.
+
+### Major features
+
+All four Spectravideos have a **Type in a demo program** button under Controls that types a short listing for you, so a first visit ends with a running program rather than a blinking prompt. On the CP/M machines it loads **BASIC-80** from disk first and waits for it, and SAVE "VISITOR" puts your own program on that disk. The [Nokia 9300 Communicator](https://kernelhive.madekivi.fi/os/nokia9300) gained the software a *2005* owner could have installed: RMR Software's card games and Othello, the falling-blocks game **Atomic**, **ProTour Golf**, **Documents To Go**, **WorldMate**, the **iSilo** e-book reader and **PuTTY**, with their own icons on its Desk. That took our own fork of the **EKA2L1** emulator a little further: Desk now hands programs written in **OPL**, the language Symbian inherited from Psion, to the OPL runtime just as the real phone does, where before none of its OPL games would start.
+
+### Quality improvements
+
+The [expanded SV-328](https://kernelhive.madekivi.fi/os/svi328cpm) nearly missed its own opening: once its floppy motor stopped after a quiet spell, the next command found an empty disk, and DIR answered NO FILE. The answer was on page one of the disk controller's original *1984* service schematic, and the emulated controller is now wired the way that drawing shows. The [turbo R](https://kernelhive.madekivi.fi/os/msxturbor)'s mouse waits for the desktop's own pointer to catch up before it clicks, so a quick click lands where you aimed. And pressing both mouse buttons together finally reaches the machine you are driving: in **Minesweeper**, that chord used to plant a flag.
+
+### Also this week
+
+- On the [SV-328](https://kernelhive.madekivi.fi/os/svi328), colon and semicolon sit on opposite Shift positions from a US PC keyboard, and Ctrl+End sends Ctrl+STOP to break a program
+- The [SVI-728](https://kernelhive.madekivi.fi/os/svi728)'s demo prints HELLO SPECTRAVIDEO!, lists the squares of 1 to 8 and plays a scale through **MSX BASIC**'s PLAY command
+- On the [SVI-738](https://kernelhive.madekivi.fi/os/svi738), STAT CON:=UC1: switches CP/M to 80 columns and STAT CON:=CRT: brings back 40
+- The [FS-A1GT](https://kernelhive.madekivi.fi/os/msxturbor) is all Japanese: open 道具 (Tools) for DRAW, PAINT and TED, and save a **ViewDRAW** picture to floppy with 保存
+- In [SymbOS](https://kernelhive.madekivi.fi/os/symbos), press Random then Start in **Game of Life**, leave it running, and open **Notepad** beside it: one *Z80*, several programs
+- On the disk machines, Restore puts in a fresh floppy: whatever you saved is gone, and the next visitor starts clean
+- Each new machine has a gallery of real hardware photographs; the turbo R's show its FS-A1ST sibling, and say so
+- The 9300's Images app holds NASA's Blue Marble, taken from Apollo 17, and Hubble's Pillars of Creation
+- The Communicator's Music player counts through Für Elise, Bach's Minuet in G and Chopin's Minute Waltz in silence: this exhibit has no sound
+- RealPlayer has no films: the 9300 decoded video on a separate signal processor that the emulator does not recreate
+- Restore brings the Communicator's Desk back as shipped, with every shareware trial on day 1 again
+
+*2,686 lines of code.*
+
 <a id="week-8"></a>
 
 ## Weeks 7–8 · A phone and twenty more · 2026-09-13 09:00 – 2026-09-27 09:00

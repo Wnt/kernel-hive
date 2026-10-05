@@ -2,6 +2,73 @@
   "cutoff": "Sunday 09:00 Europe/Helsinki",
   "weeks": [
     {
+      "week": 9,
+      "title": "Spectravideo and the MSX family",
+      "start": "2026-09-27T09:00:00+03:00",
+      "end": "2026-10-04T09:00:00+03:00",
+      "startDate": "2026-09-27",
+      "endDate": "2026-10-04",
+      "commitCount": 47,
+      "codeLines": 2686,
+      "summary": [
+        {
+          "theme": "New stations",
+          "text": "<u>A visitor's memories of Spectravideo BASIC and CP/M became six new machines on a single Saturday, tracing a line of *Z80* home computers from *1983* to *2025*.</u> The [SV-328](station:svi328) switches on straight into Microsoft's **SV Extended BASIC**. [The same computer, expanded](station:svi328cpm) with two 5\u00bc-inch floppy drives and a green-screen 80-column card, boots **CP/M** instead. The [SVI-728](station:svi728) is Spectravideo joining the shared *MSX* standard, and the [SVI-738 X'Press](station:svi738) folds a 3\u00bd-inch drive and 80-column text into the case and runs CP/M on it. Then the family grows up: Panasonic's [FS-A1GT](station:msxturbor), a *1991* *MSX turbo R*, opens its Japanese **MSX View** desktop, and [SymbOS 4.0](station:symbos), written by enthusiasts and released in *2025*, gives a *1987* Philips MSX2 overlapping windows and preemptive multitasking."
+        },
+        {
+          "theme": "Major features",
+          "text": "All four Spectravideos have a **Type in a demo program** button under Controls that types a short listing for you, so a first visit ends with a running program rather than a blinking prompt. On the CP/M machines it loads **BASIC-80** from disk first and waits for it, and SAVE \"VISITOR\" puts your own program on that disk. The [Nokia 9300 Communicator](station:nokia9300) gained the software a *2005* owner could have installed: RMR Software's card games and Othello, the falling-blocks game **Atomic**, **ProTour Golf**, **Documents To Go**, **WorldMate**, the **iSilo** e-book reader and **PuTTY**, with their own icons on its Desk. That took our own fork of the **EKA2L1** emulator a little further: Desk now hands programs written in **OPL**, the language Symbian inherited from Psion, to the OPL runtime just as the real phone does, where before none of its OPL games would start."
+        },
+        {
+          "theme": "Quality improvements",
+          "text": "The [expanded SV-328](station:svi328cpm) nearly missed its own opening: once its floppy motor stopped after a quiet spell, the next command found an empty disk, and DIR answered NO FILE. The answer was on page one of the disk controller's original *1984* service schematic, and the emulated controller is now wired the way that drawing shows. The [turbo R](station:msxturbor)'s mouse waits for the desktop's own pointer to catch up before it clicks, so a quick click lands where you aimed. And pressing both mouse buttons together finally reaches the machine you are driving: in **Minesweeper**, that chord used to plant a flag."
+        }
+      ],
+      "bullets": [
+        "On the [SV-328](station:svi328), colon and semicolon sit on opposite Shift positions from a US PC keyboard, and Ctrl+End sends Ctrl+STOP to break a program",
+        "The [SVI-728](station:svi728)'s demo prints HELLO SPECTRAVIDEO!, lists the squares of 1 to 8 and plays a scale through **MSX BASIC**'s PLAY command",
+        "On the [SVI-738](station:svi738), STAT CON:=UC1: switches CP/M to 80 columns and STAT CON:=CRT: brings back 40",
+        "The [FS-A1GT](station:msxturbor) is all Japanese: open \u9053\u5177 (Tools) for DRAW, PAINT and TED, and save a **ViewDRAW** picture to floppy with \u4fdd\u5b58",
+        "In [SymbOS](station:symbos), press Random then Start in **Game of Life**, leave it running, and open **Notepad** beside it: one *Z80*, several programs",
+        "On the disk machines, Restore puts in a fresh floppy: whatever you saved is gone, and the next visitor starts clean",
+        "Each new machine has a gallery of real hardware photographs; the turbo R's show its FS-A1ST sibling, and say so",
+        "The 9300's Images app holds NASA's Blue Marble, taken from Apollo 17, and Hubble's Pillars of Creation",
+        "The Communicator's Music player counts through F\u00fcr Elise, Bach's Minuet in G and Chopin's Minute Waltz in silence: this exhibit has no sound",
+        "RealPlayer has no films: the 9300 decoded video on a separate signal processor that the emulator does not recreate",
+        "Restore brings the Communicator's Desk back as shipped, with every shareware trial on day 1 again"
+      ],
+      "screenshots": [
+        {
+          "id": "svi328",
+          "name": "Spectravideo SV-328 \u2014 BASIC"
+        },
+        {
+          "id": "svi328cpm",
+          "name": "Spectravideo SV-328 \u2014 CP/M"
+        },
+        {
+          "id": "svi728",
+          "name": "Spectravideo SVI-728 \u2014 BASIC"
+        },
+        {
+          "id": "svi738",
+          "name": "Spectravideo SVI-738 \u2014 CP/M"
+        },
+        {
+          "id": "msxturbor",
+          "name": "MSX turbo R"
+        },
+        {
+          "id": "symbos",
+          "name": "SymbOS on MSX2"
+        },
+        {
+          "id": "nokia9300",
+          "name": "Nokia 9300 Communicator"
+        }
+      ]
+    },
+    {
       "week": 8,
       "title": "A phone and twenty more",
       "start": "2026-09-13T09:00:00+03:00",

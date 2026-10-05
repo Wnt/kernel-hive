@@ -292,28 +292,27 @@ the [`irix` branch README](https://github.com/Wnt/mame/tree/irix),
 The museum keeps a written account of every week. The latest one:
 
 <!-- release-notes:start -->
-### Weeks 7–8 · A phone and twenty more · 2026-09-13 09:00 – 2026-09-27 09:00
+### Week 9 · Spectravideo and the MSX family · 2026-09-27 09:00 – 2026-10-04 09:00
 
 #### Screenshots
 
 <table>
 <tr>
-<td><a href="https://kernelhive.madekivi.fi/os/nokia9300"><img src="spa/public/posters/nokia9300/desktop.webp" width="200" alt="Nokia 9300 Communicator"></a><br><sub>Nokia 9300 Communicator</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/multics"><img src="spa/public/posters/multics/desktop.webp" width="200" alt="Multics"></a><br><sub>Multics</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/its"><img src="spa/public/posters/its/desktop.webp" width="200" alt="MIT ITS"></a><br><sub>MIT ITS</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/vax43bsd"><img src="spa/public/posters/vax43bsd/desktop.webp" width="200" alt="4.3BSD"></a><br><sub>4.3BSD</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/svi328"><img src="spa/public/posters/svi328/desktop.webp" width="200" alt="Spectravideo SV-328 — BASIC"></a><br><sub>Spectravideo SV-328 — BASIC</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/svi328cpm"><img src="spa/public/posters/svi328cpm/desktop.webp" width="200" alt="Spectravideo SV-328 — CP/M"></a><br><sub>Spectravideo SV-328 — CP/M</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/svi728"><img src="spa/public/posters/svi728/desktop.webp" width="200" alt="Spectravideo SVI-728 — BASIC"></a><br><sub>Spectravideo SVI-728 — BASIC</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/svi738"><img src="spa/public/posters/svi738/desktop.webp" width="200" alt="Spectravideo SVI-738 — CP/M"></a><br><sub>Spectravideo SVI-738 — CP/M</sub></td>
 </tr>
 <tr>
-<td><a href="https://kernelhive.madekivi.fi/os/mvs38"><img src="spa/public/posters/mvs38/desktop.webp" width="200" alt="IBM MVS 3.8j"></a><br><sub>IBM MVS 3.8j</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/vision"><img src="spa/public/posters/vision/desktop.webp" width="200" alt="Visi On 1.0"></a><br><sub>Visi On 1.0</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/macsys1"><img src="spa/public/posters/macsys1/desktop.webp" width="200" alt="Macintosh System 1.0"></a><br><sub>Macintosh System 1.0</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/perq"><img src="spa/public/posters/perq/desktop.webp" width="200" alt="PERQ POS G.7"></a><br><sub>PERQ POS G.7</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/msxturbor"><img src="spa/public/posters/msxturbor/desktop.webp" width="200" alt="MSX turbo R"></a><br><sub>MSX turbo R</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/symbos"><img src="spa/public/posters/symbos/desktop.webp" width="200" alt="SymbOS on MSX2"></a><br><sub>SymbOS on MSX2</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/nokia9300"><img src="spa/public/posters/nokia9300/desktop.webp" width="200" alt="Nokia 9300 Communicator"></a><br><sub>Nokia 9300 Communicator</sub></td>
 </tr>
 </table>
 
-<u>The museum has its first phone: a [Nokia 9300 Communicator](https://kernelhive.madekivi.fi/os/nokia9300) from *2005*, running its own firmware, opens on the page as a drawing of the open clamshell whose every key you can press.</u> Type a letter in **Documents**, fill in a **Sheet**, or open **Web** and let its **Opera** browse the museum's archived web. Twenty more machines arrived in the same two weeks. The timesharing giants: [Multics](https://kernelhive.madekivi.fi/os/multics), [ITS](https://kernelhive.madekivi.fi/os/its), Berkeley's [4.3BSD](https://kernelhive.madekivi.fi/os/vax43bsd) on a *VAX-11/780*, and IBM's [MVS 3.8j](https://kernelhive.madekivi.fi/os/mvs38) on a *3270* terminal already logged into **ISPF**. Desktops from Pittsburgh to Tokyo: [Visi On](https://kernelhive.madekivi.fi/os/vision), the *1984* [Macintosh System 1.0](https://kernelhive.madekivi.fi/os/macsys1), the [PERQ](https://kernelhive.madekivi.fi/os/perq), the [Apple IIGS](https://kernelhive.madekivi.fi/os/apple2gs), [OS/2 1.3](https://kernelhive.madekivi.fi/os/os213), Fujitsu's [FM TOWNS](https://kernelhive.madekivi.fi/os/fmtowns), [RISC OS 3.11](https://kernelhive.madekivi.fi/os/riscos3), [Native Oberon](https://kernelhive.madekivi.fi/os/oberon) and General Magic's [Magic Cap](https://kernelhive.madekivi.fi/os/magiccap). Unix comes to the PC three ways, in [Linux 0.12](https://kernelhive.madekivi.fi/os/linux012), [Minix 2.0.4](https://kernelhive.madekivi.fi/os/minix2) and [SCO Xenix](https://kernelhive.madekivi.fi/os/xenix); [CP/M 2.2](https://kernelhive.madekivi.fi/os/cpm22) and the [MSX2](https://kernelhive.madekivi.fi/os/msx2) bring home computing, and a [PalmPilot](https://kernelhive.madekivi.fi/os/palmos) and [Mac OS X 10.3 Panther](https://kernelhive.madekivi.fi/os/macosx) carry the story into the 2000s.
+<u>A visitor's memories of Spectravideo BASIC and CP/M became six new machines on a single Saturday, tracing a line of *Z80* home computers from *1983* to *2025*.</u> The [SV-328](https://kernelhive.madekivi.fi/os/svi328) switches on straight into Microsoft's **SV Extended BASIC**. [The same computer, expanded](https://kernelhive.madekivi.fi/os/svi328cpm) with two 5¼-inch floppy drives and a green-screen 80-column card, boots **CP/M** instead. The [SVI-728](https://kernelhive.madekivi.fi/os/svi728) is Spectravideo joining the shared *MSX* standard, and the [SVI-738 X'Press](https://kernelhive.madekivi.fi/os/svi738) folds a 3½-inch drive and 80-column text into the case and runs CP/M on it. Then the family grows up: Panasonic's [FS-A1GT](https://kernelhive.madekivi.fi/os/msxturbor), a *1991* *MSX turbo R*, opens its Japanese **MSX View** desktop, and [SymbOS 4.0](https://kernelhive.madekivi.fi/os/symbos), written by enthusiasts and released in *2025*, gives a *1987* Philips MSX2 overlapping windows and preemptive multitasking.
 
-Read [weeks 7–8 in full](docs/RELEASE-NOTES.md#week-8), and every earlier week, in the [full archive](docs/RELEASE-NOTES.md).
+Read [week 9 in full](docs/RELEASE-NOTES.md#week-9), and every earlier week, in the [full archive](docs/RELEASE-NOTES.md).
 
 Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.madekivi.fi).
 <!-- release-notes:end -->
