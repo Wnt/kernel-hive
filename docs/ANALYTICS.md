@@ -12,30 +12,17 @@ being promoted across the fleet in risk-ordered waves by
 `scripts/dev/fleet_rollout.py --mode promote` — see §8 for what that binary now
 really does on a station that has it.
 
-This plane — everything described below, client and server, Rust and Python —
-is entirely inside kernel-hive: no external service, no third-party script, no
-account anywhere in it. That is an ARCHITECTURE fact, not a privacy stance: the
-gallery's public edge is a loopback-bound listener behind a forwarder, the LAN
-listener uses the lab's own CA, and stations are reached over WebTransport
-straight from the tab. There is no point in this plane's own request path
-where a hosted analytics SDK would see anything useful without being handed it
-deliberately — which is exactly why the Instana comparison below had to be
-wired by hand. What these planes may CARRY is §0, and the answer is "as much as
-is useful".
-
-That used to be true of the whole gallery; it no longer is. Since 2026-08-31
-an Instana JavaScript agent runs in every visitor's browser and beacons to
-IBM's SaaS, a separate Instana host agent runs on labhost, and a signed-in
-visitor's real account id and name are sent to it in cleartext — an
-operator-armed, operator-known exception, not a leak (§8.2 has the detail and
-the off switches). It exists as a **benchmark, not a dependency**: the
-operator wants the richest data a mature commercial APM can show, in order to
-find the gaps in this plane and close them, and has said plainly that the
-integration is **temporary** — meant to come off once this plane's own
-`/admin/observability` carries the views Instana currently supplies alone.
-Every capability this plane gains for that reason has to work with Instana
-entirely absent; §8.2 is where that principle is argued in full, against the
-real decisions it already produced.
+This plane — everything described below, client and server, Rust and Python — is
+entirely inside kernel-hive: no external service, no third-party script, no
+account anywhere in it. Every lane lands on the box's own serving plane and is
+read back through `/admin/observability` and the CLI reports; there is no hosted
+APM and no exporter that sends any of it off the box (§8.2). That is an
+ARCHITECTURE fact, not a privacy stance: the gallery's public edge is a
+loopback-bound listener behind a forwarder, the LAN listener uses the lab's own
+CA, and stations are reached over WebTransport straight from the tab. There is
+no point in this plane's own request path where a hosted analytics SDK would see
+anything useful without being handed it deliberately. What these planes may
+CARRY is §0, and the answer is "as much as is useful".
 
 ---
 
@@ -48,18 +35,16 @@ as though the operator had required them, and later sessions then reasoned from
 them as settled policy. Nobody chose them. On 2026-09-01 they were removed. The
 policy below is what is actually true.
 
-**1. Rich telemetry into both planes is the goal.** The operator's words:
-*"we can and should submit as rich as possible data to both our to-be-fully-built
-observability platform and into Instana."* Stacks, messages, full URLs and query
-strings, the identity of the account involved, per-request detail — all wanted,
-in our own trace store and in what the forwarder ships to Instana. A telemetry
-plane that cannot tell you which account hit a fault, or what the stack was, is
-not doing the job it exists for.
+**1. Rich telemetry is the goal.** The operator asked for data "as rich as
+possible". Stacks, messages, full URLs and query strings, the identity of the
+account involved, per-request detail — all wanted, in our own trace, log and
+vitals stores. A telemetry plane that cannot tell you which account hit a fault,
+or what the stack was, is not doing the job it exists for.
 
 **2. Secrets never.** Auth tokens, session cookies, passkey material, the
-Instana website key, the stream ticket. Not stored, not shipped, not logged.
-This is **security**, not privacy squeamishness: a stored credential is one an
-admin view, a backup or a forwarded OTLP batch can replay. Enforced at intake in
+stream ticket. Not stored, not exported, not logged. This is **security**, not
+privacy squeamishness: a stored credential is one an admin view, a backup or an
+OTLP read of the store can replay. Enforced at intake in
 `scripts/serve/traces.py` by explicit name (`BANNED_ATTRS`) and by key shape
 (`SECRET_KEY_RE`), so a name nobody anticipated still fails closed. It cannot
 catch a credential that arrives as the *value* of an innocent key — the call
@@ -484,10 +469,8 @@ a duration, so nothing about which key it was is knowable from it — and that i
 true of every edge now, not of one in ten. Dropping the old `SAMPLE_N` counter
 was a **volume** decision, not a content one (§0.4): this section's own
 estimate for going 1-in-1 was roughly a doubling of the store's daily span
-count on a busy day, and that is the `df` decision that was taken. What
-survives of sampling is a keep/drop at the **vendor export** only (§8.1), which
-changes what Instana is shown and never what our own store holds or what leaves
-the tab.
+count on a busy day, and that is the `df` decision that was taken. Nothing
+downstream samples them either: the store keeps every edge (§8.1).
 
 ### 5.4 The station and stream flows: opening one, coming back to one, watching one freeze
 
@@ -638,14 +621,14 @@ sometimes written to `/clientlog`, and it never reached a durable plane.
   permanently into software decode — paying CPU for every frame of every station
   for the rest of the page's life — was invisible to us.
 
-#### One call, four lanes
+#### One call, three lanes
 
 `analytics/streamEvents.ts` holds the vocabulary and is the only place it is
 declared. `emitStreamEvent(name, attrs, value)` fans out to a **probe** (the
 durable two-year count), a **metric** (the bucketed distribution of the event's
-one number), a **span** named exactly as the event and opened as a child of
-whichever flow is live, and — through a thin adapter — **Instana**. Nobody
-instruments the same fact twice and the four lanes cannot disagree about it.
+one number) and a **span** named exactly as the event and opened as a child of
+whichever flow is live. Nobody instruments the same fact twice and the three
+lanes cannot disagree about it.
 
 The event name, the span name and the probe id are the SAME STRING, so a query
 written against one works against all three. `analytics/catalogue/stream.ts`
@@ -653,9 +636,9 @@ declares the probes and metrics; the taxonomy is their only call site, which is
 the call-site gate working rather than a way around it — an id that fell out of
 the table fails the build instead of quietly reading zero forever.
 
-**One number per event, declared.** `customMetric` is a single number and this
-plane has three ladders (`ms`, `count`, `pct`). An event carrying three numbers
-would have to pick one for the vendor and invent ladders for the rest, so it
+**One number per event, declared.** The metric lane buckets one number per
+event, and this plane has three ladders (`ms`, `count`, `pct`). An event
+carrying three numbers would have to invent ladders for two of them, so it
 picks one HERE and everything else numeric rides as a span attribute, where it
 is exact rather than bucketed. The clearest case is the quality switch:
 `targetKbps` is an attribute (no honest kbps ladder exists), and the number that
@@ -690,8 +673,8 @@ whatever station dimensions the surrounding call site merged in.
 
 **The sampling decision is made once, upstream of every lane.** A sampled-away
 event costs one counter increment and reaches nothing — no span, no probe, no
-metric, no vendor beacon — so all four describe the identical population and
-`n x sampleN` is the true count for every one of them. `kh.sample.n` rides on the
+metric — so all three describe the identical population and `n x sampleN` is
+the true count for every one of them. `kh.sample.n` rides on the
 event so a reader can do that multiplication without knowing the source.
 
 The default is **1-in-1**, and it is the right default because these events are
@@ -711,17 +694,15 @@ its LATCH rather than its state, and the paused sink is latched in
 `sessionTelemetry` and re-armed by a painted frame. Sampling a fault down is how
 a report learns to under-state a fault.
 
-#### Page binding — the capability Instana's browser agent does not have
+#### Page binding — explicit, on every event
 
-Instana's browser `reportEvent` has **no `viewName` parameter**. The mobile SDK
-has one; the browser one does not, so a custom event there correlates to a page
-only implicitly, by landing in whatever page the agent's session state happened
-to be naming at that instant. That is fine for a single-route page and useless
-here: a visitor opens `/os/beos`, navigates to `/fleet` while the stream keeps
-running, and every quality switch after that is attributed to the wrong page by
-a mechanism nobody can query around.
+A stream outlives the page it started on. A visitor opens `/os/beos`, navigates
+to `/fleet` while the stream keeps running, and an event correlated to a page
+only implicitly — by whatever page the tab happens to be showing when it fires
+— attributes every quality switch after that to the wrong page, by a mechanism
+nobody can query around.
 
-So in our plane the binding is **explicit and travels on the event**
+So the binding is **explicit and travels on the event**
 (`analytics/pageBinding.ts`):
 
 * `kh.page.pattern` — the route PATTERN (`/os/:osId`, never `/os/beos`), so
@@ -731,41 +712,11 @@ So in our plane the binding is **explicit and travels on the event**
   station is `kh.station.id`, and on a navigation also `kh.page.name`.
 * `kh.page.loadId` — 16 hex, minted once per document. "Show me everything that
   happened on this page load" is an equality filter, not an inference.
-* `kh.page.instanaLoadId` — the vendor's own `ineum('getPageLoadId')`, captured
-  so the two systems can be reconciled for exactly as long as both exist.
 
 The pattern is read from `location` at emit time rather than cached from the
 router, because a cache is a second opinion about the current route that can
 disagree with the address bar — and this binding exists so that it cannot be
 wrong.
-
-#### The Instana adapter is thin, isolated and deletable
-
-`analytics/instanaStreamEvents.ts` translates an already-made decision and does
-nothing else: no sampling, no naming, no defaulting, no enrichment. Deleting it
-and its one call site removes Instana from the stream plane entirely and changes
-nothing about what our own store receives — which is the point, since the vendor
-is a benchmark the operator intends to drop.
-
-Three vendor rules matter, and all three fail SILENTLY:
-
-* `backendTraceId` must be **exactly 16 or 32 hex characters**. The minified
-  agent validates it and drops the field otherwise; the docs state no such rule.
-  Our own trace ids are already 32 lowercase hex, so nothing is reformatted —
-  only checked. Unlike `inputTrace.ts`, which abandons its beacon when the id is
-  unusable (there the join IS the beacon), a stream event is worth reporting
-  with or without a join, so a malformed id costs the FIELD and not the event.
-* `meta` values are **strings**, capped at the vendor's `maxMetadataKeys`
-  default of 25. Coercion happens in the adapter, never at the call site — that
-  is how our own span attributes would have silently become strings too.
-* `customMetric` is **one number** at 4-decimal precision. A non-finite value is
-  omitted rather than coerced to zero, because a zero is a real observation.
-
-**No synthetic entry spans, and no span-kind changes.** A rejected design asked
-for invented entry spans so Instana's UI would render something more
-trace-shaped. It is not done and must not be added: it would make our own data a
-function of a third party's rendering, which is the exact coupling the adapter
-exists to avoid.
 
 #### What is still not measured here, and why
 
@@ -863,8 +814,8 @@ That was three mistakes wearing one design, and only the last was cosmetic.
    `station.open.toFirstInputMs` as 1.573 seconds of *work*. Nothing worked for
    1.573 seconds; that is the gap between two events, most of it a human
    deciding whether to touch the machine.
-3. **Span counts and vendor aggregates.** One synthetic span per timing lands
-   in Instana's call and latency rollups as a call that never happened.
+3. **Span counts and rollups.** One synthetic span per timing lands in every
+   span count and every per-name latency rollup as a call that never happened.
 
 A stopped timing now reports itself as an **OTel span event** — a timestamped
 point carrying `kh.metric.ms` — on the innermost span genuinely open around it.
@@ -873,7 +824,7 @@ point carrying `kh.metric.ms` — on the innermost span genuinely open around it
 cannot parent anything and has no duration to misread. Events have been carried
 end-to-end since the intake was written (`_clean_events`, `scripts/serve/traces.py`;
 exported by `traces_otlp.py`; rendered by `/admin/observability`'s span detail
-pane, and surfaced by Instana in the call Details view).
+pane).
 
 **Where a timing has no open span around it** — a poster dwell, a hall
 navigation, a hesitation measured after its connect flow has legitimately
@@ -898,19 +849,19 @@ one that survives trace retention. Only the trace-plane representation moved.
 | Question | Answer |
 |---|---|
 | the distribution / p95 of any `Ms` metric | **unchanged** — the metric plane. `/admin/observability` → Metrics, and `scripts/serve/analytics.py`'s bucketed `metric` table. Day resolution, two-year retention |
-| this metric as an OTLP histogram in Instana | **unchanged** — `scripts/observability/instana_metrics.py`. Still **day resolution only**: the counters carry a day bucket and no per-sample timestamps |
 | the exact value on ONE session's journey | `/admin/observability` → open the trace → select the span → the **events** pane. `kh.metric.ms` on the event, with the station dimensions repeated on it |
 | when, precisely, first frame was painted | the event's own **timestamp** on `station.connect` — which the old design could not state at all, only imply from a span's end |
 | why one connect was slow | `station.connect`'s real children — `http.client.request`, `serve.signal`, `streamhost.session` — which are now direct children of the connect instead of buried under a clock |
 
-**Why nothing moved to the metric plane *only*.** That leg is day-resolution by
-construction, so a latency metric living there alone would lose all sub-day
-resolution and every per-session drilldown. Every `ms` metric therefore keeps
-both homes: the bucketed counter for the durable aggregate, and a span event for
-the exact per-session value. **The follow-up this defers, stated as the gap it
-is:** there is no fine-grained metric path — no per-sample timestamped metric
-export — and until one exists the span event *is* the sub-day resolution. Do not
-read this as an argument that one is unnecessary.
+**Why nothing moved to the metric plane *only*.** That plane is day-resolution
+by construction — its counters carry a day bucket and no per-sample timestamp —
+so a latency metric living there alone would lose all sub-day resolution and
+every per-session drilldown. Every `ms` metric therefore keeps both homes: the
+bucketed counter for the durable aggregate, and a span event for the exact
+per-session value. **The follow-up this defers, stated as the gap it is:** these
+flow metrics have no fine-grained path — no per-sample timestamped series like
+the vitals lane's (§8.6) — and until one exists the span event *is* the sub-day
+resolution. Do not read this as an argument that one is unnecessary.
 
 ### The three shapes, and the traps
 
@@ -1279,11 +1230,11 @@ the **`kh.page.loadId` attribute** already minted per document (§5.5). Neither
 substitutes for the other. A link is what a UI **navigates** — one click from a
 slow keystroke to the page load it happened on — and cannot be filtered or
 grouped by; an attribute is what a query **groups by** ("every action on this
-page load", one equality filter, in our own SQL and in Instana's Unbounded
-Analytics) and cannot be navigated. The link also needs no window, no count and
-no consumption: a parent claims containment, which goes stale ten minutes into
-a visit, while a link claims only "this action happened on that document",
-which is true for the life of the JS realm.
+page load", one equality filter in our own SQL) and cannot be navigated. The
+link also needs no window, no count and no consumption: a parent claims
+containment, which goes stale ten minutes into a visit, while a link claims only
+"this action happened on that document", which is true for the life of the JS
+realm.
 
 **Every key and click edge is traced.** The browser decides —
 `three/streamClient/inputTrace.ts` — mints a fresh trace per qualifying edge and
@@ -1325,12 +1276,11 @@ unchanged).
 `input.dispatch.key` / `input.dispatch.click`, with bare `input.dispatch` as the
 fallback (`trace_session.rs::dispatch_span_name`, an exhaustive match on
 `&'static str` so a formatted name can never invent an unbounded set of
-endpoints). The reason is a vendor fact, stated as one: Instana derives an OTLP
-**endpoint** from the entry span's name (`{otel.operation}` —
-`instana-docs/0251-monitoring-applications.md`, "Endpoints -> Predefined
-rules"), so one name gave keyboard and mouse a single endpoint row and one
-merged latency distribution. Two names, two rows. The vocabulary matches the
-browser's `kh.input.class` word for word, which is what keeps the two ends from
+names). A span's name is the first thing any OTel consumer groups by, and a
+keyboard round trip and a mouse round trip have different guest work and
+different latency distributions; one name merged them into a single row and one
+distribution. Two names, two rows. The vocabulary matches the browser's
+`kh.input.class` word for word, which is what keeps the two ends from
 disagreeing about what "click" means.
 
 **The return leg (added 2026-08-31) closes the trace at the pixel.** Until
@@ -1381,64 +1331,26 @@ the one figure in the whole tree that needs no clock agreement: both ends are
 `performance.now()` readings from the same tab. It replaced a separate span,
 `client.input.roundtrip`, which carried exactly this figure beside a root whose
 own duration was 0-1 ms of local enqueue — so every consumer that reads a root's
-duration (a trace list, a latency percentile, Instana's endpoint view) read 1 ms
-for something a visitor waited 240 ms for. An edge that no frame ever answers is
+duration (a trace list, a latency percentile) read 1 ms for something a visitor
+waited 240 ms for. An edge that no frame ever answers is
 settled after 3 s and still lands, with `kh.input.answered=false`: "no frame came
 back" is a value in the store, not a missing row. The timeout is generous on
 purpose — the open keyboard-lag investigation is about round trips that are TOO
 LONG, and a tight cap would discard exactly its evidence.
 
-**KEEPING EVERYTHING HERE, DECIDING AT THE VENDOR LEG.** Our own store keeps
-every action on purpose — one box, our own disk, our own data, and completeness
-beats cleverness when nobody is short of capacity. What needs protecting is
-Instana's Calls and Services views, where routine traffic drowns the traffic
-worth looking at (the operator has raised that twice), so the keep/drop decision
-lives at the export instead: `scripts/observability/tail_sampler.py`, run by the
-forwarder. **It is not a capacity measure and must not be "optimised" as one.**
+**THE STORE KEEPS EVERY ACTION, and nothing downstream samples it.** One box,
+our own disk, our own data, and completeness beats cleverness when nobody is
+short of capacity (§0.4 has the measured cost). Every error, every slow action
+and every routine one lands in `traces.db` and stays there for the retention
+window; "which actions are worth a look" is a filter on the read side
+(`/admin/observability`'s errors-only and minimum-duration filters), never a
+decision that deletes the rest.
 
-It can live there at all because we already own the collector a tail sampler
-needs. Tail sampling normally requires something that buffers a COMPLETE trace
-before deciding, which is hard across processes — the browser cannot decide for
-spans the daemon has not emitted. `traces.db` is that buffer: all three producers
-land in it, and the forwarder already waits for a trace to go quiet
-(`instana_backlog.QUIET_MS`, 210 s) before shipping. This adds a decision to that
-wait and no new machinery. It keeps **every error** (a 1-in-N failure record is
-worse than none, because it reads as a rate), **every slow action**, and **1 in
-10 of the rest, chosen by a coin** — random rather than every-Nth for the same
-aliasing reason the source-side counter was deleted for. Anything it cannot
-classify is FORWARDED: a dropped trace is unrecoverable, a duplicate costs a row.
-
-"Slow" is a rolling p95 of the last 512 completed actions, with a FLOOR that is
-derived rather than chosen. A constant cannot be right on this fleet:
-`transport.frame.next` over 597 real samples runs p50 43 ms, p90 243 ms, p99
-489 ms — an elevenfold spread inside one distribution, before a 1982 Spectrum and
-a w2kalpha are even compared. The floor models the visitor-facing round trip from
-the same store's measured parts at p90: 243 ms (daemon injection -> wire) + 23 ms
-(client receive/decode/paint, n=27) + 13 ms (`kh.transport.rtt_ms`, n=49) =
-**279 ms**. It says: never call an action slow when nine in ten of real traffic
-are already at least that slow. Without it a good hour would drag the rolling p95
-down to tens of milliseconds and the export would start forwarding ordinary
-actions as "slow", which is the noise the mechanism exists to remove.
-
-**The sampling factor is ours, and we claim nothing about the vendor reading
-it.** Instana's call detail reads `Sampling factor: 1` whatever we do, and
-under-reports accordingly. Whether an OTLP producer can DECLARE a factor is **not
-documented**: the 326-file docs corpus never mentions "sampling factor",
-`sampling.factor`, extrapolation, or an `x-instana-` header for one. The single
-adjacent hint is a PHP-tracer release note
-(`instana-docs/0006-tracers-and-autotrace-webhook.md`) about that tracer
-capturing an OpenTelemetry TraceState sampling threshold and reporting it —
-implying an OTEP 235 `tracestate` path that is documented for no other producer
-and promised to nobody. So the exporter stamps `kh.sampling.factor` (1 when kept
-for cause, 10 when kept at random) and `kh.sampling.reason` (`error`/`slow`/
-`random`) on the EXPORTED spans only. `traces.db` never carries them: it kept
-everything, and a sampling factor there would be a lie.
-
-**COUNTS NEVER DEPEND ON ANY OF THIS.** "How many clicks happened" comes from the
+**Counts do not come from traces.** "How many clicks happened" comes from the
 always-on counter plane — `three/usageStats.ts` tallies every key and click per
 station to `/usage`, and the `station.key.used` / `station.pointer.used` probes
-land in `analytics.db` — and neither passes through the sampler. The sampler only
-ever decides which actions Instana is shown a flame graph FOR.
+land in `analytics.db`. A trace is the per-action drilldown; the counter is the
+total.
 
 **Numbers do not cross 2026-09-01.** Traces recorded before that date have a
 different SHAPE and a different meaning: a trace was a visit (early ones parented
@@ -1560,221 +1472,66 @@ It was hand-run until 2026-09-01, on an argument about the spool being bounded
 That was true of the spool and false of the store: an unshipped batch is a
 daemon span missing from `/admin/observability` and from everything downstream,
 so "nothing overflows" was never "nothing is lost". The unit and timer live
-beside the script and are installed by `box-deploy.sh`; **enabling them is a
-separate operator action** (§8.1). Re-running is always safe —
-`scripts/serve/traces.py` inserts spans `ON CONFLICT(trace_id,span_id) DO
-NOTHING`, so a batch shipped twice, or left in place after a failed POST and
-retried on the next run, is stored once.
+beside the script and are installed by `box-deploy.sh --apply`; **enabling them
+is a separate operator action** (AGENTS.md rule 11):
 
-**`instana-forward.py` is one controlled thing that decides to leave the box,
-not one URL any more.** Since 2026-08-31 labhost also runs an Instana HOST
-AGENT (`systemctl status instana-agent`), a separate IBM-supplied process that
-collects its own infrastructure/process data and maintains its own connection
-out to the SaaS tenant (`ingress-blue-saas.instana.io:443`) independently of
-anything in this repo — so "the forwarder is the only thing that talks to
-Instana" stopped being literally true the day that agent was installed. What
-is still true, and is the part of the old claim worth keeping: this script
-remains the only thing **this repo** hands data to Instana through, and it
-still has one credential, one `--dry-run`, one off switch. It now has a choice
-of two local doors rather than one hardcoded URL — `--via-agent` POSTs OTLP to
-the host agent's loopback receiver (`127.0.0.1:4318`), `--via-saas` POSTs
-straight to the SaaS tenant as before, and with neither flag it auto-detects,
-preferring the agent when its port answers because that keeps the network hop
-on the box and gets host correlation for free (the agent supplies `host.id`
-itself; the direct SaaS leg still needs this script to stamp one). The
-`x-instana-key` ingest credential is sent on the SaaS leg only — confirmed
-empirically that the local agent's receiver does not check it at all, so
-sending it there would be a credential attached to a request that ignores it.
-Full detail, including the empirical checks, is in the script's own
-docstring.
+```sh
+ssh lab 'systemctl enable --now kh-trace-ship.timer'
+ssh lab 'systemctl list-timers kh-trace-ship.timer'    # next/last fire time
+ssh lab 'journalctl -u kh-trace-ship -n 40 --no-pager'
+```
 
-**It runs on a timer, and its watermark is INGEST ORDER, not trace start
-time.** Both facts date from 2026-09-01 and both were bugs before it. Hand-
-running meant every view it feeds was stale by default, which is how a
-measurement doc came to be written from a tenant nobody had forwarded to in
-days — `kh-instana-forward.timer` now runs `--scheduled` every five minutes,
-and the run logs its watermark and backlog so staleness is visible in
-`journalctl -u kh-instana-forward` instead of being invisible by construction.
-The watermark bug was worse, because it lost data silently: the forwarder
-selected traces by `started_ms` and advanced past the highest one it shipped,
-while a trace's browser half arrives up to a `sink.ts` flush interval LATER
-carrying an EARLIER start time (§8's own resummarise comment says the server
-half usually wins that race). Anything that landed after a run had passed its
-trace was never selected again by any future run, which is precisely what a
-call with no parent looks like from inside Instana. The store now stamps each
-trace with an `ingest_seq` that moves every time a span lands in it, so a late
-arrival pulls its whole trace back in front of the watermark; a 90-second quiet
-window on top holds a trace until it stops changing, which keeps duplicate
-sends rare without ever being the thing correctness rests on. See the
-`pending_traces()` docstring for why the alternatives lost and what re-sending
-means on IBM's side.
+Re-running is always safe — `scripts/serve/traces.py` inserts spans `ON
+CONFLICT(trace_id,span_id) DO NOTHING`, so a batch shipped twice, or left in
+place after a failed POST and retried on the next run, is stored once. The same
+run carries the daemon's log batches (§8.5).
 
-**A run drains the backlog, and a request is bounded in SPANS and BYTES — not
-in traces.** Landing the timer exposed two more defects the same afternoon, and
-both are worth knowing because both were invisible from inside Instana (the
-symptom for each is "the chart is empty"). First, a run shipped exactly ONE
-batch of 100 traces and exited, which on a five-minute timer is 20 traces a
-minute against a store measured taking 23 a minute: the pipeline could not
-catch up from any backlog, sat 991 traces behind, and the Applications → Calls
-view flatlined about 25 minutes behind reality — a visitor simulation's traces
-took the better part of an hour to appear. A run now keeps shipping until it is
-caught up or until a 120-second budget stops it (40% of both the unit's
-`TimeoutStartSec=300` and the timer's own 5-minute period, because an
-over-running oneshot is killed AND costs the next tick, which would lose ground
-at exactly the moment it was catching up). Draining the 991-trace backlog takes
-ten requests and about three seconds.
+## 8.2 Self-hosted: what that commits the plane to
 
-Second, 100 traces is not a size. Trace size here spans four orders of
-magnitude — a `serve.clientcmd` poll trace holds one span while a live browser
-session accumulates thousands of `input.edge` spans into a single trace — and
-one such batch carried 16,226 spans in 9.6 MB, which the agent refused by
-closing the connection mid-upload (`[Errno 32] Broken pipe`, no HTTP status,
-twice in a row). Probing the agent's OTLP receiver put its wall at exactly
-5 MiB, which is the documented *minimum* of `INSTANA_AGENT_OTEL_HTTP_MAX_MESSAGE_SIZE`
-(configurable to 49.5 MB, if requests ever need to be bigger). Batching is now
-by span count and serialized bytes, budgeted at 4,000 spans / 4 MiB, and a
-single trace over that is SPLIT across consecutive requests. Splitting is safe:
-this plane already relies on it, since a trace's server half and browser half
-reach Instana in different runs minutes apart and assemble correctly. The one
-real caveat is IBM's ~2-second trace-assembly window (`0280-custom-tracing.md`),
-so the few pieces of a very large trace may correlate imperfectly — a
-cosmetically split trace view, against the alternative of never shipping it and
-stalling everything behind it. Every run now prints `backlog: N trace(s)
-behind`, including `0`, so falling behind is a line in the journal rather than
-something to infer from an empty chart. `instana_batch.py` holds the numbers
-and the probe that produced them.
+**Every lane ends on this box.** Browser, serving plane and daemon all write to
+the serving plane's own stores — `analytics.db`, `coverage.db`, `traces.db`,
+`logs.db`, `vitals.db` — and `/admin/observability` plus the admin read leaves
+are how anything is read back. Nothing exports off the box. The `otlp` leaves
+(`/auth/traces/otlp`, `/auth/logs/otlp`, `/auth/vitals/otlp`) render a page of a
+store as OTLP/JSON so any OpenTelemetry tool can read it without a translator;
+they are reads, not exporters.
 
-**Five minutes was re-examined and KEPT**, which is worth saying because the
-throughput fix removes the reason anyone would shorten it. The period was never
-the bottleneck — one batch per run was — and now that a run drains, the worst
-case age of data in the tenant is one interval plus the 90-second quiet window,
-i.e. under seven minutes, against a store taking ~23 traces a minute. Dropping
-to one minute would buy roughly four minutes of freshness and cost five times
-the runs, five times the journal, and five times the chance of a run landing
-inside a trace's quiet window and shipping it twice — Instana does not
-de-duplicate re-sent spans (docs silent, so assume not), and duplicates are the
-one error mode the quiet window exists to keep rare. If sub-two-minute
-freshness is ever wanted, `OnUnitActiveSec` is the one line to change and
-`RUN_BUDGET_S` must come down with it, since the budget is defined as a
-fraction of the period.
+**Span kinds state what a span IS.** `input.dispatch` is `Kind::Server`
+(`docs/lab/TRACE-CONTEXT.md` §3.2) because it genuinely is the daemon's
+receiving side of the browser's client-kind `input.edge` span — the same RPC
+pairing `serve.signal` already uses — and marking it `Internal` understated what
+it already was. The idea it sits next to and rejects: relabelling a
+**browser**-kind span as `server` so a trace viewer draws a tidier tree. That
+would put a lie in the data. Same question both times ("what kind is this
+span"), opposite answer, because only one of the two spans actually was a
+server.
 
-**Neither timer is armed by landing this.** `box-deploy.sh --apply` installs the
-units; the operator enables them — the commands are in
-`docs/lab/INSTANA-VIEW-INVENTORY.md` §2.
+**Propagation is automatic, not opt-in.** `spa/src/analytics/khFetch.ts`
+patches `fetch` once and propagates `traceparent` on same-origin requests
+without a call site remembering to ask. Before it, 2 of 24 `fetch` call sites
+carried trace context, because propagation was a per-call-site choice — the
+shape that rots the moment nobody is watching it
+([TRACE-CONTEXT §4a](lab/TRACE-CONTEXT.md)).
 
-## 8.2 Instana: a benchmark, not a dependency — and a temporary one
-
-**The rule.** Every capability this plane has must work correctly with
-Instana entirely absent. Instana is there so this lab can see what a mature
-commercial APM shows a visitor's journey, decide what of that is worth
-replicating in kernel-hive's own store, and then build it here — never so
-kernel-hive can lean on IBM's SaaS for something it does not do itself. The
-operator has said so three times over in different words across one session,
-and the decisions below are what following it actually looked like, not a
-restatement of intent.
-
-**Never bend our data model to please the vendor.** `input.dispatch` is
-`Kind::Server` (`docs/lab/TRACE-CONTEXT.md` §3.1) because it genuinely IS the
-daemon's receiving side of the browser's client-kind `input.edge` span — the
-same RPC pairing `serve.signal` already uses — and marking it `Internal`
-understated what it already was. That it also happens to be the reason
-Instana's `analyze/traces` API can now attach a `service.name` to an
-`input.edge` trace instead of labelling it `"Unspecified"` is a welcome side
-effect of a correction, not the justification for it. Contrast the idea it
-sits next to and rejects: relabelling a **browser**-kind span as `server`
-purely so Instana would stitch a trace together was turned down in an earlier
-session for exactly the opposite reason — it would put a lie in the data. Same
-question both times ("what kind is this span"), same vendor watching, opposite
-answer, because only one of the two spans actually changed kind.
-
-**Capability parity is the goal, not admiration.** Where Instana's auto
-instrumentation does something this plane's own code did not — it patches
-`fetch`/`XHR` globally and propagates `traceparent` to every same-origin call
-without a call site remembering to ask — the fix was to build that in
-kernel-hive's own plane (`spa/src/analytics/khFetch.ts`, landed 2026-08-31,
-whose own header calls out the race it had to resolve against Instana's
-patch), not to depend on Instana supplying it. The alternative — leave
-propagation opt-in and let Instana's agent quietly cover the gap — would have
-meant that pulling Instana back out returned the plane to 2 of 24 `fetch`
-call sites carrying trace context, and that the gap analysis this whole
-integration exists to run would have been flattered: linked traces admired in
-Instana that kernel-hive's own plane structurally could not have produced on
-its own. Every capability gained this way is exactly the thing that has to be
-true **before** Instana can be switched off, not merely nice to also have
-while it is present.
-
-**Where the vendor cannot help, the gap is permanent and this lab's alone.**
-There is no Instana sensor for QEMU or any other emulator (§6 of
-`docs/lab/TRACE-CONTEXT.md`: "the emulator is deliberately not traced from
-inside"), so emulator-internal visibility — was the guest actually awake,
-where did a frame stall inside the capture pipeline — was never something a
-vendor integration could shortcut. It is a poor thing to prototype in Instana
-and exactly the thing `streamhost`'s own span plane (§8.1) exists to build.
-
-**Removable, checked against the code rather than assumed.** The operator's
-stated intent is to drop the dependency once this plane's own tooling has the
-views it needs — no removal date and no checklist of views is fixed here,
-because the operator has not named the bar and this doc will not invent one.
-What can be stated is how clean the off switch actually is, verified against
-the three places Instana touches this repo, not asserted:
-
-- **The browser agent is inert without configuration, and cleanly so.**
-  `spa/index.html`'s inline bootstrap reads `VITE_INSTANA_WEBSITE_KEY` /
-  `VITE_INSTANA_EUM_REPORTING_URL` (Vite substitutes these from
-  `registry/local.env`'s gitignored `INSTANA_WEBSITE_KEY` /
-  `INSTANA_EUM_REPORTING_URL` at build time) and returns before doing
-  anything — no `ineum` stub, no script tag, no request to any Instana host —
-  the instant either value is unset or still the raw placeholder text. Blanking
-  `INSTANA_WEBSITE_KEY` in `registry/local.env` and rebuilding/redeploying the
-  SPA is the whole off switch for the browser half; nothing else references
-  the key. Note what the second variable now carries: since §8.4 it is
-  substituted as the **first-party path** `/eum`, not the tenant's reporting
-  URL, so the tenant URL is no longer in the bundle at all.
-- **The beacon proxy comes off with it, and is the newest of the legs.**
-  `scripts/serve/eum_proxy.py` (§8.4) exists solely because Instana does. It
-  deletes as one commit — the module, its `telemetry_routes` row, its
-  `gate.WALKIN_PATHS` entry, its `box-sync-pairs.sh` row, its
-  `KH_TELEMETRY_PATHS` entry and `serve-https-spa.sh`'s
-  `publish_instana_upstream` — and nothing else in the tree references it.
-  Clearing `INSTANA_EUM_REPORTING_URL` turns it off without a code change:
-  the route then 404s, exactly as it does on a fresh clone.
-- **`instana-forward.py` is already the minimum-commitment shape.** It has its
-  own `--dry-run` and its one credential, and since 2026-09-01 one timer
-  (`kh-instana-forward.timer`, §8.1). `systemctl disable --now
-  kh-instana-forward.timer` — or simply clearing `INSTANA_ENDPOINT`, which makes
-  every scheduled run a logged no-op — is itself "off" for anything this repo
-  ships to Instana.
-- **The labhost host agent is NOT this repo's to switch off.** Unlike the two
-  above, `systemctl status instana-agent` is a separate IBM-supplied install
-  on labhost, started independently of anything in this repo (§8.1) — removing
-  it is a box-level operator action (stop and uninstall the package), not a
-  `registry/local.env` edit or a redeploy. Anyone reading "removable" as "one
-  repo change" would be wrong about this third of it.
-
-So three of the four legs come off with a config edit and a rebuild; the
-remaining one is a genuinely separate install that needs its own teardown on
-labhost whenever the operator decides to do it.
-
-One fact worth recording rather than planning around: the Instana UI reported,
-as read on 2026-08-31, that this tenant is a trial expiring in 14 days. That
-may force the exit before this plane's own views are ready, independent of
-whatever order the operator would otherwise have chosen.
+**The emulator is measured from outside.** The guests are deliberately not
+traced from inside (TRACE-CONTEXT §6), so emulator visibility — was the guest
+actually awake, where did a frame stall inside the capture pipeline — is exactly
+what `streamhost`'s own span plane (§8.1) exists to build.
 
 ## 8.2a Page names: the station, not the route pattern (changed 2026-09-01)
 
-**The rule, as of 2026-09-01.** The page name this app reports — to Instana via
-`ineum('page', ...)` and to our own store as `kh.page.name` — is the **concrete
-station**: `/os/beos`, `/walkin/play/win311`. The route **pattern** (`/os/:osId`)
-goes out beside it as `kh.route.pattern` — `meta` on the vendor's plane, a span
-attribute on ours — and `kh.page.pattern` (§5.5, page binding) is unchanged.
-Before this date the page name was the pattern alone.
+**The rule, as of 2026-09-01.** The page name this app records — `kh.page.name`
+on the `app.page` span every navigation opens (`analytics/navigation.ts`) — is
+the **concrete station**: `/os/beos`, `/walkin/play/win311`. The route
+**pattern** (`/os/:osId`) goes out beside it as `kh.route.pattern`, and
+`kh.page.pattern` (§5.5, page binding) is unchanged. Before this date the page
+name was the pattern alone.
 
 **Read any page-name comparison across 2026-09-01 as two different questions.**
 A "page" before that date is a route; after it, a station. Nothing rewrites
-history in either store, so the dimension is genuinely discontinuous at that
-timestamp — and today's data is already a construction site for several other
-reasons (the beacon proxy, the log plane, the metric-span split of the same
-week). Do not put a trend line through it.
+history in the store, so the dimension is genuinely discontinuous at that
+timestamp — and that week's data is a construction site for other reasons too
+(the log plane, the metric-span split). Do not put a trend line through it.
 
 ### Why per-station, when the RUM convention says otherwise
 
@@ -1806,119 +1563,50 @@ visit, and hides exactly the variation worth looking at. The generalised name
 was answering "how is the station page doing" — a real question, and the only
 one it could answer.
 
-### Both, not a swap — and the roll-up is verified, not assumed
+### Both, not a swap
 
-So the roll-up question keeps its answer. `kh.route.pattern` is emitted as
-`meta` on the vendor's plane, which its page-load view filters on, and as a span
-attribute on ours. A pure swap would have traded one blindness for another:
-per-station detail bought at the cost of never again being able to ask how the
-station page as a whole is doing.
+So the roll-up question keeps its answer: `kh.route.pattern` rides the same
+span, one equality filter away. A pure swap would have traded one blindness for
+another: per-station detail bought at the cost of never again being able to ask
+how the station page as a whole is doing.
 
 ### The bound, and where it actually is
 
 The registry is finite, but the URL is not: anyone can request `/os/anything`.
-So neither copy of the naming logic substitutes a param value blindly. A value
-enters a page name only if it matches `STATION_ID` — `^[a-z][a-z0-9]{1,15}$`,
-which every id in `registry/stations/` satisfies (longest today: 12 characters).
-Anything else keeps its `:name` placeholder, so an unrecognised path degrades to
+So the naming logic never substitutes a param value blindly. A value enters a
+page name only if it matches `STATION_ID` — `^[a-z][a-z0-9]{1,15}$`, which every
+id in `registry/stations/` satisfies (longest today: 12 characters). Anything
+else keeps its `:name` placeholder, so an unrecognised path degrades to
 **exactly the old pattern-only name**. The worst case of this change is the
 previous behaviour.
 
 Be honest about what that guard is: **syntactic, not a registry-membership
 check.** The browser has no synchronous list of stations — the manifest is
-fetched, and `spa/index.html`'s copy of this logic runs before any module
-evaluates, so neither can wait for one. A determined crawler walking
+fetched, and a navigation span cannot wait for it. A determined crawler walking
 `/os/aa`, `/os/ab`, … would still mint page names. If the page dimension ever
 shows ids that are not stations, the escalation is to project the registry id
-list into the bundle (a generated module for `navigation.ts`, and a Vite
-placeholder for `index.html`, the mechanism `%VITE_KH_BUILD_ID%` already uses)
-and check membership rather than shape. That is deliberately not built yet: it
-is real duplication to maintain, for a failure mode that has not happened.
-
-### Does Instana collapse high-cardinality page names? Docs silent.
-
-Asked because the answer would have changed the decision. For **endpoints** the
-vendor documents a collapse: "When too many endpoints are detected on a given
-service, calls are grouped under the special 'Others' endpoint. This safeguard
-is meant to keep the set of endpoints to a reasonable size"
-(`0251-monitoring-applications.md`). There is **no equivalent statement anywhere
-in the corpus for website page names.** `beacon.page.name` appears once, as the
-grouping tag of the page-loads view (`0250-monitoring-websites.md`), with no cap
-or "Others" language near it, and none in the mobile-monitoring or
-known-issues documents either.
-
-The only adjacent documented limits are the JavaScript agent's **per-tab rate
-limits** — 128 beacons/10 s, 4096/10 min, 8096/page-load; page changes 32/10 s,
-128/10 min (`0250-monitoring-websites.md`). Those throttle throughput per tab
-and are indifferent to how many distinct names exist across the site; naming
-per-station does not change how many beacons a tab sends.
-
-So: **docs silent on page-name cardinality**. The empirical check on this
-tenant (2026-09-01, `analyze/beacon-groups` grouped by `beacon.page.name`, 7-day
-window) returned **6 distinct PAGELOAD page names and 5 PAGE_CHANGE ones, with
-no "Others"-style collapse bucket among them.** That is honest but weak
-evidence: the site has never had 63 page names, so the observation shows no
-collapse *at the sizes reached*, it does not disprove one at 63. What makes that
-acceptable is the syntactic bound above — the dimension cannot grow past the
-registry plus the handful of static routes without a code change — and the fact
-that the failure mode, if it ever happened, would be visible in the same query
-and reversible in one commit.
-
-#### Querying the roll-up: the filter syntax that silently returns nothing
-
-Verified against the live tenant on 2026-09-01, because "the aggregate is still
-queryable" is a claim that had to be tested rather than asserted. `beacon.meta`
-is a `KEY_VALUE_PAIR` tag, and the two API shapes are **not** symmetric:
-
-| purpose | shape | result |
-|---|---|---|
-| **filter** to one pattern | `{name: 'beacon.meta', operator: 'EQUALS', value: 'kh.route.pattern=/os/:osId'}` | works — `key=value` in one string |
-| **group** by pattern | `{groupbyTag: 'beacon.meta', groupbyTagSecondLevelKey: 'kh.route.pattern'}` | works — one row per pattern |
-| filter, the shape that reads natural | `{name: 'beacon.meta', operator: 'EQUALS', value: '/os/:osId', tagSecondLevelKey: 'kh.route.pattern'}` | **HTTP 200, zero rows** |
-
-The third form is the trap: it is accepted, it is the obvious mirror of the
-grouping form, and it matches nothing. `beacon.meta.<key>` as a filter or group
-name is rejected outright (HTTP 400, "Invalid or unknown tag filter name"),
-which is the better failure of the two. Anyone reading a zero out of a meta
-filter should check the shape before concluding the meta is not there.
-
-Both roll-up forms were confirmed to return the expected rows after this change:
-filtering PAGELOAD on `kh.route.pattern=/os/:osId` returned the per-station page
-names underneath it, and grouping on the meta returned one row per pattern.
+list into the bundle (a generated module for `navigation.ts`) and check
+membership rather than shape. That is deliberately not built yet: it is real
+duplication to maintain, for a failure mode that has not happened — and if it
+ever did, it would be one `GROUP BY` on `kh.page.name` away and reversible in
+one commit.
 
 ### Where the page name is decided (all of it)
 
-Three places, and they are three because two of them physically cannot import
-the third:
-
 | where | decides | why it is separate |
 |---|---|---|
-| `spa/src/analytics/navigation.ts` | every SPA transition, both planes | the canonical copy: `ROUTES`, `STATION_ID`, `pageName()` |
-| `spa/index.html` inline bootstrap | the FIRST beacon of every visit | runs before any module evaluates; the page-load beacon fires ~1 s after `onLoad` and cannot be retroactively updated |
-| `spa/src/App.tsx` | which routes exist at all | the router itself — the authority the other two are pinned to |
+| `spa/src/analytics/navigation.ts` | every SPA transition, the initial load included | the one copy: `ROUTES`, `STATION_ID`, `pageName()` |
+| `spa/src/App.tsx` | which routes exist at all | the router itself — the authority `ROUTES` is pinned to |
 
 `analytics/pageBinding.ts` reads `navigation.ts`'s `matchRoute`, so it is a
-consumer, not a fourth copy.
+consumer, not a second copy.
 
 **They are pinned.** `scripts/test_page_naming_in_sync.py` parses App.tsx's
-route declarations, both `ROUTES` copies, both `STATION_ID` copies and the
-substitution/`meta` calls in each, and fails if any two disagree — with a
-vacuous-pass guard, so a restructure that defeats the parsing errors rather than
-asserting nothing. It exists because the identical duplication in
-`TELEMETRY_PATHS` was missed twice in one day (`/eum`, then `/logs`, each added
-to some copies and not the others), and the symptom showed up in the vendor's
-UI rather than in a test. That guard is
-`scripts/test_telemetry_paths_complete.py`; this is the same shape for the same
-reason.
-
-### One ordering bug fixed on the way
-
-`ineum('page', ...)` **cuts** the page-transition beacon: the vendor's own API
-reference says "make sure to change the page name last as this immediately
-triggers the transition". `reportPageToInstana` used to call `page` first and
-`meta` after, so the route params it sent landed on the *next* transition. Both
-copies now set every `meta` first and the page name last, and both have a test
-asserting the order.
+route declarations and `navigation.ts`'s `ROUTES`, fails if they disagree, and
+proves `STATION_ID` admits every registry station id and still rejects the
+shapes it exists to reject — with a vacuous-pass guard, so a restructure that
+defeats the parsing errors rather than asserting nothing. A route missing from
+`ROUTES` is named `*`, and the page dimension silently loses it.
 
 ### Walk-in clones report as the exhibit
 
@@ -1933,45 +1621,39 @@ the same software on the same golden.
 private clone with a reset button and a queue is a different product from the
 shared exhibit, and their timings are not comparable.
 
-## 8.3 Which bundle was this client running — and old shell vs blocked beacon
+## 8.3 Which bundle was this client running — and is it a stale shell
 
-**Every telemetry lane this plane owns names the client's build, and the answer
-does not pass through a vendor.** `<branch>@<short-sha>` (`-dirty` when the tree
-was; `unknown-build` when there was no git to ask) — the same string
-`box-deploy.sh --status` prints, so the two compare character-for-character:
+**Every telemetry lane this plane owns names the client's build.**
+`<branch>@<short-sha>` (`-dirty` when the tree was; `unknown-build` when there
+was no git to ask) — the same string `box-deploy.sh --status` prints, so the two
+compare character-for-character:
 
 | Lane | Where the build id sits |
 |---|---|
 | `/traces` | the batch's **resource** envelope, `kh.bundle` (`spa/src/analytics/index.ts`) → stored on the `trace` row (`traces.build`) → exported as the OTLP resource attribute **`service.version`** |
+| `/logs` | the `build` column on every record (§8.5) |
 | `clientlog.jsonl` | the `build` field, on the **first event of a batch**, exactly like `ua` |
-| the boot-time error reporter | `build` on every `client-error` / `unhandled-rejection` row, from `window.__kernelHiveBuildId` — set by its own inline script so it survives a build with no vendor key |
-| Instana (while it lasts) | the `kh.bundle` beacon meta. Same value, same source, and now the *least* authoritative copy |
+| the boot-time error reporter | `build` on every `client-error` / `unhandled-rejection` row, from `window.__kernelHiveBuildId` — set by its own inline script, because the reporter runs before any module evaluates |
 
 One value, one place: `spa/src/analytics/build.ts` reads
-`import.meta.env.VITE_KH_BUILD_ID`, which `vite.config.ts` computes once. The two
-inline scripts in `spa/index.html` cannot import it — they run before any bundle
-evaluates — so they read the placeholder Vite substitutes into the HTML instead.
+`import.meta.env.VITE_KH_BUILD_ID`, which `vite.config.ts` computes once. The
+inline script in `spa/index.html` that sets `window.__kernelHiveBuildId` cannot
+import it — it runs before any bundle evaluates — so it reads the placeholder
+Vite substitutes into the HTML instead.
 
-**Why this is here and not only on a beacon.** On 2026-09-01 the operator used
-the installed PWA on a phone. Our own plane recorded the visit in full: three
-`serve.page` + `app.page` + `station.connect` traces, `class=human`, real
-`input.edge` spans, a full `clientlog` tail. Instana received **nothing** — a
-three-hour window held exactly one page load, a desktop probe. The first
-question — *was that phone running the bundle we think we deployed?* — could
-only be asked of a beacon that did not exist. The build id was recorded
-**exclusively as vendor beacon metadata**, which is precisely backwards for a
-dependency §8.2 says we intend to drop.
+**Why it is on every lane.** *Was that client running the bundle we think we
+deployed?* is the first question about any odd report — an installed PWA can
+hold an old HTML shell (below) — and it has to be answerable from the visit's
+own record, whichever lane that record happens to be in.
 
-### The differential: telling "old shell" from "beacons blocked", using only our own data
+### The differential: stale shell or fresh load, using only the store
 
-Both look identical from the vendor's side (silence). They are trivially
-distinguishable from ours. Ask, in this order:
+Ask, in this order:
 
 1. **What build was it?** — `SELECT build, COUNT(*) FROM trace WHERE started_ms
    > … GROUP BY build`, or `GET /auth/traces/facets`'s `builds` facet, or
    `search` with `build=`. Two builds live in one window means somebody is on a
-   shell the box no longer serves. **This is the direct answer, and it is the
-   one that did not exist before 2026-09-01.**
+   shell the box no longer serves. **This is the direct answer.**
 2. **Did the HTML come off the network for THAT load?** — an `app.page` whose
    page-load LINK names a `serve.page` that started a second earlier is a
    **fresh document**: the `traceparent` that link was read from was minted by
@@ -1981,37 +1663,18 @@ distinguishable from ours. Ask, in this order:
    `serve.page` that is hours stale — or links nothing at all. Read the LINK,
    not a shared trace id: since 2026-09-01 a trace is one action (§8.1), so the
    tab's entry is its own root and never shares the page load's trace id.
-3. **Did the vendor agent even load?** — it is served same-origin from
-   `/vendor/instana-eum.min.js`, so a `GET` for it appears in
-   `/data/vms/streamhost/serve/https-server.log` beside the document request. A
-   content blocker that matches the path drops it there, visibly. If the agent
-   was fetched and the beacon still never arrived, the loss is on the leg this
-   lab cannot see: the client to IBM's EUM host (DNS filtering, a content
-   blocker, a private relay, a captive network).
+3. **What did the access log see?** —
+   `/data/vms/streamhost/serve/https-server.log` holds the document `GET` and
+   the hashed `/assets/index-*.js` it named, so the bundle a fresh load fetched
+   can be read off the file directly.
 
-**What that answered in the 2026-09-01 case**, and it refuted the leading
-hypothesis rather than confirming it:
-
-- Each of the three phone sessions had a `serve.page` span one second before its
-  `app.page`, with `kh.route.kind: "initial"`. Three fresh document loads, not
-  one cached shell. **Stale shell: refuted.**
-- The access log for that minute shows `GET /os/irix` 200, then the current
-  hashed `/assets/index-*.js`, then `GET /vendor/instana-eum.min.js` **200**.
-  The agent was served. **"The keyless bundle was still being served": refuted**
-  — a shell from that window would have carried no vendor script tag at all and
-  would never have requested it.
-- The traces carry `kh.auth.role: admin` on a signed-in session at `/os/:osId`.
-  **`signedOutAtTheDoor` suppression: refuted** — and it never fitted anyway,
-  since that gate cannot explain missing beacons while our own spans exist: it
-  gates *both* planes together, so it would have silenced ours too.
-- `kh.route.kind: "initial"` on all three. **"A PWA start_url produced a
-  transition, not a page load": refuted.**
-
-What is left is the one leg our own data does not reach: the beacon never got
-from that phone to IBM. **Unproven which of blocking, filtering or an agent-side
-failure it was**, and the plane cannot prove it from here — but the useful half
-is now decided by evidence rather than by argument, and the next occurrence
-starts at query 1 instead of a debugging cycle.
+**A worked case, 2026-09-01.** Three sessions from the operator's installed PWA
+on a phone were suspected of running a stale shell. Each had a `serve.page` span
+one second before its `app.page`, with `kh.route.kind: "initial"`, and the
+access log for that minute showed `GET /os/irix` 200 followed by the current
+hashed `/assets/index-*.js`. Three fresh document loads, not one cached shell —
+and not a PWA `start_url` producing a transition instead of a load. Decided by
+evidence rather than by argument, starting at query 1.
 
 ### The staleness trap the review found anyway
 
@@ -2022,7 +1685,7 @@ from the current one — so the cached HTML shell survived every deploy this
 gallery has ever had. The worker is network-first, so it takes a failed
 navigation (one flaky moment on mobile) to start serving that shell, and nothing
 at all to keep it. And an HTML shell is not inert: it carries the inline
-bootstraps — vendor config, session-id minting, the boot error reporter — so an
+bootstraps — session-id minting, the build id, the boot error reporter — so an
 old shell means old boot behaviour even while the hashed bundle it names is
 still on the box.
 
@@ -2045,75 +1708,34 @@ new worker and drops its cache. That is verified by looking — open the install
 app, then `builds` in the trace facets should show only the current build for
 that session.
 
-## 8.4 The beacon proxy — first-party delivery for the vendor's own beacons
+## 8.4 First-party delivery — why a tracker blocker cannot drop this plane
 
-**The measurement.** The operator's phone runs a private-DNS ad/tracker blocker
-(Blockada). One real PWA visit produced a complete record in **our own** plane —
-`/clientlog`, `/analytics`, `/traces` — and **zero Instana beacons**. Nothing
-was broken. The blocker refuses to resolve the vendor's reporting host, and a
-beacon whose destination will not resolve is never sent.
+Every telemetry endpoint — `/traces`, `/logs`, `/vitals`, `/analytics`,
+`/coverage`, `/clientlog`, `/usage` — is a path on the origin the page was
+served from: same host, same TLS, same cookie, no second hostname for anything
+to filter. Measured on the operator's phone, which runs a private-DNS
+ad/tracker blocker (Blockada): one real PWA visit produced a complete record in
+`/clientlog`, `/analytics` and `/traces`. A DNS-level blocker works by refusing
+to resolve a tracker's hostname, and this plane has none of its own to refuse.
 
-That is worth stating as a property of this plane and not only as an Instana
-defect: **our own telemetry has enjoyed first-party delivery since its first
-line**, and that is precisely why it kept working when the vendor's did not.
-Every endpoint in §2 is a path on the origin the page was served from — same
-host, same TLS, same cookie, no second name for anything to filter. The
-Instana half was the only part of this system that depended on a third-party
-hostname resolving in the visitor's own resolver, and it was the only part that
-disappeared.
-
-**What was built.** `scripts/serve/eum_proxy.py` answers `POST /eum` on our own
-origin, and forwards the beacon body verbatim to the tenant from the box. The
-vendor SCRIPT was already self-hosted (`/vendor/instana-eum.min.js`, fetched at
-deploy time), so the beacon POST was the last third-party hop; both halves are
-first-party now. `scripts/serve-https-spa.sh` substitutes `/eum` into the
-bootstrap's `reportingUrl`, so the tenant's URL never enters the bundle.
-
-**The security posture and the blocking-vs-stalling decision** are written out
-in that module's docstring and summarised in
-[`docs/lab/INSTANA-VIEW-INVENTORY.md` §2.2](lab/INSTANA-VIEW-INVENTORY.md).
-The short forms: one destination, from a box-side file, that no request can
-influence; POST only, capped, no redirect, no client headers passed through;
-gated exactly like `/traces` and never traced; and **the upstream call runs on
-a background worker, not the request thread**, so an unreachable Instana costs
-one thread and some telemetry rather than a slow gallery. The route answers 200
-for *queued*, never for *delivered*.
-
-**The trade-off, and the part of it that was NOT avoidable.** Instana derives
-geography from the beacon's source IP and browser/OS from its `User-Agent` —
-neither is in the beacon body. Browser/OS survives, because we forward the
-visitor's own `User-Agent` (verified live: `browser=HeadlessChrome os=Linux`).
-**Geography does not.** The documented escape (`X-Forwarded-For`, or
-`X-REALER-IP`) is implemented and IBM honours it — proved by a run that
-forwarded `127.0.0.1` and came back geolocated to `127.0.0.0` — but the real
-client IP never reaches this process: labhost's Caddy is the last hop that
-writes the header and it sees only the tunnel's loopback peer, so every request
-arrives as `X-Forwarded-For: 127.0.0.1`. (Same reason
-`auth/routes._client_ip` has been rate-limiting on a constant.) So the proxy
-refuses to assert a non-routable address and geo falls back to the box's egress
-IP: populated, and wrong for the first genuinely remote visitor. **The fix is
-one commit in the edge repo, not here.** Full evidence and the exact change:
-[`INSTANA-VIEW-INVENTORY.md` §2.3](lab/INSTANA-VIEW-INVENTORY.md). Kept in
-proportion by §4.1's own reading: geo was already POPULATED BUT UNINFORMATIVE,
-one household and one city.
-
-**It is temporary.** It exists only because Instana does, and it is listed in
-§8.2's off switch as its own leg for exactly that reason.
+**Keep it that way.** A lane that posts anywhere but the page's own origin — a
+separate ingest subdomain, a hosted collector — reintroduces exactly the
+dependency that makes telemetry vanish for the visitors who block trackers, and
+it vanishes silently: every other vantage point still looks healthy.
 
 ## 8.5 The LOG plane — the third pillar, and the only one that carries a stack
 
 Until 2026-09-01 this lab had traces and metrics on two planes and **logs on
-neither**. Instana's Logs pillar was empty; the serving plane's stdout went to a
-flat file with no timestamps; the daemon's 747 000 lines a day went to journald
-and nowhere else; and the one queryable record of anything — `clientlog.jsonl` —
-was a rolling JSONL file with no severity and no way to relate a line to the
-span it happened inside.
+neither**. The serving plane's stdout went to a flat file with no timestamps;
+the daemon's 747 000 lines a day went to journald and nowhere else; and the one
+queryable record of anything — `clientlog.jsonl` — was a rolling JSONL file with
+no severity and no way to relate a line to the span it happened inside.
 
 **The value is not shipping log files somewhere. It is a log record joined to a
 trace.** Every record carries `trace_id`/`span_id` where a span was in scope, so
-a slow `guest.attach` and what the daemon printed during it are one query apart
-— in our own store and in Instana, which takes the same two fields "without any
-alterations" ([`docs/lab/research/instana-logs.md`](lab/research/instana-logs.md)).
+a slow `guest.attach` and what the daemon printed during it are one query apart.
+They are the OpenTelemetry log record's own `TraceId`/`SpanId` fields, so the
+`otlp` read leaf hands any OTel tool the same join.
 
 ### The model
 
@@ -2121,9 +1743,9 @@ alterations" ([`docs/lab/research/instana-logs.md`](lab/research/instana-logs.md
 
 | Column | Why it exists |
 |---|---|
-| `seq` | `INTEGER PRIMARY KEY AUTOINCREMENT` — the forwarder's watermark. AUTOINCREMENT, not a plain rowid, so a delete can never hand the same number out twice; a duplicate watermark is silent data loss and the trace store had to be migrated to fix exactly that. |
+| `seq` | `INTEGER PRIMARY KEY AUTOINCREMENT` — the cursor an incremental reader resumes from (`since_seq`, `order=ingest` on `/auth/logs/search`). AUTOINCREMENT, not a plain rowid, so a delete can never hand the same number out twice; a duplicate cursor value is silent data loss for whoever resumes from it. |
 | `ts_ms` / `observed_ms` | The producer's clock and ours. Both, always: a store with one timestamp cannot tell a slow carrier from a slow event, which is the question a stall investigation opens with. |
-| `severity` / `sev_num` | OTel text and SeverityNumber. Text is what a human filters on; the number makes "at least WARN" a range query, and is what Instana falls back to. |
+| `severity` / `sev_num` | OTel text and SeverityNumber. Text is what a human filters on; the number makes "at least WARN" a range query. |
 | `service` / `instance` | `kernel-hive-spa` \| `-serve` \| `-daemon`, and the station, tab or box within it. Together they are the OTLP resource identity. |
 | `trace_id` / `span_id` | The join. Nullable, because some records genuinely have no span in scope (a boot line, a timer tick) and inventing an id that joins to nothing is worse than admitting there is none. |
 | `body`, `attrs`, `session_id`, `build`, `day` | The message, structured attributes (a stack included), and the three facts every triage query groups by. |
@@ -2131,8 +1753,7 @@ alterations" ([`docs/lab/research/instana-logs.md`](lab/research/instana-logs.md
 The trace store's `BANNED_ATTRS` do **not** apply here. A stack is the most
 useful thing a log record can carry, and refusing it is precisely what kept
 `clientlog.jsonl` alive as a parallel store. Stacks land as
-`exception.stacktrace`, which is the attribute name Instana documents support
-for.
+`exception.stacktrace`, the OpenTelemetry semantic-convention name for one.
 
 ### What each producer emits
 
@@ -2181,9 +1802,8 @@ journal:
 **≈20 MB/day, ≈140 MB at 7 days, ≈210 MB with indexes.** That is the real
 constraint here — one box, one disk — and it is what picks the number:
 
-- **7 days**, half the trace store's 14. A log row costs roughly ten times a
-  trace row at this traffic, and 7 days is also Instana's own default log
-  retention, so both stores answer a question for the same window.
+- **7 days**. A log row costs roughly ten times a trace row at this traffic,
+  so the log window is the shorter one.
 - A runaway backstop at 4M rows, ~5× the honest window, so a producer fault
   drops the oldest records instead of the disk.
 - `LOG_RETENTION_DAYS` overrides it. Raising the daemon to `SH_LOG_LEVEL=info`
@@ -2209,33 +1829,10 @@ three of these are true:**
    `window.__kernelHiveReportError` is absent) posts to `/logs`. The primary
    path already does, through `reportError`.
 3. The `correlated` facet on a normal traffic day is not near zero — i.e. the
-   lane is actually joining, not just storing. `/auth/logs/facets` reports it,
-   and it is on every forwarder run line.
+   lane is actually joining, not just storing. `/auth/logs/facets` reports it.
 
 `docs/lab/STREAM-DEBUGGING.md` §1.1 already points operators at the new surface
 and names what is not covered yet; that list and this one are the same list.
-
-### The Instana leg
-
-`scripts/observability/instana_logs.py` posts OTLP/JSON to `/v1/logs` after the
-traces leg (so the call a record correlates to has already landed), under its
-own `lastLogSeq` watermark, through the same `instana_batch.drain()` loop and
-the same measured 4 MiB budget. What Instana does with it — and the four things
-its docs are silent about, two of which are exactly what a batcher would want —
-is quoted in [`docs/lab/research/instana-logs.md`](lab/research/instana-logs.md).
-
-**This tenant refuses log ingress and the forwarder cannot tell.** Measured on
-the first batch this box ever sent: the local agent answered **200 OK**, and
-250 ms later logged the backend's answer — `402 Payment Required`, "The current
-TU doesn't allow this endpoint because it needs to be paid for". It is the only
-402 in that agent log's history, and the Logging API reports `totalHits: 0` for
-the tenant over 24 hours. On SaaS, OpenTelemetry logs need a logging add-on
-(`0275-logging.md`); traces and metrics are entitled and unaffected. The
-refusal is on the agent-to-backend hop, which an OTLP exporter never sees, so
-**an OK from this leg means the agent took the batch, not that Instana kept
-it** — do not read the run line as proof the pillar is populated. The code side
-is done; buying the add-on is the only thing that changes the outcome, and the
-pivot is answered by our own store meanwhile.
 
 ---
 
@@ -2253,18 +1850,18 @@ this is it: `scripts/serve/vitals.py`, `vitals.db`, `POST /vitals` in,
 
 This is the distinction most likely to be lost, so it is stated first.
 
-| | `instana_metrics.py` → `analytics.db` | `instana_vitals.py` → `vitals.db` |
+| | the metric table in `analytics.db` (§6) | `vitals.db` |
 |---|---|---|
 | shape | bucketed counters | timestamped samples |
-| resolution | **one day** | **5 seconds** |
-| forwarded | with the 5-minute trace timer | its own **10-second** timer |
+| resolution | **one day** | **one second** (below) |
+| read at | `/admin/observability` → Metrics | `/auth/vitals/{series,live}` |
 | answers | "how many restores yesterday, and how slow" | "is win311 streaming cleanly *right now*" |
 
 The day lane is not a coarse version of the vitals lane and must not be
 "improved" into one: **its counters carry no per-sample timestamp at all**, only
-a day bucket, and its own docstring says emitting them at any finer resolution
-would be a lie. There is no finer data underneath it. The vitals lane is a
-genuinely new shape beside it.
+a day bucket, so reporting them at any finer resolution would be a lie. There is
+no finer data underneath it. The vitals lane is a genuinely new shape beside
+it.
 
 ### The single biggest win, and it was already being computed
 
@@ -2400,12 +1997,10 @@ day that changes.
 the measured busiest day in `clientlog.jsonl` was 2,262 five-second samples,
 which at 1 Hz is a couple of megabytes.
 
-**Cardinality** is the one limit that is *not* ours to waive, because it is the
-vendor's. A series is (metric × station × session), and `session` is the only
-unbounded term — which is exactly why it rides as a **data-point attribute** and
-never in the resource. In the resource each session id would mint a new
-OpenTelemetry *entity*, and entities are what an infrastructure backend keeps
-forever. One live stream is 33 series; all 71 at once would be 2,343.
+**Cardinality.** A series is (metric × station × session), and `session` is the
+only unbounded term — which is exactly why the OTLP rendering carries it as a
+**data-point attribute** and never in the resource (below). One live stream is
+33 series; all 71 at once would be 2,343.
 
 **Retention is 30 days — the longest window in the plane, not the shortest.**
 The instinct with dense data is to keep a tight window, but density is a reason
@@ -2430,94 +2025,38 @@ read as a line and every other store here answers newest-first), `live` (one
 row per stream reporting in the last two minutes — the triage read), `facets`
 (what is in the window, the catalogue, and **coverage**: a store holding a
 thousand rows from one 40-second session is a souvenir, not monitoring), and
-`otlp` (the same page as OTLP/JSON, so "are the numbers Instana shows the
-numbers we sent" is answerable without reading a forwarder log).
+`otlp` (the same page as OTLP/JSON, so any OpenTelemetry tool can read a series
+without a translator).
 
 Ingest is **open**, like `/traces` and `/analytics`, and walk-ins are allowed:
 the visitor whose picture is breaking up is the one whose numbers matter, and
 they hold no admin session.
 
-### The Instana leg, and the cadence constraint that shaped everything
+### One station, one resource — the shape of the OTLP rendering
 
-    "The metric timestamp that is recorded for OpenTelemetry metrics is the
-     timestamp of ingestion into Instana."  — 0307-opentelemetry-signals.md:98
-
-Instana stamps a metric point when it **arrives**, not when we measured it.
-Everything below follows from that one sentence.
-
-**The five-minute forwarder could not carry this.** It would hand Instana 60
-consecutive 5-second samples per stream, all stamped with one ingest moment:
-sixty distinct measurements of a changing stream collapsed onto one instant.
-Not a degraded chart — a wrong one, and one that would look perfect in
-`--dry-run`. So the vitals leg has **its own timer at 10 seconds**
-(`kh-instana-vitals.timer`), running `instana-forward.py --scheduled
---no-traces --no-logs --no-metrics`.
-
-**Ten**, because that is Instana's own floor: infrastructure metrics on a
-custom dashboard have "10 second resolution" (`0261`), and the Saturation SLO
-blueprint samples at 10 s (`0262`). Faster buys resolution the backend will not
-display; slower throws away resolution already collected.
-
-Note the **asymmetry, and that it is deliberate**: our store samples at 1 Hz,
-Instana gets one point per 10 s tick. That is not a resolution we traded away to
-save anything — it is the finest thing an ingest-stamped backend can represent,
-and it is Instana's own documented floor. The good signal lives in our store;
-Instana gets what Instana can display.
-
-A run ships **one point per (station, session, metric)** — the newest sample —
-because "this is the value now" is the most a run can truthfully say when the
-timestamp will be replaced on arrival. The intermediate samples are not lost:
-they are in **our** store at full resolution with the producer's own clock,
-which is the whole point of having one. `INSTANA_VITALS_ALL=1` ships every
-unsent sample instead, for a payload proof or a backfill, with its cost stated —
-backfilled points arrive stamped *now*, so they land as a spike at the current
-instant, not as history.
-
-The watermark is therefore called `lastVitalsSeenSeq`, **not** `lastVitalsSeq`:
-in the default mode it records how far the leg has *looked*, not what it has
-delivered. Naming it after a guarantee this lane does not make is exactly the
-mistake that cost the trace lane half of every trace until 2026-09-01.
-
-**Cost per tick, measured:** one point per metric per live stream. At the
-measured peak of four streams that is 132 data points, ~40 KiB — three orders
-of magnitude under the measured 5 MiB agent wall, which is why this leg reuses
-`instana_batch`'s planner unchanged. With nothing streaming — the museum's
-normal state — a tick runs one indexed query, sends nothing and exits.
-
-### One station, one entity — the reason the export looks like this
-
-> "Instana creates an OpenTelemetry entity from the metrics data. OpenTelemetry
-> spans automatically link to this entity by using the `service.name` and
-> `service.instance.id` resource attributes… Correlation chain: OpenTelemetry
-> span > OpenTelemetry entity > Host entity"
-> — `0311-…-infrastructure-correlation.md`:236-248
-
-**OTLP metrics alone create a first-class monitored entity; no spans are
-needed.** So `vitals_otlp.py` puts the **station id** in `service.instance.id`,
-and that one choice turns 71 exhibits into 71 entities rather than one blurred
-service with a label. They are reachable at *Infrastructure → Analyze
-infrastructure → OpenTelemetry*, or by Dynamic Focus `entity.type:opentelemetry`.
+`vitals_otlp.py` puts the **station id** in `service.instance.id`, so each
+exhibit is its own resource — 71 exhibits are 71 instances of one service
+rather than one blurred series with a label. In OpenTelemetry a resource
+identifies the thing being measured, and that is the station — the same
+`service.instance.id` the daemon's spans carry, so spans and vitals join on the
+machine.
 
 The **session** id is a data-point attribute and never part of the resource:
-session ids are unbounded over time, and in the resource each one would mint a
-new *entity* — the thing an infrastructure backend keeps forever.
+session ids are unbounded over time, and in the resource each one would declare
+a new monitored thing.
 
-Instrument kinds are the catalogue's: Gauge and Sum are what Instana's acceptor
-takes (exponential histograms are unmentioned in the corpus and treated as
-unsupported). Cumulative counters export as **monotonic cumulative Sums** —
-exported as a gauge, "4 frames dropped so far" renders as a level and means
-nothing, and only the axis lies, which is why the test pins it.
+Instrument kinds are the catalogue's: Gauge and Sum. Cumulative counters render
+as **monotonic cumulative Sums** — rendered as a gauge, "4 frames dropped so far"
+reads as a level and means nothing, and only the axis lies, which is why the
+test pins it.
 
 ### Out of scope, deliberately, and not foreclosed
 
 Discrete degradations — a stall, a decode error, an ABR downshift, blocked
 audio — are **events**, and they already have a lane
-(`analytics/streamEvents.ts`); the planned Instana **Event SDK** integration is
-a follow-up, not part of this. What this lane carries is the **continuous level
-such an event would be a threshold on**, which is exactly the number that
-follow-up will fire against. The same is true of SLOs: infrastructure metrics
-support the Saturation blueprint at 10 s sampling, and nothing here forecloses
-one.
+(`analytics/streamEvents.ts`, §5.5). What this lane carries is the **continuous
+level such an event would be a threshold on** — the number an alert or an SLO
+would fire against. Neither is built, and nothing here forecloses one.
 
 ---
 
@@ -2712,8 +2251,7 @@ Traps worth knowing, each of which was hit while writing this:
   row is keyed by (day, thing, class) and holds an `n`; there is no column a
   person could occupy without changing what the number means, and *"which
   feature is dead"* never needed to know who. This is a table shape, not a
-  privacy policy — §0. Identity lives in the trace plane, deliberately, and the
-  Instana forwarder ships it onward.
+  privacy policy — §0. Identity lives in the trace plane, deliberately.
 - **These are the tab's own account of what it did.** Same caveat as `usage.py`,
   same reason: the counters come from the client. Right for deciding what to
   build; not an audit trail. The per-batch caps bound how far one forged report
@@ -2734,28 +2272,27 @@ Traps worth knowing, each of which was hit while writing this:
 A trace can be broken in a way that no other number shows. Every span is well
 formed, every request it describes succeeded, the latency is right — and the
 `parent_id` names a span that is not in the store, so the trace has no root.
-Instana renders that as *"The root call of the trace is missing or has not yet
-arrived in the processing pipeline"*, and there is nothing to see in the access
-log, the span list, or any latency chart.
+A trace viewer renders that as a trace whose root call is missing, and there is
+nothing to see in the access log, the span list, or any latency chart.
 
 It went unmeasured until an operator wrote the query by hand on 2026-09-01 and
 found **42.9%** of a six-hour window in that state. The causes and the fix are
 [`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTEXT.md) §4c; this is how the next
 regression gets noticed instead of discovered.
 
-**The largest single cause was a browser budget, not a tracing bug.** Six senders
-posted every batch with `keepalive: true`. A document's keepalive allowance is
-64 KiB spent ONCE for its whole life, not per request: measured on the live
-gallery in Chrome 150 with 4 KiB bodies, ~15 posts succeed and every keepalive
-fetch after that rejects `TypeError: Failed to fetch` permanently, while a plain
-fetch to the same URL still succeeds. So `/traces`, `/analytics`, `/clientlog`
-and `/logs` all died mid-visit — in the same second — while `/clientcmd` polling
-and the vendor's `/eum` beacons kept flowing, which is why the access log showed
-a healthy tab. Each caller swallowed the rejection in a bare `.catch(() => {})`,
-and `/traces` had already DRAINED its buffer before posting, so the browser's
-half of every affected trace — the ROOT — was destroyed while the daemon's half
-kept arriving by an independent path: **175 of 459 `input.dispatch` spans over
-24 h (38%) named a parent the store never had.** The fix is
+**The largest single cause was a browser budget, not a tracing bug.** Six
+senders posted every batch with `keepalive: true`. A document's keepalive
+allowance is 64 KiB spent ONCE for its whole life, not per request: measured on
+the live gallery in Chrome 150 with 4 KiB bodies, ~15 posts succeed and every
+keepalive fetch after that rejects `TypeError: Failed to fetch` permanently,
+while a plain fetch to the same URL still succeeds. So `/traces`, `/analytics`,
+`/clientlog` and `/logs` all died mid-visit — in the same second — while
+`/clientcmd` polling kept flowing, which is why the access log showed a healthy
+tab. Each caller swallowed the rejection in a bare `.catch(() => {})`, and
+`/traces` had already DRAINED its buffer before posting, so the browser's half
+of every affected trace — the ROOT — was destroyed while the daemon's half kept
+arriving by an independent path: **175 of 459 `input.dispatch` spans over 24 h
+(38%) named a parent the store never had.** The fix is
 `spa/src/analytics/beacon.ts`: `keepalive` only on the final pagehide/hidden
 flush, the response body always drained (an unread body holds the allocation
 open), and an undelivered batch requeued (`spanBuffer.ts`) rather than thrown
@@ -2799,26 +2336,22 @@ real wire from one credentialed page load, which is where to look next.
 | `spa/src/analytics/pageLoadLink.ts` | the `<meta name="traceparent">` seed every trace entry LINKS back to (`kh.link.kind=page.load`) beside the `kh.page.loadId` attribute — was `pageLoadJoin.ts`, which made early traces children of `serve.page` until a trace came to mean one action (§8.1) |
 | `spa/src/analytics/spanBuffer.ts` | spans between `end()` and the wire: the bounded buffer, the entry-flush debounce, and the requeue that stops a failed upload deleting a trace's root |
 | `spa/src/analytics/beacon.ts` | the ONE telemetry upload path, and the 64 KiB per-document keepalive budget every other path was spending (§12a) |
-| `scripts/observability/tail_sampler.py` | the keep/drop for the VENDOR export only — every error, every slow action, 1 in 10 of the rest — and the derived 279 ms floor (§8.1) |
 | `scripts/observability/trace-orphans.py` | the orphaned-parent rate — the one number that shows a broken trace JOIN, since every individual span still looks perfect (§12a) |
-| `spa/src/analytics/khFetch.ts` | the automatic same-origin `traceparent` propagation + client-span-per-request patch, and the Instana ordering finding |
+| `spa/src/analytics/khFetch.ts` | the automatic same-origin `traceparent` propagation + client-span-per-request patch, and the `traceresponse` read-back |
 | `spa/src/analytics/metrics.ts` | the metrics lane — bucketing, the visible-time clock, effort accumulators |
 | `spa/src/three/connectTelemetry.ts` | the reference call site: one flow + one timing |
-| `spa/src/analytics/streamEvents.ts` | the stream event vocabulary (§5.5): the taxonomy table and the one emitter that fans it to all four lanes |
+| `spa/src/analytics/streamEvents.ts` | the stream event vocabulary (§5.5): the taxonomy table and the one emitter that fans it to all three lanes |
 | `spa/src/analytics/catalogue/stream.ts` | the probes and metrics those events feed |
-| `spa/src/analytics/pageBinding.ts` | the explicit page/page-load binding on every stream event — the capability Instana's browser agent lacks |
-| `spa/src/analytics/instanaStreamEvents.ts` | the Instana mirror: thin, isolated, deletable, and the three vendor rules that fail silently |
+| `spa/src/analytics/pageBinding.ts` | the explicit page/page-load binding on every stream event (§5.5) |
 | `spa/src/three/streamClient/analyticsEvents.ts` | the stream client's call sites, kept out of the load-bearing decode/transport modules |
 | `scripts/test_stream_event_intake.py` | proves every event name and attribute survives the REAL `/traces` and `/analytics` validators |
 | `scripts/serve/vitals_schema.py` | the vitals CATALOGUE — column, OTLP metric name, unit and instrument kind, in one place — plus the SCHEMA built from it and the generic add-a-column migration (§8.6) |
 | `scripts/serve/vitals.py` | the time-series store: open ingest, admin reads, 3-day prune, the runaway backstop |
 | `scripts/serve/vitals_read.py` | the four admin leaves — `series`, `live`, `facets`, `otlp` — and the filter whitelist beside the store it filters |
-| `scripts/serve/vitals_otlp.py` | stored rows → OTLP `resourceMetrics`; the file where `service.instance.id = station` turns each exhibit into its own OpenTelemetry entity |
+| `scripts/serve/vitals_otlp.py` | stored rows → OTLP `resourceMetrics` for the `otlp` read leaf; the file where `service.instance.id = station` makes each exhibit its own resource |
 | `spa/src/three/streamClient/vitals.ts` | the browser sink: queue, 20 s flush, pagehide keepalive, fold-back on network failure, and the u32 capture-clock wrap |
 | `spa/src/three/streamClient/vitalsSample.ts` | one ABR tick → one vitals row; the file that changes when a vital is added, with no I/O in it |
-| `scripts/observability/instana_vitals.py` | the fourth OTLP leg, and the cadence argument — why 10 s, why latest-only, and why the watermark is called `Seen` |
-| `scripts/observability/kh-instana-vitals.{service,timer}` | the 10-second carrier, separate from the 5-minute one because Instana ingest-stamps metrics |
-| `scripts/test_vitals_plane.py` | the migration crash-loop test, the intake rules, and the OTLP entity/instrument-kind pins |
+| `scripts/test_vitals_plane.py` | the migration crash-loop test, the intake rules, and the OTLP resource/instrument-kind pins |
 | `spa/src/ui/fleetFindEpisode.ts` | the `fleet.find` episode |
 | `spa/src/scene/hallEngagement.ts` | the `hall.navigate` episode, and what "approached" means |
 | `spa/src/ui/posterReadEpisode.ts` | the `poster.read` episode and the reversal counter |
@@ -2843,14 +2376,11 @@ real wire from one credentialed page load, which is where to look next.
 | `streamhost/streamhost/src/trace_guest.rs` | the guest-lifecycle spans, measured from outside the guest |
 | `scripts/serve/traces.py`, `scripts/serve/tracecontext.py` | the span store and the shared `traceparent` rule |
 | `scripts/observability/trace-ship.py` | ships daemon spool batches to the box's own `/traces` route |
-| `scripts/observability/instana-forward.py`, `instana_destination.py`, `instana_backlog.py`, `instana_batch.py`, `instana_metrics.py` | forwards traces + metric histograms to Instana; agent-vs-SaaS destination choice and the narrow loopback-http exception; the ingest-sequence watermark and quiet window that decide WHICH traces are still owed; how much goes in one request and how many requests one run may make; the histogram projection |
-| `scripts/observability/kh-instana-forward.{service,timer}`, `kh-trace-ship.{service,timer}` | the schedules for the two carriers. Installed by `box-deploy.sh --apply`, enabled by the operator |
-| `spa/src/analytics/instana.ts` | Instana EUM configuration — the pseudonymous-then-real identity upgrade, `ignoreUrls`, the fetch/XHR collision writeup (§8.2) |
-| `spa/index.html` (inline bootstrap) | the earliest-possible `ineum` config; the unconfigured-checkout guard that is the browser-side off switch (§8.2); `reportingUrl` now names our own `/eum` (§8.4) |
-| `spa/src/analytics/navigation.ts` | the canonical `ROUTES` table, `STATION_ID` and `pageName()` — what a page is CALLED, on both planes (§8.2a) |
-| `scripts/test_page_naming_in_sync.py` | pins App.tsx's routes and both hand-duplicated copies of the naming tables equal, with a vacuous-pass guard (§8.2a) |
-| `scripts/serve/eum_proxy.py`, `scripts/test_eum_proxy.py` | the beacon proxy (§8.3): one fixed destination, POST-only, gated like `/traces`, never traced, forwarded off the request thread — and the tests that pin every one of those refusals |
-| `scripts/visitor-sim/beacon-probe.mjs` | the acceptance probe: where beacons went, whether we accepted them, and (`--instana-check`) whether the tenant actually received them |
+| `scripts/observability/kh-trace-ship.{service,timer}` | the two-minute schedule for that carrier. Installed by `box-deploy.sh --apply`, enabled by the operator (§8.1) |
+| `spa/index.html` (inline scripts) | the build id and session id set before any module evaluates, and the boot-time error reporter (§8.3) |
+| `spa/src/analytics/navigation.ts` | the one `ROUTES` table, `STATION_ID` and `pageName()` — what a page is CALLED (§8.2a) |
+| `scripts/test_page_naming_in_sync.py` | pins `navigation.ts`'s `ROUTES` to App.tsx's routes and `STATION_ID` to the registry, with a vacuous-pass guard (§8.2a) |
+| `scripts/visitor-sim/beacon-probe.mjs` | the on-the-wire acceptance probe: one credentialed page load, its injected `traceparent` meta and `traceresponse`, every outbound `traceparent` resolved against the store, and the build id on the `/traces` envelope (§12a) |
 | `scripts/serve/linecov.py` | `POST /coverage`, `GET /coverage/report.json`, the line-set merge |
 | `spa/vite-plugins/coverage.ts`, `spa/src/analytics/coverage.ts` | the armed-only instrumentation plugin and its collector |
 | `spa/src/analytics/*.test.ts`, `spa/src/walkin/telemetry.test.ts`, `spa/src/ui/keyboard/composeTelemetry.test.ts` | the client side; one test per rule that could otherwise silently invert |

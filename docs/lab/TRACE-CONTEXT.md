@@ -34,7 +34,7 @@ can break the thing it measures is not telemetry, it is a fault injector.
 |---|---|---|
 | serving plane → browser (page load) | `<meta name="traceparent">` in `index.html` | the FIRST hop of a visit, before any JS has run — see §4 |
 | browser → serving plane | `traceparent` request header | **automatic, on every same-origin request** — `spa/src/analytics/khFetch.ts` patches `window.fetch` once at boot, so this is no longer a per-call-site opt-in. See §4a |
-| serving plane → browser (every traced response) | `traceresponse` response header, plus `Server-Timing: intid;desc=` | the return leg: the reply names the span that answered it — see §4b |
+| serving plane → browser (every traced response) | `traceresponse` response header | the return leg: the reply names the span that answered it — see §4b |
 | serving plane → its own spans | in-process | child of the inbound span |
 | browser → daemon (input plane, session join) | the session ticket | the input plane is WebTransport straight to the daemon's QUIC listener and carries no headers, so the id rides the thing that is already exchanged |
 | browser → daemon (input plane, per-edge) | inside the input RECORD itself, on a SAMPLED edge only | no headers here either, and no per-request exchange to piggyback on the way the ticket does — see §3.2 |
@@ -171,31 +171,26 @@ rule already uses for `mark_first_au` / `mark_first_input`.
 
 **The daemon's entry span is named per input CLASS** — `input.dispatch.key`,
 `input.dispatch.click`, with the bare `input.dispatch` as the fallback for a
-class neither end recognises (`trace_session.rs::dispatch_span_name`). Instana
-derives an OTLP trace's ENDPOINT from its entry span's name, the
-`{otel.operation}` rule in its predefined endpoint mapping
-(`instana-docs/0251-monitoring-applications.md`, "Endpoints → Predefined
-rules"), so one name meant one endpoint row for every input a visitor ever
-made. A keyboard round trip and a mouse round trip have different guest work,
-different damage and different latency distributions; folding them into one row
-hid both. `kh.input.class` stays on the span as well, because a name cannot be
-grouped away when somebody does want the whole input plane at once.
+class neither end recognises (`trace_session.rs::dispatch_span_name`). A span's
+name is the first thing any OTel consumer groups by, so one name meant one row
+for every input a visitor ever made. A keyboard round trip and a mouse round
+trip have different guest work, different damage and different latency
+distributions; folding them into one row hid both. `kh.input.class` stays on the
+span as well, because a name cannot be grouped away when somebody does want the
+whole input plane at once.
 
 **`input.dispatch` is `Kind::Server`, not `Internal`** — this is the daemon's
 receiving side of the browser's `input.edge` **`Kind::Client`** span, the same
 RPC pairing this codebase already uses for `http.client.request` /
-`serve.signal`. Verified live 2026-08-31 against Instana's own `analyze/traces` API
-(`scripts/observability/instana-forward.py`): every `serve.*` trace, which has a
-`Server`-kind entry span, arrived with a real `service.name`; every
-`input.edge` trace — Client root, Internal children throughout, no `Server`
-span anywhere — arrived labelled service `"Unspecified"`. Instana derives a
-trace's owning service from its entry span, and a trace with no `Server` span
-has none. Marking `input.dispatch` Internal understated what it already is:
-not merely something that happens during the session, but the request/response
-boundary itself, so `Server` is a correction of an existing span, not a
-vendor-pleasing relabel — the same "never call a UI span a server span" rule
-this file states elsewhere cuts the other way here, because this span already
-was the server side of a real client/server exchange.
+`serve.signal`. Without it an `input.edge` trace is a Client root with Internal
+children throughout and no `Server` span anywhere — no entry span, so nothing in
+the trace says which service received the request. Marking `input.dispatch`
+Internal understated what it already is: not merely something that happens
+during the session, but the request/response boundary itself, so `Server` is a
+correction of an existing span, not a relabel for a viewer's benefit — the same
+"never call a UI span a server span" rule this file states elsewhere cuts the
+other way here, because this span already was the server side of a real
+client/server exchange.
 
 ### 3.3 The return leg: closing the trace at the pixel
 
@@ -270,8 +265,8 @@ leg.** `input.edge` is left OPEN when the edge is sampled and closed by
 Until 2026-09-01 the figure lived in a SIBLING span, `client.input.roundtrip`,
 beside a root whose own duration was the 0–1 ms it took to hand a record to a
 stream writer — so every consumer that reads a root's duration (a trace list, a
-latency percentile, Instana's endpoint view) read 1 ms for something a visitor
-waited a quarter of a second for. One measurement, one span.
+latency percentile) read 1 ms for something a visitor waited a quarter of a
+second for. One measurement, one span.
 
 **An edge no frame ever answers still lands.** An idle or damage-gated guest
 may legitimately never produce a frame; that edge is settled after 3 s with
@@ -347,11 +342,11 @@ backpressure appears — and the hop's actual cost rides beside it as an
 attribute:
 
 - `server.address` / `server.port`, and the same pair as `net.peer.name` /
-  `net.peer.port` — the current OTel spelling and the older one Instana's
-  documented consumed-attribute list reads, emitted together, the shape the
-  OTel SDKs spell `http/dup`. Our own plane's naming is the product; the vendor
-  is the temporary consumer. When the HTTP side of this repo settles one
-  bridging rule, `transportFacts.ts` follows it — it never invents a third.
+  `net.peer.port` — the current OTel spelling and the previous one, emitted
+  together, the shape the OTel SDKs spell `http/dup`, so a reader written
+  against either semantic-convention generation finds them. When the HTTP side
+  of this repo settles one bridging rule, `transportFacts.ts` follows it — it
+  never invents a third.
 - `network.transport=quic`, `network.protocol.name=http`,
   `network.protocol.version=3`, `network.protocol.alpn` when the UA exposes it,
   `peer.service=kernel-hive-daemon`.
@@ -423,18 +418,16 @@ store, never a missing row.
 ### 3.5 A missing daemon entry span is usually a DEPLOYMENT fact, not a bug
 
 Over six hours on 2026-09-01 only 37% of sampled `input.edge` traces carried
-the daemon's `input.dispatch`, and the vendor label on the rest was "To
-input.edge of **Unspecified**". Both readings are correct and neither is an
-instrumentation fault.
+the daemon's `input.dispatch`; the rest were a browser root with no receiving
+side at all. That reading is correct and it is not an instrumentation fault.
 
 Broken down per station, every station whose daemon could emit the span joined
 **100%** of its edges. The entire 63% was ONE station, win95, running a binary
 from before this feature existed and doing exactly what §3.2's "new browser →
 old daemon" paragraph promises: read the fixed fields off the front, ignore the
-25-byte tail, land the click, emit nothing. `Unspecified` followed from the
-same fact — with no daemon span there is no `Server`-kind entry span, and
-Instana derives a trace's owning service from its entry. Once the two stale
-stations were promoted, the same query returned `input.dispatch` /
+25-byte tail, land the click, emit nothing — so no `Server`-kind entry span,
+and nothing in the trace naming `kernel-hive-daemon`. Once the two stale
+stations were promoted, the same query returned `input.dispatch` under
 `kernel-hive-daemon` for every new trace.
 
 This will recur, on purpose: §8's last rule says version skew between browser
@@ -462,7 +455,7 @@ source. The general rule this is an instance of: **anything a new span emits
 must be run through the real `traces.py` validators in a test**, which is what
 `scripts/test_input_trace_intake.py` now does for this whole family.
 
-## 4. The page-load hop: an HTML `<meta>` tag, read by a vendor agent
+## 4. The page-load hop: an HTML `<meta>` tag
 
 Everything in §2 assumes the browser already HAS a trace id to send. Something
 has to mint the first one, for the very first request of a visit — the
@@ -483,36 +476,24 @@ artifact: the tag does not exist until a request asks for the page, and a new
 one is minted on every such request. Staging (`/staging/<session>/`) is served
 by the same function and gets its own tag from its own request, the same way.
 
-**Who reads it, and why.** Two readers now, independently, off the SAME tag.
-It was built for **Instana's website-monitoring agent**, embedded separately
-in the SPA, whose whole job is to correlate a RUM page load with the backend
-trace that served the page — via `document.querySelector('meta[name=
-"traceparent"]')` and the exact `00-<32 hex>-<16 hex>-<2 hex>` shape, asserted
-nowhere IBM or Instana publishes, established 2026-08-31 by reading the
-vendor's own minified agent bundle (it silently ignores anything that is not
-exactly that shape — never an error). That provenance still matters: a future
-reader "fixing" this tag's shape to match Instana's docs will get it wrong,
-because the docs never state it — this file, and the agent's own source, are
-the only record.
-
-As of the same day, `spa/src/analytics/trace.ts` reads it too —
-`joinPageLoadTraceFromMeta()`, called once at boot from `main.tsx` — and uses
-it to seed the FIRST trace this tab opens (§4a). This closes the gap §7 used
-to describe: a visit no longer produces two disconnected trees, one rooted at
-`serve.page` and one at the browser's own first flow.
+**Who reads it.** `spa/src/analytics/pageLoadLink.ts` —
+`readPageLoadTraceFromMeta()`, called once at boot from `main.tsx` — and every
+trace this tab opens carries a LINK to the span it names (§4a, §7.1). That is
+what stops a visit producing two disconnected trees, one rooted at `serve.page`
+and one at the browser's own first action, without making either a child of
+the other.
 
 **The id is real, not a prop.** The span behind the tag is opened and ended in
 `static_files.py` and flows through the same buffered flush (`tracing.py`)
-into the **same store** as every other span in this document — so a page load
-an operator finds in Instana by this id is the identical span they can also
-find in `/admin/observability`, not a parallel identity invented only to look
-plausible in a tag.
+into the **same store** as every other span in this document — so the page load
+a link names is a span `/admin/observability` can open, not a parallel identity
+invented only to look plausible in a tag.
 
-**The document response carries the headers too.** The same span is handed
-back in `traceresponse` and `Server-Timing` (§4b), so a page load correlates
-for any reader that never touches the DOM — the tag is the vendor's channel,
-the headers are everyone's. Two channels, one span: they are emitted together
-or not at all, so they can never disagree about whether a span exists.
+**The document response carries the header too.** The same span is handed
+back in `traceresponse` (§4b), so a page load correlates for any reader that
+never touches the DOM — the tag is the page's own scripts' channel, the header
+is everyone's. Two channels, one span: they are emitted together or not at
+all, so they can never disagree about whether a span exists.
 
 **ONE REQUEST, ONE SPAN — the tag names the request's span when there is one.**
 `_traceparent_meta` calls `tracing.current()` first and mints a `serve.page`
@@ -569,12 +550,15 @@ makes (checked by `URL.origin`, never leaked to a third-party host) it:
 - names that client span `http.client.request` and records method,
   `url.pathname` (never the query string — the same rule `errors.ts`'s fingerprint and this file's own §8
   state), status code and duration — UNLESS the path is one of this repo's own
-  telemetry endpoints (`/traces`, `/analytics`, `/coverage`, `/clientlog`,
-  `/usage`, `/clientcmd`), reusing `instana.ts`'s `IGNORE_URL_PATTERNS`
-  rather than a second list that could drift from it. A span about sending a
-  span is the feedback loop the per-tab beacon budget exists to prevent. **No
-  span means no header either** (§4c): those requests go out bare and the
-  serving plane roots its own trace;
+  telemetry endpoints (`/traces`, `/logs`, `/vitals`, `/analytics`,
+  `/coverage`, `/clientlog`, `/usage`, `/clientcmd`), read from the SPA's one
+  `KH_TELEMETRY_PATHS` list (`spa/src/analytics/telemetryPaths.ts`) rather than
+  a second list that could drift from it
+  (`scripts/serve/telemetry_paths.py` mirrors it server-side, and the Python
+  tests pin the two equal and every ingest route onto them). A span about
+  sending a span is a feedback loop: every upload would mint the next upload's
+  span. **No span means no header either** (§4c): those requests go out bare
+  and the serving plane roots its own trace;
 - reads the response's return leg (§4b) back onto the client span as
   `kh.backend.trace_id`;
 - respects the same `enabled`/`allowed` gates as everything else in this
@@ -605,45 +589,6 @@ content on the tag (no server injection, a stale cached document, tracing
 unbound) leaves it unset and a trace is simply unlinked — the same "malformed
 → new trace, never refuse the work" rule as §1.
 
-**The Instana collision, measured rather than assumed.** Both this patch and
-Instana's own agent (`enableW3CHeaders: true`) want to own the outbound
-`traceparent` header. Reasoning from Instana's minified source alone is
-exactly the trap §4 already avoided once by testing instead of reading docs —
-so this was run, not read: the real agent
-(`registry/local.env`'s pinned `INSTANA_EUM_SCRIPT_URL`) loaded into a
-scripted harness with a capturing `fetch` underneath it, in both install
-orders. Findings, in full in `khFetch.ts`'s own header:
-
-- Instana's fetch patch uses `Headers.append` for every header it adds,
-  `traceparent` included — written to coexist with an existing value, not to
-  overwrite it.
-- A monkey-patch chain is **last-installed-outermost**: whichever patch is
-  installed more recently wraps the other and runs first, calling inward to
-  whichever installed earlier — which sits closer to the real network call
-  and therefore gets the last word.
-- **When this patch installs before Instana's agent has loaded** (the common
-  case — this module is the first import `main.tsx` evaluates; Instana's
-  agent is a separately fetched, non-parser-inserted `<script>` and is
-  therefore genuinely async regardless of its own `defer` attribute, per
-  `index.html`'s comment on that tag), this patch ends up INNER. Instana's
-  outer wrapper appends its headers first; this patch's `Headers.set(...)`
-  then runs and OVERWRITES whatever Instana put there. Verified: the wire
-  header is our clean single value, Instana's `X-INSTANA-*`/`tracestate`
-  headers sit untouched beside it.
-- **When the order is reversed** — Instana's agent finishes loading and
-  patches first — this patch becomes OUTER, sets the header first, and
-  Instana's inner `.append` turns it into `"<ours>, 00-...-03"`: two
-  comma-joined values in one header, which is not a valid single
-  `traceparent`. Both `tracecontext.py` and Instana's own backend then treat
-  it as malformed and start a fresh trace for that one call — the request
-  itself is never broken either way, only that one call's join is lost.
-- No hard guarantee against the reversed order is attempted (an inline
-  `<script>` ahead of Instana's own bootstrap in `index.html` would win
-  unconditionally, at the cost of re-implementing trace-id minting outside
-  this module in raw inline JS — a second implementation of exactly the kind
-  this section exists to stop having). A best-effort win that degrades to "no
-  join, never a broken request" was judged the better trade.
-
 **The header must name the span, so the span is created first.** Until
 2026-09-01 `khFetch.ts` built the header *before* opening its client span, from
 `traceHeaders()` — which reads `currentSpan()`, and the client span is never
@@ -670,7 +615,7 @@ bug alive for another day: `traceHeaders()` still existed and was still what a
 call with no span of its own used. §4c is what removed it, and both functions
 with it. **`traceparentOf(span)` is now the only producer in the tab.**
 
-## 4b. The return leg: `traceresponse` is ours, `Server-Timing` is the bridge
+## 4b. The return leg: `traceresponse`
 
 §4 gets a trace id into the page. Everything after it was, until 2026-09-01,
 one-directional: the browser SENT a `traceparent` and never learned what the
@@ -681,11 +626,10 @@ trace id is a *guess* about which server trace answered it, and the guess is
 wrong exactly when something interesting happened.
 
 So every **traced** response (`tracing_http.py`'s allowlist, unchanged, plus
-the `index.html` document response of §4) carries two headers:
+the `index.html` document response of §4) carries one header:
 
 ```
 traceresponse: 00-<32 hex trace-id>-<16 hex span-id>-01
-Server-Timing: intid;desc=<32 hex trace-id>
 ```
 
 **`traceresponse` is ours, and it is a standard.** W3C Trace Context Level 2
@@ -693,41 +637,31 @@ defines it as the mirror of `traceparent`: same four fields, same spelling,
 opposite direction, naming the span the server actually recorded for THIS
 response. `spa/src/analytics/khFetch.ts` reads it, prefers it, and records the
 trace id on its client span as `kh.backend.trace_id` — which is what lets
-`/admin/observability` jump from a click to the server trace **with no vendor
-in the loop**. That attribute is chosen to survive `traces.py` intake unaltered
-(key ≤ 64 chars, not refused by `traces.refused()`, value ≤ `ATTR_STR_MAX`,
-which is 2048 since 2026-09-01); a truncated or dropped id would look right in
-the tab and join nothing in the store.
-
-**`Server-Timing: intid;desc=` is the vendor bridge, and nothing else.**
-Instana's EUM agent parses exactly that token off a response and sets the value
-as the beacon's `backendTraceId`. Emitting it costs one header and buys vendor
-correlation for free; nothing in this repo reads it except as a *fallback* in
-`khFetch.ts`, and deleting it would cost only the Instana join. Where khFetch
-has a backend trace id it also mirrors it to Instana explicitly
-(`analytics/instana.ts`'s `reportBackendTrace`), under the vendor's silent
-16-or-32-lowercase-hex rule — a value of any other length is dropped with no
-error, which is indistinguishable from never having tried.
+`/admin/observability` jump from a click to the server trace. That attribute is
+chosen to survive `traces.py` intake unaltered (key ≤ 64 chars, not refused by
+`traces.refused()`, value ≤ `ATTR_STR_MAX`, which is 2048 since 2026-09-01); a
+truncated or dropped id would look right in the tab and join nothing in the
+store.
 
 **Written at one choke point, so no reply shape can miss it or be broken by
 it — and there is exactly one writer.** `tracing_http.set_response_trace()` is
 the only way to name a response's span, and the `end_headers` wrapper is the
-only thing that puts these two headers on a response; no route may add them to
-its own reply. It was two writers for one day: `static_files.py` also merged
-its own copy into the index.html reply's `extra` dict, which is how a single
-LAN response came to carry two pairs (§4). `tracing_http.py` wraps
+only thing that puts the header on a response; no route may add it to its own
+reply. It was two writers for one day: `static_files.py` also merged its own
+copy into the index.html reply's `extra` dict, which is how a single LAN
+response came to carry two of them (§4). `tracing_http.py` wraps
 `end_headers`, which every reply the stdlib can produce passes through: 200, 304, 206, 416, HEAD (headers only, by definition),
 an error page, and the long-lived streaming replies whose headers are written
 once at the top. The values are stashed when the request span is opened and
 cleared when they are written, so a keep-alive connection cannot leak one
 response's ids onto the next. `tracecontext.response_headers()` returns `{}`
 for a NOOP span, which is what an untraced route, an unsampled parent and an
-unbound tracer all are — so **an untraced route emits neither header, by
+unbound tracer all are — so **an untraced route emits no header, by
 construction** rather than by a second copy of the allowlist. The whole write
 sits in a `try`: a telemetry header may never be the reason a response fails to
 close its header block.
 
-**Same-origin only.** The browser reads these headers because the request was
+**Same-origin only.** The browser reads this header because the request was
 same-origin (`khFetch.ts` refuses anything else before it does anything at
 all). No `Access-Control-Expose-Headers` is configured and none is wanted:
 cross-origin correlation is out of scope, and a trace id is a correlation
@@ -741,10 +675,10 @@ handle for this box's own store.
 This is §8's "never invent a parent" seen from the SENDER's side, and it was
 broken for as long as browser propagation has existed. Measured on the live
 store on 2026-09-01, over six hours: **2,839 of 6,620 spans that declared a
-parent — 42.9% — named a parent that was not anywhere in the store.** In
-Instana every one of those renders as *"The root call of the trace is missing
-or has not yet arrived in the processing pipeline"*, and nothing else shows
-it: each span is well formed, each request succeeded, only the join is gone.
+parent — 42.9% — named a parent that was not anywhere in the store.** A trace
+viewer renders every one of those as a trace whose root call is missing, and
+nothing else shows it: each span is well formed, each request succeeded, only
+the join is gone.
 
 Three producers, all in the browser, all now removed:
 
@@ -861,10 +795,10 @@ wall serves), posting 4 KiB keepalive bodies to `/traces`:
 ~61 KiB, and the tab's telemetry is over. That is exactly what the access log
 shows at the moment a run of losses begins: `/traces`, `/analytics`,
 `/clientlog` and `/logs` all stop in the same second, while `/clientcmd` keeps
-polling every five seconds and the vendor's `/eum` keeps beaconing — so the tab
-looks perfectly healthy, and it is still minting real trace ids and putting
-them on the wire for the daemon to pick up. Every sender swallowed the
-rejection in a bare `.catch(() => {})`; nothing was logged, nothing retried.
+polling every five seconds — so the tab looks perfectly healthy, and it is still
+minting real trace ids and putting them on the wire for the daemon to pick up.
+Every sender swallowed the rejection in a bare `.catch(() => {})`; nothing was
+logged, nothing retried.
 
 **And `/traces` destroyed the batch rather than delaying it**, because
 `flushSpans()` drains the buffer BEFORE the upload. A dropped counter reads
@@ -883,8 +817,7 @@ this tab uploads telemetry:**
 2. **The response body is ALWAYS drained.** Not politeness: an unread response
    holds its allocation open, which is what turned a per-request budget into a
    per-document one. `void fetch(...)` is banned in that module for this
-   reason, and `/clientcmd` and `/eum` — which read their bodies — are why they
-   never broke.
+   reason, and `/clientcmd` — which reads its body — is why it never broke.
 3. **A batch with NO ANSWER is kept, not deleted.** `postTelemetry` reports
    three outcomes and callers treat them differently: `sent` (2xx — drop it),
    `refused` (the server answered and said no: a settled answer, drop it, since
@@ -906,7 +839,7 @@ flame graph is indistinguishable from a gap in the work.
 At this scale everything is sampled. The flag exists so that turning sampling
 down later is a one-line change in one place rather than four.
 
-### 5.1 The source keeps everything; the VENDOR EXPORT decides — 2026-09-01
+### 5.1 The source keeps everything — 2026-09-01
 
 The input plane used to sample at the source: one key or click edge in
 `SAMPLE_N` (default 10) got a trace and the other nine were never minted. That
@@ -925,69 +858,25 @@ had three faults, and the third is the one that mattered.
 
 The third fault cannot be fixed at the source at any rate, because the decision
 there happens BEFORE the round trip: the browser cannot know which edge will
-turn out to be the slow one. So the decision moved to where the answer exists,
-and the two halves are now one design.
+turn out to be the slow one. So there is no decision at the source at all.
 
-**SOURCE — keep everything.** Every key and click edge is traced, in full, into
-`traces.db`. One box, our own disk, our own data; completeness beats cleverness
-when nobody is short of capacity.
-
-**FORWARD — decide what the vendor is shown.**
-`scripts/observability/tail_sampler.py`, at the Instana leg, keeps every
-errored action, every slow one, and one in ten of the rest.
-
-**That split is NOT a capacity measure, and a future reader must not
-"optimise" it as one.** Our own plane keeps everything on purpose. The tail
-decision exists solely to keep Instana's Calls and Services views legible,
-because routine traffic drowns the interesting traffic there.
-
-**Why the decision can live at the forward at all** is the part worth
-remembering. Tail sampling normally needs a collector that buffers a complete
-trace before deciding, which is hard across processes — the browser cannot
-decide for spans the daemon has not emitted, and the daemon cannot decide for
-the browser's return leg. **We already have that collector: `traces.db`.** All
-three producers land there, and the forwarder ALREADY holds a trace until it
-has taken nothing new for `instana_backlog.QUIET_MS` (210 s, sized so a trace's
-daemon half has certainly arrived). That quiet window IS the buffering a tail
-sampler needs; it simply was not making a keep/drop decision yet.
-
-**"Slow" is derived, not chosen.** A fixed threshold cannot be right on this
-fleet: measured on the live store, `transport.frame.next` over 597 real samples
-runs p50 = 43 ms, p90 = 243 ms, p99 = 489 ms — an eleven-fold spread inside one
-distribution, before a ZX Spectrum is compared with a w2kalpha. So the line is
-a rolling p95 of the last 512 completed actions, floored at 279 ms, and the
-floor is the number that is derived: modelling the round trip from the same
-store's measured parts at the 90th percentile gives `transport.frame.next`
-243 ms + the client return leg 23 ms + the application RTT 13 ms = 279 ms.
-It says "never call an action slow when nine in ten already are". Without it, a
-good hour would drag the rolling p95 down to tens of milliseconds and ordinary
-actions would start being forwarded as "slow", which is the noise the whole
-mechanism exists to remove.
+**Every key and click edge is traced, in full, into `traces.db`, and the store
+keeps all of it.** One box, our own disk, our own data; completeness beats
+cleverness when nobody is short of capacity (`docs/ANALYTICS.md` §0.4 has the
+measured cost). Picking out the slow and the failed is a READ: the trace list's
+errors-only and minimum-duration filters find them after the fact, when the
+duration exists, instead of a coin flipped before it did.
 
 **Motion is still not traced, and not for volume.** Pointer motion is a
 continuous signal at up to ~250 Hz; "how long from movement to pixel" is a rate
 and a latency histogram, and thousands of eight-span trees describe a
 distribution worse than one histogram does. The time-series lane owns it.
 
-**The sampling factor: the docs are silent.** Instana's call detail shows a
-"Sampling factor" field, and nothing in the 326-file corpus at
-`/home/wnt/instana-docs` documents a way for an OTLP producer to declare one —
-no "sampling factor", no `sampling.factor`, no extrapolation, no
-`x-instana-` header. The single adjacent hint is a PHP-tracer release note
-(`0006-tracers-and-autotrace-webhook.md`) that its tracer "captures the
-OpenTelemetry TraceState sampling threshold value and reports it to the
-backend", implying an OTEP 235 `tracestate` `ot=th:` path documented for no
-other producer and promised to no one. So the sampler stamps our OWN
-`kh.sampling.factor` and `kh.sampling.reason` on the EXPORTED spans — never on
-the store, which kept everything and for which a factor would be a lie — and
-claims nothing about the vendor reading them.
-
-**And counts never depend on any of it.** Every input edge already increments
-the always-on counter plane: `three/usageStats.ts` tallies every key and click
-per station to `/usage`, and the `station.key.used` / `station.pointer.used`
-probes land in `analytics.db`. Neither passes through the sampler, so "how many
-clicks happened" is an exact count from an unsampled source, and the sampler
-only decides which of them Instana is shown a flame graph FOR.
+**And counts never depend on traces.** Every input edge already increments the
+always-on counter plane: `three/usageStats.ts` tallies every key and click per
+station to `/usage`, and the `station.key.used` / `station.pointer.used` probes
+land in `analytics.db`. "How many clicks happened" is an exact count from that
+plane; a trace is the per-action drilldown beside it.
 
 ## 6. The emulator is deliberately NOT traced from inside
 
@@ -1015,10 +904,9 @@ the only place that can honestly measure it.
 else in this section.** A real operator session on win311 produced trace
 `fc4a9d74…`: 43 spans, root `serve.page`, 15.7 s of wall clock, still taking
 writes 74.4 s after it started, with five separate keystrokes sitting as
-SIBLINGS under the page span seconds apart. Instana assembles a trace in about
-two seconds, so a trace that dribbles for 74 s is fragmented by construction —
-which is what its "the position of this call in the calls tree is unknown
-because the parent call is missing" banner was reporting.
+SIBLINGS under the page span seconds apart. A trace that is still taking writes
+a minute after it started is never finished: every reader that renders it sees
+a different, partial tree depending on when it looked.
 
 It was also NON-DETERMINISTIC. The page-load JOIN (§4a as it stood) attached
 new traces to `serve.page` for 15 seconds. Reproduced live in one tab in one
@@ -1113,16 +1001,14 @@ Every trace ENTRY this tab opens therefore carries **both**:
 * an OTel **span LINK** naming `serve.page`'s trace and span, with
   `kh.link.kind=page.load` (`spa/src/analytics/pageLoadLink.ts`,
   `scripts/serve/traces.py`'s `links` column, `traces_otlp.py`'s `links`
-  export). Instana surfaces links in the call Details view
-  (`instana-docs/0307-opentelemetry-signals.md`, "OpenTelemetry span events and
-  span links"), and `/admin/observability` renders them as a jump.
+  export), which `/admin/observability` renders as a jump.
 * the **`kh.page.loadId` attribute** (`analytics/pageBinding.ts`).
 
 **Both, and it is not belt-and-braces.** A link is what a UI NAVIGATES — one
 click from a slow keystroke to the page load it happened on — and it cannot be
 filtered or grouped by. An attribute is what a QUERY GROUPS BY — "every action
-on this page load", one equality filter, in our own SQL and in Instana's
-Unbounded Analytics — and it cannot be navigated. Neither substitutes for the
+on this page load", one equality filter in our own SQL — and it cannot be
+navigated. Neither substitutes for the
 other, and the link additionally survives a consumer that has never heard of
 `kh.` anything.
 
@@ -1145,8 +1031,8 @@ Say it out loud, because the numbers look like the same numbers.
   roughly 1 ms to roughly 250 ms at the boundary.
 * `client.input.roundtrip` no longer exists; its figure is the root's duration.
 * The daemon's entry span split from `input.dispatch` into
-  `input.dispatch.key` / `input.dispatch.click`, so a per-endpoint series in
-  Instana starts over on that date.
+  `input.dispatch.key` / `input.dispatch.click`, so any series keyed on the span
+  name starts over on that date.
 * Before the fix in §4d, an unknown share of browser spans never reached the
   store at all (38% of `input.dispatch` spans were orphaned over the 24 h
   measured), so pre-boundary volume is an undercount of unknown size.
@@ -1204,8 +1090,8 @@ Do not plot across the boundary. Compare 2026-09-01 onwards with itself.
   than deleted. §4d — one 64 KiB allowance per document, spent once, and
   spending it on every flush silently killed four telemetry routes mid-visit
   and orphaned 38% of the input plane.
-- **The source keeps everything; the VENDOR EXPORT decides what is forwarded.**
-  §5.1. Never re-introduce sampling at the source to "protect" the store: the
+- **The source keeps everything, and so does the store.** §5.1. Never
+  re-introduce sampling at the source to "protect" the store: the
   store is not what is short, and a source-side coin has to be flipped before
   the duration exists, which throws away exactly the slow actions the plane is
   for.

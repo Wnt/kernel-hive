@@ -99,7 +99,7 @@ gate green (eslint+knip, vitest, shfmt+shellcheck on 3 files, size budget,
 generated drift, box state), `box-deploy --apply`, smoke rig withdrawn,
 `station-up` (`re-emitted with --pin-machine`, unit active, LISTENING udp/54191,
 5 runtime docs carry `medley`, `POST /restore/medley -> 200`), 11 claims
-re-homed, SPA built with the Instana key and deployed, `sculpt`'s
+re-homed, SPA built (`serve-https-spa.sh build`) and deployed, `sculpt`'s
 dark-launch overlay re-applied, window released. `== LANDED medley` at
 18:34 UTC.
 

@@ -815,8 +815,8 @@ report it.
   event of the session's `clientlog` batch, or the `builds` facet /
   `build` filter on the trace store. Two live builds in one window means
   somebody is on a shell the box no longer serves. The full differential —
-  including how to tell "ran an old shell" from "its beacons were blocked"
-  using only our own data — is [`docs/ANALYTICS.md`](../ANALYTICS.md) §8.3.
+  how to tell "ran an old shell" from "loaded a fresh document", using only the
+  store and the access log — is [`docs/ANALYTICS.md`](../ANALYTICS.md) §8.3.
 
 ## An observer holding QMP stops sessions negotiating (2026-08-30)
 

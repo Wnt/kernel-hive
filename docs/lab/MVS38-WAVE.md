@@ -211,8 +211,8 @@ While cleaning up the timing smoke I ran `pkill -x Xvfb` inside `ssh lab`.
 **This is precisely what AGENTS.md rule 5 forbids.** It killed the Xvfb of every
 `SH_CAPTURE=x11` station on the box: `medley`, `lisa`, `vision`, `perq`, `amix`.
 All five went to `labctl shot: Connection refused`. No other station class was
-affected (`systemctl list-units 'streamhost@*'` stayed all-active; the two
-failed units, `kh-instana-forward` and `kh-trace-ship`, are pre-existing).
+affected (`systemctl list-units 'streamhost@*'` stayed all-active; the failed
+non-station units were pre-existing).
 
 Recovery: `systemctl restart streamhost@<tile>` for all five. Four came back at
 once. `medley` would not: its `start-pre` hit the unit's 90 s timeout on every

@@ -4,7 +4,7 @@
 `scripts/dev/fleet_rollout_policy.py`, `scripts/host/fleet-rollout-probe.sh`,
 `scripts/observability/`, or the trace/probe planes.**
 
-The previous session built the analytics and APM planes and left the Rust half
+The previous session built the analytics and tracing planes and left the Rust half
 merged but never executed. **This session executed it.** The binary was built,
 canaried and rolled across the fleet, the daemon's spans now reach the store,
 and the docs were corrected to match. What remains is listed in §3, and two
@@ -23,10 +23,9 @@ decisions are yours (§5).
 | Server-side branch probes (Python) | live |
 | OTel traces (browser, Python) | live |
 | **Rust `streamhost` probes + spans** | **LIVE on 66 stations — first execution ever** |
-| **Daemon span → store carrier** | `scripts/observability/trace-ship.py` — hand-run as of this handover; **on `kh-trace-ship.timer` since 2026-09-01** (INSTANA-VIEW-INVENTORY.md §2.1) |
+| **Daemon span → store carrier** | `scripts/observability/trace-ship.py` — hand-run as of this handover; **on `kh-trace-ship.timer` since 2026-09-01** (enabling it: `docs/ANALYTICS.md` §8.1) |
 | Observability UI `/admin/observability` | live, admin-only |
 | Line coverage lane | built, NOT armed |
-| Instana forwarding | works; hand-run as of this handover, **on `kh-instana-forward.timer` since 2026-09-01**, when its watermark was also found to be dropping every trace's browser half (INSTANA-VIEW-INVENTORY.md §2). Visibility still unproven (§3) |
 
 Binary now on the fleet: `streamhost-3546b768762d1262bfc92a45a9df49cad681ca9e`.
 Box deploy state is whatever `scripts/dev/box-deploy.sh --status` says; it was
@@ -66,21 +65,7 @@ old pointer but are NOT live registry stations — stale directories, not a miss
   and every station now dumps real counts; joining them to the SPA catalogue is
   the remaining step, and it is now the only thing between us and a fleet-wide
   answer to "which daemon code earns its keep".
-- **Instana visibility is still unproven, and the next experiment is now
-  possible.** §4 of the previous handover established that Instana only builds a
-  trace from an ENTRY span; the serving plane and the daemon both emit
-  `server`-kind roots now, with real children, which is the shape that was never
-  testable before. `--check` confirms the credential is accepted. **What I did
-  NOT establish: whether the forwarder actually picks up daemon spans and how it
-  labels them.** `--dry-run` samples one trace and showed only browser spans, so
-  I could neither confirm nor refute a labelling problem — do not repeat my
-  first guess that it is broken. The specific question: daemon spans carry no
-  `kh.service` attribute (only the Python plane stamps one), so check what
-  `service.name` they leave under before reading anything into a result.
-- **Instana forwarding on a timer** — still deliberate, still by hand.
 - **The line-coverage lane is not armed.**
-- **The agent key was pasted into a chat transcript in a previous session.
-  Still worth rotating.**
 
 ## 4. Traps, all found by running it
 
