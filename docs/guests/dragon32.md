@@ -203,6 +203,10 @@ Two encoding details that bit during the add:
   than inventing a second one.
 - **`SH_KEY_MAP` must not *begin* with a quote** — systemd's `EnvironmentFile`
   parser would read the value as a quoted string. `@:[` therefore leads the map.
+  The registry validator enforces it fleet-wide since 2026-10-05 (and a trailing
+  backslash, which joins the next line), and requires the value in the
+  station's `station.env.fixture`: a copy recorded only in the registry's
+  `runtime.stationEnv` never reached the box.
   Verified with `systemd-run -p EnvironmentFile=…` that the whole value, `"`
   included, survives intact, and again against `/proc/<MainPID>/environ` on the
   live station.

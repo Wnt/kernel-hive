@@ -89,8 +89,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/fmtowns/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/fmtowns/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": "\":@,&:^,':&,(:*,):(,=:_,^:=,~:+,@:[,`:{,[:],{:},]:`,}:~,+:%3A,*:\",%3A:'"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 196,
     "bringUpOrder": 97,
@@ -188,7 +187,6 @@
   ],
   "keyboard": {
     "charMap": {
-      "\"": "@",
       "&": "^",
       "'": "&",
       "(": "*",
@@ -204,7 +202,8 @@
       "}": "~",
       "+": ":",
       "*": "\"",
-      ":": "'"
+      ":": "'",
+      "\"": "@"
     },
     "physical": true
   }

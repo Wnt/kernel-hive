@@ -89,8 +89,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/atari800xl/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/atari800xl/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": "\":@,':&,&:^,@:*,<:-,>:=,-:[,_:{,=:],|:},+:',\\:\",*:\\,^:|,[:<,]:>"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 186,
     "bringUpOrder": 90,
@@ -191,8 +190,6 @@
   ],
   "keyboard": {
     "charMap": {
-      "\"": "@",
-      "'": "&",
       "&": "^",
       "@": "*",
       "<": "-",
@@ -206,7 +203,9 @@
       "*": "\\",
       "^": "|",
       "[": "<",
-      "]": ">"
+      "]": ">",
+      "\"": "@",
+      "'": "&"
     },
     "physical": true
   }

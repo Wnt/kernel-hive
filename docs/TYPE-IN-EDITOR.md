@@ -154,6 +154,13 @@ table. What the check changed (2026-10-05):
   (`PRINT` typed with Caps Lock on arrived as `print`). The visitor gets the
   character on their keycap in the case they typed, with or without Caps Lock.
 
+labctl gets the same map as `SH_KEY_MAP`, which must sit in the station's
+`station.env.fixture`: samcoupe, the SVIs, fmtowns and msxturbor had it only in
+the registry's recorded `runtime.stationEnv`, which is never emitted, so
+`labctl type` sent US positions there. The validator now requires the fixture,
+and a value that starts with a quote or ends with a backslash (systemd's
+`EnvironmentFile` would misread both); labctl reads the value raw.
+
 A character a machine has no key for goes in `typeIn.unreachable` (or in the
 guest doc, for a station without an editor), never into the map as a
 look-alike. A visitor who types one gets whatever that US key makes there, as
