@@ -389,10 +389,36 @@ reapply_darklaunch() {
     msg "WARNING: dark-launch re-overlay failed — /os/<id> views of in-flight waves may be gone" >&2
 }
 
+# A checkout that does not contain what the box runs re-publishes OLDER
+# declarations over newer ones. 2026-10-04: a sibling wave's worktree,
+# branched before amstradcpc went host-native, republished all five documents
+# two minutes after the cutover; golden-manifest.json said resetMode=loadvm
+# again and the station's Restore button failed on a qmp.sock that no longer
+# exists. So publish only from a checkout whose history contains the box's
+# deployed main commit (box-deploy.sh writes it to .deployed-rev).
+# PUBLISH_STALE_OK=1 overrides, for the day that is really what you want.
+assert_not_behind_box() {
+  [ "${PUBLISH_STALE_OK:-0}" = 1 ] && return 0
+  local rev branch
+  rev="$($SSH "cat /data/vms/streamhost/.deployed-rev 2>/dev/null" || true)"
+  branch="$(sed -n 's/^branch=//p' <<<"$rev")"
+  rev="$(sed -n 's/^sha=//p' <<<"$rev")"
+  if [ -z "$rev" ] || [ "$branch" != main ]; then
+    msg "note: the box's .deployed-rev names no main commit — publishing without the staleness check"
+    return 0
+  fi
+  if ! git -C "$REPO" merge-base --is-ancestor "$rev" HEAD 2>/dev/null; then
+    msg "ERROR: this checkout does not contain the box's deployed main ${rev:0:8}: its runtime documents would"
+    msg "       revert newer station declarations. Merge origin/main first (PUBLISH_STALE_OK=1 overrides)."
+    exit 1
+  fi
+}
+
 publish_manifests() {
   # None of these has a committed copy to go stale: render them now, from the
   # registry, and publish those bytes. A registry that no longer validates fails
   # HERE, with the live serving plane untouched.
+  assert_not_behind_box
   msg "rendering the runtime documents from the registry"
   python3 "$REPO/scripts/stations-registry.py" render >/dev/null || {
     msg "ERROR: render failed (registry does not validate) — nothing published"
