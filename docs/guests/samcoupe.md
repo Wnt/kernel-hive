@@ -57,7 +57,8 @@ the `menu-release` stream for the held-key `B` fix; the pre-fix disk was
 before that `bcec34e98a8f5391d6bef666319fa2e55bac164a56a9096eac08905a988e3c6e`),
 29 files,
 104 of 1560 data sectors free. Installed at
-`/data/vms/streamhost/assets/samcoupe/media/hive.mgt`, mounted as `-flop1`.
+`/data/vms/streamhost/assets/samcoupe/media/hive.mgt` (mode 444), the template
+of the per-start `-flop1` copy (see Fresh media per start).
 SAMDOS 2.0 is the first directory entry, which is what the ROM's `BOOT`
 command loads.
 
@@ -183,6 +184,34 @@ The composer (`mgtfs.py`) writes the menu via a Lua-typed autoboot script,
 one line per `emu.wait(6)`, in `MODE 3` — a single unpaced
 `-autoboot_command` string was tried first and mangled every ENTER into one
 line (see §Traps).
+
+## Fresh media per start (2026-10-05)
+
+The station mounts per-start COPIES of immutable templates
+(`MAME_NATIVE_DISK_TEMPLATE`, mode 444, never handed to MAME): MAME opens its
+media read-write, and before this a visitor's saved file landed in the shared
+asset and outlived Restore. A start copies `hive.mgt` to
+`stations/samcoupe/media/`. Restore stays the in-process `LOADST golden`, but
+LOADST restores CPU, RAM and device registers, not media (a floppy's track
+data lives in the drive's memory, a hard disk is the file), so the Restore
+path pauses MAME, has the launcher's companion `media-hook.sh` (emitted as an
+aux file, a Lua hook entering through `-pluginspath`) unload, re-copy and
+reload every image, then LOADSTs and resumes. Without the armed hook a Restore
+takes the service restart, which copies fresh media at its start: never a
+plain LOADST. Mechanism: `streamhost/stations/mame-native/x11-runtime.sh` and
+`media-hook.sh`.
+
+**Proof.** Rig: `SAVE "khproof"` was in DIR and committed to the image
+(motor-off); a plain `LOADST golden` still listed it (the bug), the media
+Restore (395 ms) did not, 50 K free again, image hash `818b61d2…`, the golden
+frame pixel-identical. Live through the real SPA: `B`, the Rainbow fan example
+typed and ran (`0 OK, 60:1`), the visitor's Restore answered in 0.8 s and the
+menu was back.
+
+Evidence:
+`/data/vms/streamhost/stations/samcoupe/evidence/media-reset-2026-10-05/` (rig
+frames and live frames). Rollback: `station.env.pre-mediareset-20261005` and
+`x11-runtime.sh.pre-mediareset-20261005` in the station dir.
 
 ## §Type-in examples
 `registry/examples/samcoupe/` has three SAM BASIC programs: Rainbow fan

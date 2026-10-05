@@ -1199,6 +1199,28 @@ For production, fill `reset` and `render.goldenOrder`. Use
 `resetMode: "restart"` with `snapshot: null` only when the launcher creates a
 fresh deterministic fixture.
 
+**Every disk a host-native MAME station mounts is a per-start copy** — the
+default, not an option. MAME opens media read-write: a hard disk takes guest
+writes in place and a floppy is committed whenever its motor stops, so a
+`-flopN`/`-hardN` pointed at `assets/<id>/media/` lets one visitor's saved file
+become the next visitor's exhibit (apple2e carried a Dazzle Draw picture from a
+pointer test for four weeks, 2026-10-05). In the fixture, list every image as
+`MAME_NATIVE_DISK_TEMPLATE="<assets path>:media/<name> ..."` and point the
+media argument at `/data/vms/streamhost/stations/<id>/media/<name>`; keep the
+basename, since MAME picks some formats by extension. Make each template
+`chmod a-w` (the per-start copy is what MAME writes). A station with a
+savestate (`MAME_NATIVE_CHECKPOINT=1`) also needs the launcher's companion in
+its registry `emitArgs` and `auxFiles`: `--aux-file
+"$T/mame-native/media-hook.sh"`. Without the companion its Restore falls back
+to the slow service restart. With the companion, the in-process `LOADST` Restore
+unloads, re-copies and reloads every image before it loads the state, because no
+savestate carries a floppy's track data. Bake the golden against the template
+bytes, and record the template's sha256 beside the golden's. A read-only
+CD/CHD (fmtowns) needs no template. ROMs passed as media (`-rom3`) are opened
+read-only. Proof per station: write something the way a visitor would, Restore,
+and show from the framebuffer that it is gone and that the image hash is the
+template's ([`../guests/samcoupe.md`](../guests/samcoupe.md#fresh-media-per-start-2026-10-05)).
+
 **A host-native MAME station without a savestate** (`-listxml` says
 `savestate="unsupported"`, so `MAME_NATIVE_CHECKPOINT=0`) resets by cold
 booting. Measure that boot in EMULATED seconds: poll the ctlsock's `PING` mtime

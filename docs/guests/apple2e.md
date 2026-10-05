@@ -384,6 +384,46 @@ across a relaunch with `-state golden`. The menu's Applesoft `GET` cursor
 blinks, so a frame-settle rule watching this scene must accept a set of two
 signatures, not a single still frame.
 
+## Fresh media per start (2026-10-05)
+
+The station mounts per-start COPIES of immutable templates
+(`MAME_NATIVE_DISK_TEMPLATE`, mode 444, never handed to MAME): MAME opens its
+media read-write, and before this a visitor's saved file landed in the shared
+asset and outlived Restore. A start copies `assets/apple2e/media/hive.hdv` to
+`stations/apple2e/media/`. Restore stays the in-process `LOADST golden`, but
+LOADST restores CPU, RAM and device registers, not media (a floppy's track
+data lives in the drive's memory, a hard disk is the file), so the Restore
+path pauses MAME, has the launcher's companion `media-hook.sh` (emitted as an
+aux file, a Lua hook entering through `-pluginspath`) unload, re-copy and
+reload every image, then LOADSTs and resumes. Without the armed hook a Restore
+takes the service restart, which copies fresh media at its start: never a
+plain LOADST. Mechanism: `streamhost/stations/mame-native/x11-runtime.sh` and
+`media-hook.sh`.
+
+**Drift found and repaired.** The live `hive.hdv` (sha256 `63211371…`, last
+written 2026-09-08 09:03 UTC, 1 h 40 min after `golden.sta`) differed from the
+golden stream's documented build `0a5a4997…` by exactly two guest writes: a 16
+KB Dazzle Draw picture `/DAZZLE/ART` (33 blocks, no ProDOS date: written in
+the emulator, the pointer work's), and AppleWorks' own rewrite of `/AW/SEG.ER`
+(it stores the date typed at its start-up, so every AppleWorks launch writes
+the disk). Reverting those two writes reproduces
+`0a5a4997ba64bb2d5761260540c86a56761992b65c95fc7f0757f6be3970a8f6` byte for
+byte, so that image is the template now; the drifted one is kept as
+`hive.hdv.pre-mediareset-20261005` (catalog diff and the reconstruction
+scripts in the evidence dir).
+
+**Proof.** Rig: `SAVE KHPROOF` (CAT lists it, `<NO DATE>`), Restore 353 ms,
+CAT shows 1125 blocks and no KHPROOF, image hash `0a5a4997…`, the restored
+frame pixel-identical to the golden apart from the GET cursor's blink phase.
+Live through the real SPA: the starburst example typed and ran, a visitor
+`SAVE KHLIVE` was listed, the visitor's Restore answered in 0.9 s, and CAT
+afterwards had no KHLIVE.
+
+Evidence:
+`/data/vms/streamhost/stations/apple2e/evidence/media-reset-2026-10-05/` (rig
+frames and live frames). Rollback: `station.env.pre-mediareset-20261005` and
+`x11-runtime.sh.pre-mediareset-20261005` in the station dir.
+
 ## Standby
 Same contract as every converted station: the launcher freezes MAME once the
 scene has painted; the daemon sends `SIGSTOP` after an idle grace and
