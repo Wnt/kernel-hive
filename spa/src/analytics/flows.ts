@@ -108,9 +108,8 @@ let lifecycleHooked = false;
  * is not a hypothetical: one live tab held `station.connect` open for seven
  * hours, and every span opened under it that DID end (each
  * `http.client.request`, each server entry span that had been handed its id)
- * reached the store naming a parent the store had never seen. Instana renders
- * that as "the root call of the trace is missing", forever, because the root
- * genuinely never arrived.
+ * reached the store naming a parent the store had never seen — a trace whose
+ * root call is missing forever, because the root genuinely never arrived.
  *
  * `close()` rather than `fail()`: the visitor navigating away is already
  * visible as the funnel's drop-off, and reporting it as a fault would make
@@ -166,8 +165,8 @@ export function currentFlow(): OpenFlow | null {
  *
  * `attrs` are merged onto the flow's root span AND every step span it opens —
  * not just the root — because a consumer that reads spans individually
- * (Instana's Unbounded Analytics, `/admin/observability`'s own span list)
- * must not have to walk up to a parent to learn what STATION a span belongs
+ * (`/admin/observability`'s own span list, an OTLP export) must not have to
+ * walk up to a parent to learn what STATION a span belongs
  * to. Typically `stationAttrs(...)` (analytics/stationAttrs.ts): station id
  * plus the low-cardinality type dimensions a report groups by.
  */

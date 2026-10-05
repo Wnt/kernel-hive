@@ -4,9 +4,7 @@
 // propagates `traceparent`, and join the page-load trace the server named in
 // <meta name="traceparent"> (docs/lab/TRACE-CONTEXT.md §4/§7) before the
 // first flow (station.connect, typically) opens and would otherwise mint an
-// unrelated id. See analytics/khFetch.ts's header for why this install point
-// — as early in OUR OWN bundle as we control — is a deliberate best-effort
-// rather than a hard guarantee against Instana's separately-loaded agent.
+// unrelated id. See analytics/khFetch.ts's header for the mechanism.
 import { installKhFetchPropagation } from './analytics/khFetch';
 import { readPageLoadTraceFromMeta } from './analytics/pageLoadLink';
 
@@ -27,7 +25,6 @@ import { setUsageAllowed } from './three/usageStats';
 import { configureLogSink } from './analytics/logSink';
 import { initAnalytics, reportError } from './analytics';
 import { BUILD_ID } from './analytics/build';
-import { armInstanaAgent, configureInstana, configureInstanaIdentity } from './analytics/instana';
 import './index.css';
 
 type ErrorReporterInput = {
@@ -173,17 +170,17 @@ function mount(session: Session) {
   setTelemetryAllowed(!signedOutAtTheDoor);
 
   // The FULLER telemetry surface — feature-reach counters (/analytics), spans
-  // (/traces), the correlated log lane (/logs) and Instana EUM (/eum) — is a
-  // NARROWER question than the one above, and conflating the two is the
-  // anon-role recurrence of the exact bug class this file's header already
-  // names for /gallery-manifest.json and /boot/index.json (walkin/route.ts).
+  // (/traces) and the correlated log lane (/logs) — is a NARROWER question
+  // than the one above, and conflating the two is the anon-role recurrence of
+  // the exact bug class this file's header already names for
+  // /gallery-manifest.json and /boot/index.json (walkin/route.ts).
   // gate.py grants an anonymous stranger `/clientlog` and `/vitals` by name
   // (ANON_PATHS) and refuses everything else here: `/clientcmd`, `/usage`,
-  // `/analytics`, `/traces` and `/eum` are enumerated right beside it as "NOT
+  // `/analytics` and `/traces` are enumerated right beside it as "NOT
   // granted, each on purpose", and test_anon.py's
   // `test_the_surfaces_a_walk_in_earned_by_registering_stay_earned` locks
-  // /traces and /eum specifically to "a walk-in earns this by registering, a
-  // stranger never does". So the gate for all four is `role !== 'anon'`, not
+  // /traces specifically to "a walk-in earns this by registering, a
+  // stranger never does". So the gate for all of them is `role !== 'anon'`, not
   // `!signedOutAtTheDoor` — and it is a strict NARROWING of it: every role
   // that is not `anon` makes `signedOutAtTheDoor` false by construction too,
   // so nothing a walk-in or an invited session could already reach changes
@@ -209,25 +206,6 @@ function mount(session: Session) {
   // sits in the same "not granted" set as /analytics and /traces. Counting
   // itself still happens locally for every role; only the send is gated.
   setUsageAllowed(fullTelemetry);
-  // Instana EUM (analytics/instana.ts) rides the SAME session id and the SAME
-  // `fullTelemetry` gate as the plane above — a build with no website key
-  // configured makes every call inside a no-op regardless, but neither a
-  // signed-out stranger at the walk-in door nor an anonymous visitor anywhere
-  // else must be handed to Instana just because their build happens to be
-  // configured (`/eum` sits in the same "not granted" set as `/traces`).
-  // `armInstanaAgent` is the one call here that used to fire unconditionally
-  // from index.html's own bootstrap, before role was knowable at all — see
-  // its own header for why the agent FETCH specifically had to move here
-  // while everything else it needs stays queued from index.html. configureInstana
-  // sets the pseudonymous identity; configureInstanaIdentity immediately
-  // upgrades it to the real account when one exists (see that function's
-  // header for why both calls are needed and why nothing here calls
-  // `ineum('terminateSession')`).
-  if (fullTelemetry) {
-    armInstanaAgent();
-    configureInstana(clientSessionId());
-    configureInstanaIdentity(session);
-  }
   // Telemetry's first row (/clientlog) and the operator poller (/clientcmd) no
   // longer ride the same answer. Until 2026-09-08 the walk-in shape skipped
   // both, so a stranger whose stream never painted was the one session

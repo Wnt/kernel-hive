@@ -153,8 +153,7 @@ export const STREAM_EVENT_METRICS = {
   // Bitrate is deliberately NOT the bucketed metric. This plane has three
   // ladders (ms, count, pct) and none of them can carry kbps without lying
   // about its own resolution; the exact `targetKbps` rides as a span
-  // ATTRIBUTE, where it is a number and not a bucket, and as Instana's
-  // `customMetric` on the same event.
+  // ATTRIBUTE, where it is a number and not a bucket.
   'stream.quality.sinceLastSwitchMs': {
     area: 'stream',
     owner: OWNER,

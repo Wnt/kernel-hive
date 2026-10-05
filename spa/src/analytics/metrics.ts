@@ -183,7 +183,7 @@ function reportTiming(id: MetricId, ms: number, attrs?: Attrs): void {
  *      1.573 s; that is the interval between two events, most of it a human
  *      deciding whether to touch the machine.
  *   3. One synthetic span per timing inflates span counts and lands in
- *      Instana's call and latency aggregates as a call that never happened.
+ *      any call or latency aggregate as a call that never happened.
  *
  * So a stopped timing now reports itself as an OTel SPAN EVENT — a timestamped
  * point carrying `kh.metric.ms` — on the innermost span that is genuinely open

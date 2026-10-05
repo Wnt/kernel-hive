@@ -31,8 +31,8 @@ if (import.meta.env.DEV) (window as any).__museum = useMuseum;
 
 export default function App() {
   useManifest();
-  // One router-level navigation observer, feeding both our own plane and
-  // Instana off the SAME event — see analytics/navigation.ts's header.
+  // One router-level navigation observer — see analytics/navigation.ts's
+  // header.
   useNavigationTelemetry();
 
   const { role } = useSession();

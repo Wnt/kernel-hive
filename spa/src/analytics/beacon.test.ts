@@ -10,8 +10,8 @@
 //  is 64 KiB, spent once for its whole life, so ~15 four-KiB posts in and every
 //  later keepalive fetch rejected `TypeError: Failed to fetch` — permanently,
 //  for that tab. `/traces`, `/analytics`, `/clientlog` and `/logs` all stopped
-//  in the same second while `/clientcmd` kept polling and the vendor's `/eum`
-//  kept beaconing, so the tab looked perfectly healthy. Each sender swallowed
+//  in the same second while `/clientcmd` kept polling, so the tab looked
+//  perfectly healthy. Each sender swallowed
 //  the rejection in a bare `.catch(() => {})`, and `/traces` had already
 //  drained its buffer, so the spans were destroyed rather than delayed.
 //

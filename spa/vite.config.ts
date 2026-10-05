@@ -47,15 +47,15 @@ function registryDocuments(): Plugin {
 // against that base; the live gallery keeps base '/'.
 const BASE = process.env.VITE_BASE ?? '/';
 
-// The build/commit identifier baked into every bundle: analytics/instana.ts's
-// `kh.bundle` meta AND three/clientDebug.ts's BUNDLE_MARKER (our own
-// /clientlog plane) both read this ONE value, so a beacon in Instana and a
-// row in our own clientlog.jsonl name the same build — the whole point of
-// running both.
+// The build/commit identifier baked into every bundle: analytics/build.ts
+// (the `/traces` resource envelope), three/clientDebug.ts's BUNDLE_MARKER
+// (/clientlog) and index.html's boot-time error reporter all read this ONE
+// value, so a span, a clientlog row and a boot-time error from the same tab
+// name the same build.
 //
 // SAME SHAPE `scripts/host/box-install.sh` stamps into `.deployed-rev` and
 // `scripts/dev/box-deploy.sh --status` prints: `<branch>@<short-sha>`. An
-// operator can diff a beacon's kh.bundle against `box-deploy.sh --status`
+// operator can diff a span's kh.bundle against `box-deploy.sh --status`
 // output character-for-character rather than translating between two id
 // schemes. SHORT, not full: box-install.sh already made that call (`git
 // rev-parse --short HEAD`, git's own auto-disambiguating length) and this
@@ -93,9 +93,10 @@ const BUILD_ID = computeBuildId();
 // index.html `%VITE_..%` placeholder mechanism (a plain env-var substitution
 // pass, unrelated to the `define` block below which only rewrites
 // `import.meta.env.*` inside JS/TS) can see it too. spa/index.html's inline
-// bootstrap needs this value for `kh.bundle` — it runs before any bundle
-// evaluates, so it cannot read `import.meta.env.VITE_KH_BUILD_ID` the way
-// three/clientDebug.ts's BUNDLE_MARKER does. Setting it here, once, keeps
+// build-id script needs this value for the boot-time error reporter — it runs
+// before any bundle evaluates, so it cannot read
+// `import.meta.env.VITE_KH_BUILD_ID` the way three/clientDebug.ts's
+// BUNDLE_MARKER does. Setting it here, once, keeps
 // both readers (the `define` substitution below and index.html's
 // placeholder pass) agreeing on the exact same computed value rather than
 // each deriving it — same principle as the git-computed value only being
@@ -110,8 +111,7 @@ export default defineConfig({
   // contract of the instrumented lane — see vite-plugins/coverage.ts.
   plugins: [react(), registryDocuments(), ...coveragePlugins()],
   // Exposed to app code as `import.meta.env.VITE_KH_BUILD_ID` — read by
-  // three/clientDebug.ts's BUNDLE_MARKER, the single place both consumers
-  // (Instana `meta`, our own /clientlog + snapshot payloads) get it from.
+  // analytics/build.ts and three/clientDebug.ts's BUNDLE_MARKER.
   define: {
     'import.meta.env.VITE_KH_BUILD_ID': JSON.stringify(BUILD_ID),
   },
@@ -127,21 +127,16 @@ export default defineConfig({
   build: {
     target: 'es2022',
     // true: emit a .map file per asset AND write a `//# sourceMappingURL=`
-    // comment into the shipped JS, so both consumers work:
-    //  - a human with devtools open on the public gallery can resolve a
-    //    minified frame back to real source, same as any other public site;
-    //  - Instana's stack-trace translation still gets its own copy via
-    //    scripts/serve-https-spa.sh's publish_instana_sourcemaps, uploaded
-    //    straight to Instana's private store rather than relying on its
-    //    crawler to fetch the map from us.
+    // comment into the shipped JS, so a human with devtools open on the
+    // public gallery can resolve a minified frame back to real source, same
+    // as any other public site.
     // The maps are public on purpose: the built bundle already ships
     // unauthenticated (only the app shell at '/' is passkey-gated — see
     // docs/PUBLIC-GALLERY.md and serve-https-spa.sh's deploy()), and the
     // source itself is the openly-public kernel-hive GitHub repo, so a map
     // reveals nothing the repo doesn't already. A .map is fetched only when
     // a visitor's devtools is open, so it costs nothing for an ordinary
-    // visit. See serve-https-spa.sh's deploy() and publish_instana_sourcemaps
-    // for the full reasoning and why BOTH delivery paths are kept.
+    // visit. See serve-https-spa.sh's deploy() for the full reasoning.
     sourcemap: true,
   },
 });

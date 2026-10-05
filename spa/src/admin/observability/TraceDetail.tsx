@@ -110,9 +110,9 @@ function Facts({ trace, layout, worstHidden }: { trace: Trace; layout: FlameLayo
         <dd>{trace.class}</dd>
       </div>
       {/* WHICH BUNDLE the client was running. The first question of any
-          "the fix did not take effect" report, and until 2026-09-01 it could
-          only be answered from a vendor beacon — see docs/ANALYTICS.md §8.3.
-          Older traces have no answer and say so rather than showing a blank. */}
+          "the fix did not take effect" report — see docs/ANALYTICS.md §8.3.
+          Traces recorded before 2026-09-01 have no answer and say so rather
+          than showing a blank. */}
       <div className="td-fact">
         <dt>build</dt>
         <dd><small>{trace.build || 'unknown'}</small></dd>

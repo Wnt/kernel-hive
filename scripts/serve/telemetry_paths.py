@@ -1,10 +1,10 @@
 """THE TELEMETRY PLANE'S OWN ENDPOINTS: the server-side counterpart of
-`KH_TELEMETRY_PATHS` in spa/src/analytics/instana.ts.
+`KH_TELEMETRY_PATHS` in spa/src/analytics/telemetryPaths.ts.
 
 WHY THIS FILE EXISTS AT ALL. The browser has known for a long time which paths
 are "us measuring ourselves" rather than "a visitor doing something" — one list,
-two mechanically derived matchers, so adding an endpoint is one edit
-(instana.ts's own header makes that argument). The SERVER had no such notion:
+a mechanically derived matcher, so adding an endpoint is one edit
+(telemetryPaths.ts's own header makes that argument). The SERVER had no such notion:
 `tracing_http.route_of()` says which paths are TRACED, which is a different
 question and deliberately so. Anything that needed to distinguish plumbing from
 visitor behaviour on this side had to hardcode a second list, and a second list
@@ -43,10 +43,6 @@ contain something a person is waiting for:
     /usage                 were essentially the entire call list.
     /traces                Same, and not traced server-side today anyway.
     /coverage              Same.
-    /eum                   The vendor's OWN beacons, proxied first-party by
-                           eum_proxy.py. Plumbing by the same argument, and
-                           doubly so: it is the delivery of a measurement, not
-                           a thing measured. Listed for the day it is traced.
 
     /analytics/report.json READS. Somebody has /admin open and is waiting for
     /coverage/report.json  a page to render; the report query is one of the
@@ -76,7 +72,7 @@ TWO MORE BOUNDARY CASES, DECIDED AND WRITTEN DOWN SO THEY ARE NOT RE-ARGUED:
 
 from __future__ import annotations
 
-#: Mirrors `KH_TELEMETRY_PATHS` (spa/src/analytics/instana.ts) exactly. Keep the
+#: Mirrors `KH_TELEMETRY_PATHS` (spa/src/analytics/telemetryPaths.ts) exactly. Keep the
 #: two equal — a test fails if they diverge — rather than "close enough": the
 #: whole value of a mirrored list is that a reader can trust it is the same list.
 TELEMETRY_PATHS = frozenset(
@@ -89,7 +85,6 @@ TELEMETRY_PATHS = frozenset(
         "/clientlog",
         "/usage",
         "/clientcmd",
-        "/eum",
     }
 )
 

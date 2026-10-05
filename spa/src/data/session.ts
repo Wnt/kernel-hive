@@ -23,9 +23,8 @@ export interface Session {
   role: Role;
   /** The account's display handle, when it has one. */
   name: string;
-  /** The account's server-side id, when it has one ('' for `anon`). Not
-   *  previously surfaced here — `analytics/instana.ts` is the first reader,
-   *  which is why this field exists at all. */
+  /** The account's server-side id, when it has one ('' for `anon`). Read by
+   *  main.tsx to put WHO on the trace (`initAnalytics`' `user`). */
   id: string;
 }
 

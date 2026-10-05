@@ -117,7 +117,7 @@ describe('usage counters', () => {
 
   it('still counts locally for a role /usage refuses, but never sends', () => {
     // gate.py refuses /usage to the anonymous role by name, beside /clientcmd,
-    // /analytics, /traces and /eum — main.tsx never calls setUsageAllowed(true)
+    // /analytics and /traces — main.tsx never calls setUsageAllowed(true)
     // for that role. Counting is pure bookkeeping (no network) so it still
     // happens; only the send is withheld.
     setUsageAllowed(false);

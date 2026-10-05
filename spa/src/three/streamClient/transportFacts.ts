@@ -67,16 +67,9 @@ import type { DatagramWriterFacts } from './datagramWriter';
  *  average, so sampling it faster measures nothing new. */
 const STATS_EVERY_MS = 5000;
 
-/** OTel semantic-convention naming, emitted in BOTH spellings on purpose.
- *  `server.address`/`server.port` is the current convention and is what our
- *  own plane is the product of; `net.peer.name`/`net.peer.port` is the older
- *  spelling Instana's documented consumed-attribute list still reads to
- *  populate its call-detail and dependency panes. This is the same
- *  emit-both migration shape the OTel SDKs spell `http/dup`, applied here by
- *  hand because our emitter is our own. When the HTTP side of this repo
- *  settles on one bridging rule, this is the second place that has to follow
- *  it — the rule is "our plane's naming is the product, the vendor is the
- *  temporary consumer", never a third convention invented here. */
+/** The QUIC peer, in CURRENT OTel semantic-convention names
+ *  (`server.address`/`server.port`) — the same names `khFetch.ts` uses for an
+ *  HTTP exit span, so one query reads both. */
 interface Endpoint {
   host: string;
   port: number;
@@ -239,8 +232,6 @@ export function transportAttrs(reliability: 'stream' | 'datagram'): Attrs {
   if (facts.endpoint) {
     a['server.address'] = facts.endpoint.host;
     a['server.port'] = facts.endpoint.port;
-    a['net.peer.name'] = facts.endpoint.host;
-    a['net.peer.port'] = facts.endpoint.port;
   }
   if (facts.alpn) a['network.protocol.alpn'] = facts.alpn;
   if (facts.dg) a['kh.transport.dg_api'] = facts.dg.api;

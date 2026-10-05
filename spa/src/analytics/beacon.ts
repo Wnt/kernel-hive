@@ -23,10 +23,10 @@
 //  ~61 KiB, and the tab's telemetry is over. Every sender swallows the
 //  rejection in a `.catch(() => {})`, so nothing is logged, nothing is retried,
 //  and the access log shows the tab still healthy — `/clientcmd` polling every
-//  five seconds, the vendor's `/eum` beacons flowing — while `/traces`,
-//  `/analytics`, `/clientlog` and `/logs` all stop in the same second and never
-//  resume. Both of those routes read their response bodies; ours did not, and
-//  neither did they draw on the keepalive budget.
+//  five seconds — while `/traces`, `/analytics`, `/clientlog` and `/logs` all
+//  stop in the same second and never resume. The poll reads its response body
+//  and never draws on the keepalive budget; every sender that stopped did the
+//  opposite on both counts.
 //
 //  That is the whole of the orphaned-span problem the trace plane had. The
 //  daemon's spans for a sampled input edge travel on a completely independent

@@ -2,9 +2,9 @@
 // imports and no other test covers.
 //
 // WHY THIS FILE EXISTS. On 2026-09-01 a phone ran the gallery, our own
-// telemetry plane recorded the visit in full, and the vendor plane recorded
-// nothing — and the leading hypothesis was "the installed app is pinned to an
-// old HTML shell". It was not (see docs/ANALYTICS.md for how that was settled),
+// telemetry plane recorded the visit in full, a second telemetry plane
+// recorded nothing — and the leading hypothesis was "the installed app is
+// pinned to an old HTML shell". It was not (see docs/ANALYTICS.md for how that was settled),
 // but the code review it prompted found the trap anyway: the shell cache was
 // named by a hand-written `kh-shell-v1` that had never been bumped, and
 // `activate` only deletes caches whose key DIFFERS from the current one — so a
@@ -14,8 +14,7 @@
 // is actively deleted, and none of the worker's existing virtues moved.
 //
 // The REAL shipped file is executed (via Vite's `?raw` import and a `new
-// Function`, the same technique analytics/indexHtmlBootstrap.test.ts uses on
-// index.html) rather than a retyped copy of its logic, which could drift from
+// Function`) rather than a retyped copy of its logic, which could drift from
 // what ships and still pass. sw.js is not a module — it talks to
 // `self`/`caches`/`fetch`, so those are passed in as parameters.
 

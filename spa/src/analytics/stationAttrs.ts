@@ -3,7 +3,7 @@
 //  span or metric sliceable by station TYPE, not merely by id.
 //  ---------------------------------------------------------------------------
 //  The operator's ask: latency for wakeup, golden reset and friends should be
-//  groupable per station type in both Instana and our own trace store. Every
+//  groupable per station type in our own trace store. Every
 //  span already carries free-text attributes (analytics/trace.ts); what was
 //  missing was a CONSISTENT set of names for the dimensions worth grouping by,
 //  computed once from data the registry already publishes rather than
@@ -34,12 +34,9 @@
 //  make the low-cardinality dimensions unusable for exactly the grouping they
 //  exist for.
 //
-//  SAME NAMES ON BOTH SIDES OF THE WIRE. These are the identical keys
-//  `instana.ts`'s station tagging uses via `ineum('meta', k, v)` — see that
-//  file's header — so a query means the same thing in our own trace store and
-//  in Instana's Unbounded Analytics. No content-rule exception: every value
-//  here is registry METADATA, never anything a visitor typed or a station
-//  identity a visitor doesn't already see on the grid card.
+//  No content-rule exception: every value here is registry METADATA, never
+//  anything a visitor typed or a station identity a visitor doesn't already
+//  see on the grid card.
 // ============================================================================
 
 import type { Attrs } from './trace';

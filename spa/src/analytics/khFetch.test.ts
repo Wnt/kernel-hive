@@ -10,7 +10,6 @@ import {
   __bufferedSpans, __resetTracer, configureTracer, startTrace, pushActive, popActive,
 } from './trace';
 import { seedPageLoadTrace } from './pageLoadLink';
-import { BACKEND_TRACE_ID_RE } from './instana';
 import * as traceModule from './trace';
 
 const ORIGIN = 'https://gallery.example';
@@ -102,12 +101,9 @@ describe('installKhFetchPropagation', () => {
   });
 
   it('carries the peer attributes an exit span owes, in current semantic-convention names', async () => {
-    // `scripts/serve/otlp_semconv.py` DERIVES Instana's older spellings
-    // (`http.host`, `net.peer.name`, `net.peer.port`, `http.scheme`) and a
-    // query-free `http.url` from exactly these four. If one of them stops
-    // being set here the cost is an empty pane in a vendor UI that nobody
-    // notices for weeks, so it is pinned on both sides of the boundary
-    // (scripts/test_otlp_fidelity.py has the Python half).
+    // A consumer that renders the peer of a call reads exactly these. If one
+    // stops being set here the cost is an empty field nobody notices for
+    // weeks, so it is pinned.
     installKhFetchPropagation();
     const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
     await win.fetch(`${ORIGIN}/restore/beos`, { method: 'POST' });
@@ -295,7 +291,7 @@ describe('installKhFetchPropagation', () => {
   });
 
   // ==========================================================================
-  // The return leg: traceresponse / Server-Timing -> kh.backend.trace_id
+  // The return leg: traceresponse -> kh.backend.trace_id
   // ==========================================================================
 
   const BACKEND = 'abcdefabcdefabcdefabcdefabcdefab';
@@ -307,25 +303,6 @@ describe('installKhFetchPropagation', () => {
     await win.fetch(`${ORIGIN}/restore/beos`);
     const [span] = __bufferedSpans();
     expect(span.a?.['kh.backend.trace_id']).toBe(BACKEND);
-  });
-
-  it('falls back to the Server-Timing intid token when traceresponse is absent', async () => {
-    responseHeaders = { 'server-timing': `intid;desc=${BACKEND}` };
-    installKhFetchPropagation();
-    const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
-    await win.fetch(`${ORIGIN}/restore/beos`);
-    expect(__bufferedSpans()[0].a?.['kh.backend.trace_id']).toBe(BACKEND);
-  });
-
-  it('prefers traceresponse over Server-Timing when both are present', async () => {
-    responseHeaders = {
-      traceresponse: `00-${BACKEND}-1234567890abcdef-01`,
-      'server-timing': 'intid;desc=99999999999999999999999999999999',
-    };
-    installKhFetchPropagation();
-    const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
-    await win.fetch(`${ORIGIN}/restore/beos`);
-    expect(__bufferedSpans()[0].a?.['kh.backend.trace_id']).toBe(BACKEND);
   });
 
   it('records nothing when the response carries no trace headers', async () => {
@@ -363,26 +340,8 @@ describe('installKhFetchPropagation', () => {
     expect(value).toBe(BACKEND); // untruncated, byte for byte
   });
 
-  it('mirrors the backend trace id to Instana as a valid backendTraceId', async () => {
-    const ineumCalls: unknown[][] = [];
-    const win = (globalThis as unknown as {
-      window: { fetch: typeof fetch; ineum?: (...a: unknown[]) => void };
-    }).window;
-    win.ineum = (...args: unknown[]) => { ineumCalls.push(args); };
-    responseHeaders = { traceresponse: `00-${BACKEND}-1234567890abcdef-01` };
-    installKhFetchPropagation();
-    await win.fetch(`${ORIGIN}/restore/beos`);
-    const reported = ineumCalls.filter(([name]) => name === 'reportEvent');
-    expect(reported).toHaveLength(1);
-    const opts = reported[0][2] as { backendTraceId: string };
-    // The vendor DROPS anything that is not 16 or 32 hex, silently — assert
-    // against its own rule, not a looser one.
-    expect(BACKEND_TRACE_ID_RE.test(opts.backendTraceId)).toBe(true);
-    expect(opts.backendTraceId).toBe(BACKEND);
-  });
-
   it('a response whose headers cannot be read never breaks the call', async () => {
-    // The return leg reads two headers off every traced response. A Response
+    // The return leg reads a header off every traced response. A Response
     // whose `headers.get` throws (a polyfill, an opaque-ish shim, a test
     // double) must still be handed to the caller unchanged — the same rule as
     // every other enhancement in this module.

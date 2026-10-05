@@ -1,30 +1,25 @@
 // ============================================================================
 //  analytics/pageBinding — WHICH PAGE, and WHICH LOAD OF IT.
 //  ---------------------------------------------------------------------------
-//  This is the capability gap we are beating, stated plainly.
+//  An event that correlates to a page only IMPLICITLY — by landing in
+//  whatever page some session state happened to be naming at that instant —
+//  is fine for a page whose whole life is one route, and useless for this app:
+//  a visitor opens `/os/beos`, navigates to `/fleet` while the stream keeps
+//  running in a background tile, and every quality switch after that moment is
+//  attributed to the wrong page by a mechanism nobody can query around.
 //
-//  Instana's BROWSER agent has no `viewName` on `reportEvent`. Its MOBILE SDK
-//  does; the browser one does not — a custom event there correlates to a page
-//  only IMPLICITLY, by landing in whatever page the agent's own session state
-//  happened to be naming at that instant. That is fine for a page whose whole
-//  life is one route, and useless for this app: a visitor opens `/os/beos`,
-//  navigates to `/fleet` while the stream keeps running in a background tile,
-//  and every quality switch after that moment is attributed to the wrong page
-//  by a mechanism nobody can query around.
+//  So the binding is EXPLICIT and travels ON the event:
 //
-//  So in OUR plane the binding is EXPLICIT and travels ON the event:
-//
-//    kh.page.pattern        the route PATTERN (`/os/:osId`, never `/os/beos`)
-//    kh.page.loadId         this DOCUMENT's identity, minted once, ours
-//    kh.page.instanaLoadId  Instana's own `getPageLoadId`, when it is loaded
+//    kh.page.pattern   the route PATTERN (`/os/:osId`, never `/os/beos`)
+//    kh.page.loadId    this DOCUMENT's identity, minted once
 //
 //  "Show me everything that happened on this page load" is then one equality
 //  filter on `kh.page.loadId`, not an inference from beacon ordering.
 //
 //  WHY A PATTERN AND NOT A PATH, EVEN AFTER 2026-09-01. The operator's page-name
 //  decision that day changed what the PAGE NAME is (`navigation.ts`'s
-//  `kh.page.name` and `ineum('page', ...)` now carry the concrete station); it
-//  deliberately did NOT change this attribute. `kh.page.pattern` is the
+//  `kh.page.name` now carries the concrete station); it deliberately did NOT
+//  change this attribute. `kh.page.pattern` is the
 //  ROLL-UP key — the "how is the station page doing overall" grouping every
 //  stream event on this plane is already joined by — and the whole point of
 //  doing that decision as BOTH rather than a swap was to keep it. The concrete
@@ -37,27 +32,10 @@
 //  between the cache write and the event), and this file exists precisely so
 //  that the binding cannot be wrong. `matchRoute` is pure and costs a split
 //  and a loop over eleven patterns.
-//
-//  WHY OUR OWN LOAD ID AT ALL, given Instana mints one. Because the operator's
-//  standing rule for this whole plane is that Instana is a benchmark we intend
-//  to drop, and a page-load identity that only exists while a third-party
-//  bundle is loaded is not an identity we own. `kh.page.instanaLoadId` is
-//  captured ALONGSIDE ours, for exactly as long as the two systems have to be
-//  reconciled, and its absence changes nothing about our own binding.
 // ============================================================================
 
 import { matchRoute } from './navigation';
 import type { Attrs } from './trace';
-
-/** The subset of `ineum` this module reads. Declared locally rather than
- *  imported from `instana.ts`, the same isolation `navigation.ts`,
- *  `khFetch.ts` and `streamClient/inputTrace.ts` each keep: this module must
- *  keep working, unchanged, on the day the vendor is deleted. */
-declare global {
-  interface Window {
-    ineum?: (...args: unknown[]) => void;
-  }
-}
 
 /** Lowercase hex, 8 bytes — the same shape and the same reasoning as
  *  `trace.ts`'s span ids (crypto when it exists, because Math.random collides
@@ -78,33 +56,11 @@ let loadId = '';
 /**
  * This document's identity, minted on first use and stable for the life of the
  * JS realm. A full navigation tears the realm down and the next load mints a
- * fresh one, which is exactly the boundary the word "page load" means — the
- * same reasoning `instana.ts` gives for not needing a `terminateSession` call.
+ * fresh one, which is exactly the boundary the word "page load" means.
  */
 export function pageLoadId(): string {
   if (!loadId) loadId = hex8();
   return loadId;
-}
-
-/**
- * Instana's own page-load id, or null. Read at EMIT time, never cached: the
- * vendor bundle loads asynchronously, so an early event legitimately has no
- * answer and a later one on the same document does.
- *
- * `ineum('getPageLoadId')` is the documented getter and is the ONE `ineum`
- * call in this repo whose RETURN value matters, which is why it does not go
- * through the void-returning guard every other call site uses.
- */
-export function instanaPageLoadId(): string | null {
-  try {
-    if (typeof window === 'undefined') return null;
-    const fn = window.ineum;
-    if (typeof fn !== 'function') return null;
-    const id: unknown = (fn as (...a: unknown[]) => unknown)('getPageLoadId');
-    return typeof id === 'string' && id ? id.slice(0, 120) : null;
-  } catch {
-    return null;
-  }
 }
 
 /** The current route pattern, or `'*'` outside a browser / for an unmatched
@@ -125,13 +81,10 @@ export function pagePattern(): string {
  * belongs to from when it arrived.
  */
 export function pageBindingAttrs(): Attrs {
-  const out: Attrs = {
+  return {
     'kh.page.pattern': pagePattern(),
     'kh.page.loadId': pageLoadId(),
   };
-  const instana = instanaPageLoadId();
-  if (instana) out['kh.page.instanaLoadId'] = instana;
-  return out;
 }
 
 /** Test seam: forget this document's minted id. */

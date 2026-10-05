@@ -443,7 +443,7 @@ class SyntheticTest(ExportCase):
         """One source of truth, two languages. A path added to the SPA's
         `KH_TELEMETRY_PATHS` and forgotten here would keep polling the tenant's
         call list forever, which is the drift this test exists to prevent."""
-        src = (Path(__file__).resolve().parents[1] / "spa" / "src" / "analytics" / "instana.ts").read_text()
+        src = (Path(__file__).resolve().parents[1] / "spa" / "src" / "analytics" / "telemetryPaths.ts").read_text()
         body = src.split("export const KH_TELEMETRY_PATHS = [", 1)[1].split("]", 1)[0]
         typescript = set(re.findall(r"'([^']+)'", body))
         self.assertEqual(typescript, set(telemetry_paths.TELEMETRY_PATHS))

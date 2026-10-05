@@ -129,11 +129,8 @@ function postSpans(sessionId: string, spans: WireSpan[], final = false): void {
         // WHICH BUNDLE THIS CLIENT IS RUNNING — a RESOURCE attribute, not a
         // per-span one: it is identical for every span a tab will ever emit,
         // which is exactly what a Resource is for. serve/traces.py stores it on
-        // the trace row and traces_otlp.py exports it as `service.version`.
-        // Before this existed the only place a build id was recorded was a
-        // vendor beacon's `kh.bundle` meta, so "was that phone on an old
-        // shell?" was unanswerable without the vendor — see
-        // docs/ANALYTICS.md §"Which bundle was this client running".
+        // the trace row, so "was that phone on an old shell?" is one lookup —
+        // see docs/ANALYTICS.md §"Which bundle was this client running".
         'kh.bundle': BUILD_ID,
       },
       spans,

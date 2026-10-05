@@ -1,5 +1,4 @@
-// Tests for analytics/navigation: the single router-level observer and its
-// two consumers. Exercises the exported functions directly (matching how
+// Tests for analytics/navigation: the single router-level observer. Exercises the exported functions directly (matching how
 // this suite already tests khFetch.ts and trace.ts) rather than rendering
 // the React hook — `useNavigationTelemetry` is a thin wiring layer over
 // exactly these functions.
@@ -10,22 +9,11 @@ import {
   openNavigationSpan,
   finishNavigationSpan,
   pageName,
-  reportPageToInstana,
-  reportTransitionDurationToInstana,
   nextPaint,
   type NavEvent,
 } from './navigation';
 import { __bufferedSpans, __resetTracer, configureTracer } from './trace';
 import { __pendingBatch, __resetSink, configureSink } from './sink';
-
-type Call = [string, ...unknown[]];
-
-function installIneum(): { calls: Call[] } {
-  const calls: Call[] = [];
-  const fn = (...args: unknown[]) => { calls.push(args as Call); };
-  (globalThis as { window?: unknown }).window = { ineum: fn };
-  return { calls };
-}
 
 beforeEach(() => {
   __resetTracer();
@@ -68,8 +56,8 @@ describe('matchRoute', () => {
   });
 });
 
-describe('consumer A: our own plane, with Instana entirely absent', () => {
-  it('opens and ends a real span with no window.ineum at all', () => {
+describe('the navigation span', () => {
+  it('opens and ends a real span, with no window at all', () => {
     delete (globalThis as { window?: unknown }).window;
     const event: NavEvent = { pattern: '/os/:osId', params: { osId: 'beos' }, prevPattern: '/', kind: 'push' };
     const span = openNavigationSpan(event);
@@ -86,7 +74,7 @@ describe('consumer A: our own plane, with Instana entirely absent', () => {
     });
   });
 
-  it('records the probe and the metric — visible with Instana absent', () => {
+  it('records the probe and the metric', () => {
     delete (globalThis as { window?: unknown }).window;
     const event: NavEvent = { pattern: '/fleet', params: {}, prevPattern: '/', kind: 'push' };
     const span = openNavigationSpan(event);
@@ -97,69 +85,22 @@ describe('consumer A: our own plane, with Instana entirely absent', () => {
   });
 });
 
-describe('consumer B: Instana', () => {
-  it('is a no-op with no window.ineum (unconfigured build)', () => {
-    delete (globalThis as { window?: unknown }).window;
-    const event: NavEvent = { pattern: '/os/:osId', params: { osId: 'beos' }, prevPattern: '/', kind: 'push' };
-    expect(() => reportPageToInstana(event)).not.toThrow();
-    expect(() => reportTransitionDurationToInstana(50)).not.toThrow();
-  });
-
-  it('names the STATION and keeps the route pattern as meta (both, not a swap)', () => {
-    const { calls } = installIneum();
-    const event: NavEvent = { pattern: '/os/:osId', params: { osId: 'beos' }, prevPattern: '/', kind: 'push' };
-    reportPageToInstana(event);
-    expect(calls).toContainEqual(['page', '/os/beos']);
-    expect(calls).toContainEqual(['meta', 'kh.route.pattern', '/os/:osId']);
-    expect(calls).toContainEqual(['meta', 'kh.route.param.osId', 'beos']);
-  });
-
-  it('sets the page name LAST — meta after it would belong to the next transition', () => {
-    const { calls } = installIneum();
-    const event: NavEvent = { pattern: '/os/:osId', params: { osId: 'solaris' }, prevPattern: null, kind: 'push' };
-    reportPageToInstana(event);
-    expect(calls.findIndex((c) => c[0] === 'page')).toBe(calls.length - 1);
+describe('the page name on the span', () => {
+  it('names the STATION and keeps the route pattern beside it (both, not a swap)', () => {
+    const event: NavEvent = { pattern: '/os/:osId', params: { osId: 'irix' }, prevPattern: '/fleet', kind: 'popstate' };
+    finishNavigationSpan(openNavigationSpan(event), 10);
+    const [span] = __bufferedSpans();
+    expect(span.a?.['kh.page.name']).toBe('/os/irix');
+    expect(span.a?.['kh.route.pattern']).toBe('/os/:osId');
+    expect(span.a?.['kh.route.param.osId']).toBe('irix');
   });
 
   it('never mints a page name from something that is not a plausible station id', () => {
-    const { calls } = installIneum();
     const event: NavEvent = { pattern: '/os/:osId', params: { osId: '../etc/passwd' }, prevPattern: null, kind: 'push' };
-    reportPageToInstana(event);
+    finishNavigationSpan(openNavigationSpan(event), 10);
     // Degrades to EXACTLY the old pattern-only name — the worst case is the
     // previous behaviour, never a leaked path in the page dimension.
-    expect(calls.find((c) => c[0] === 'page')).toEqual(['page', '/os/:osId']);
-  });
-
-  it('skips the INITIAL navigation entirely — index.html already named that page-load beacon', () => {
-    const { calls } = installIneum();
-    const event: NavEvent = { pattern: '/', params: {}, prevPattern: null, kind: 'initial' };
-    reportPageToInstana(event);
-    expect(calls).toEqual([]);
-  });
-
-  it('forwards the measured duration as meta, for every kind including initial', () => {
-    const { calls } = installIneum();
-    reportTransitionDurationToInstana(77);
-    expect(calls).toContainEqual(['meta', 'kh.page.transitionMs', '77']);
-  });
-});
-
-describe('both consumers receive the same event', () => {
-  it('the pattern/params dispatched to Instana match the attributes recorded on our own span', () => {
-    const { calls } = installIneum();
-    const event: NavEvent = { pattern: '/os/:osId', params: { osId: 'irix' }, prevPattern: '/fleet', kind: 'popstate' };
-    const span = openNavigationSpan(event);
-    reportPageToInstana(event);
-    finishNavigationSpan(span, 10);
-    const [ourSpan] = __bufferedSpans();
-    expect(ourSpan.a?.['kh.route.pattern']).toBe('/os/:osId');
-    expect(ourSpan.a?.['kh.route.param.osId']).toBe('irix');
-    // Both planes agree on the page NAME as well as on the pattern — the whole
-    // point of carrying `kh.page.name` beside `kh.route.pattern` on our span.
-    expect(ourSpan.a?.['kh.page.name']).toBe('/os/irix');
-    expect(calls).toContainEqual(['page', '/os/irix']);
-    expect(calls).toContainEqual(['meta', 'kh.route.pattern', '/os/:osId']);
-    expect(calls).toContainEqual(['meta', 'kh.route.param.osId', 'irix']);
+    expect(__bufferedSpans()[0].a?.['kh.page.name']).toBe('/os/:osId');
   });
 });
 

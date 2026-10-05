@@ -138,8 +138,6 @@ class TransportAttrsSurviveIntake(unittest.TestCase):
         "kh.transport.conn": "0123456789abcdef",
         "server.address": "labhost",
         "server.port": 8443,
-        "net.peer.name": "labhost",
-        "net.peer.port": 8443,
         "kh.transport.rtt_ms": 7.5,
         "kh.transport.rtt_source": "getstats",
         "kh.transport.rtt_min_ms": 6.0,

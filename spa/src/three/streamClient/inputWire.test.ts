@@ -160,7 +160,6 @@ describe('input.wire', () => {
     const a = __bufferedSpans().find((s) => s.n === 'input.wire')!.a!;
     expect(a['server.address']).toBe('labhost');
     expect(a['server.port']).toBe(8443);
-    expect(a['net.peer.port']).toBe(8443);
     expect(a['network.transport']).toBe('quic');
     expect(a['network.protocol.version']).toBe('3');
     expect(a['kh.wire.reliability']).toBe('stream');

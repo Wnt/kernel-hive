@@ -85,8 +85,8 @@ export interface TraceSummary {
   /** Which BUNDLE the client was running — `<branch>@<short-sha>`, off the
    *  batch's resource envelope, or `unknown` for a trace recorded before the
    *  column existed / contributed only by the serving plane. This is how "was
-   *  that client on the shell we think we deployed?" is answered without a
-   *  vendor beacon; see docs/ANALYTICS.md. */
+   *  that client on the shell we think we deployed?" is answered; see
+   *  docs/ANALYTICS.md. */
   build: string;
 }
 

@@ -27,21 +27,11 @@
 //
 //  The third fault is unfixable at this end at any sampling rate, because the
 //  decision here happens BEFORE the round trip — this code cannot know which
-//  edge will turn out to be the slow one. So the decision moved to where the
-//  answer exists, and the two halves are one design:
-//
-//     SOURCE (here)  — emit EVERYTHING for keys and clicks. Our own box, our
-//                      own store, our own data; completeness beats cleverness,
-//                      and every action is in the store to be queried.
-//     FORWARD        — `scripts/observability/tail_sampler.py`, at the Instana
-//                      leg, where the trace is COMPLETE and its duration is
-//                      known: keep every error, every slow action, and a random
-//                      share of the rest.
-//
-//  THAT SPLIT IS NOT A CAPACITY MEASURE, and a future reader must not
-//  "optimise" it as one. Our own plane keeps everything on purpose. The tail
-//  decision exists solely to keep the VENDOR's Calls and Services views
-//  legible, because routine traffic there drowns the interesting traffic.
+//  edge will turn out to be the slow one. So this end emits EVERYTHING for
+//  keys and clicks: our own box, our own store, our own data; completeness
+//  beats cleverness, and every action is in the store to be queried. That is
+//  not a capacity measure, and a future reader must not "optimise" it as one —
+//  a sampler here would throw away exactly the slow tail the trace exists for.
 //
 //  MOUSE MOTION IS STILL NOT TRACED, and not for volume either. Motion is a
 //  CONTINUOUS SIGNAL sampled at up to ~250 Hz; "how long from movement to
@@ -62,37 +52,7 @@
 //  process ever transmitting which key it was.
 // ============================================================================
 import { startTrace, type Span } from '../../analytics/trace';
-import { reportBackendTrace } from '../../analytics/instana';
 import { transportAttrs } from './transportFacts';
-
-// -- the EUM↔backend join (Instana `reportEvent`) ---------------------------
-// A vendor beacon can name a backend trace; a backend span can never name a
-// browser session — the join is one-directional and has to be driven from
-// here, the ONE place a sampled `input.edge` trace is minted
-// (docs/lab/TRACE-CONTEXT.md §3.2, docs/ANALYTICS.md §8.1).
-//
-// The mechanics — the guarded `ineum` call, the 16-or-32-hex `backendTraceId`
-// rule the vendor enforces SILENTLY, the meta-key cap — now live in
-// `analytics/instana.ts`, which is where facts about the vendor belong. They
-// were declared here while this module was the only caller; `khFetch.ts`
-// reporting the same join off a response header made a local copy a second
-// opinion about what the vendor accepts, and two opinions is exactly how a
-// silently-dropped field survives a green test suite.
-
-/**
- * Tag a just-minted sampled `input.edge` trace onto the browser session via
- * Instana's EUM↔backend join. A no-op, entirely, when `window.ineum` does not
- * exist (unconfigured build — the vendor script never loaded) and when the
- * span is a NOOP (tracing off, empty trace id) — our own tracing above this
- * call is already complete and unaffected either way.
- *
- * `meta` NEVER carries a key's identity or typed text — the caller already
- * enforces that (`keyClass` is a bucket, `kh.input.class` is a wire-record
- * type), and this function only forwards what it is given.
- */
-function reportSampledEdge(span: Span, meta: Record<string, string>): void {
-  reportBackendTrace('kh.input.sampled', span.traceId, meta);
-}
 
 /** 0xC5 marker + 16-byte trace id + 8-byte span id, matching
  *  `input_trace::SUFFIX_MARKER` / `SUFFIX_LEN` exactly. */
@@ -159,10 +119,6 @@ export function maybeSampleEdge(
       if (pendingOrder[0] === oldest) pendingOrder.shift();
     }
   }
-  // Fires only on the edges that actually mint a trace, so an untraced edge
-  // pays nothing here either — `reportSampledEdge` itself no-ops below that
-  // (unconfigured build, or a NOOP span because our own tracing is disabled).
-  reportSampledEdge(span, attrs);
   return span;
 }
 
@@ -256,8 +212,8 @@ function closeEdge(traceId: string, atMs: number | null, answered: boolean): voi
  * It replaced a sibling span, `client.input.roundtrip`, which carried exactly
  * this figure next to a root whose own duration was 0–1 ms of local enqueue.
  * Two spans for one measurement meant every consumer that reads a root's
- * duration — a trace list, a latency percentile, Instana's endpoint view —
- * read 1 ms for something a visitor waited 240 ms for.
+ * duration — a trace list, a latency percentile — read 1 ms for something a
+ * visitor waited 240 ms for.
  */
 export function settleEdge(traceId: string, paintAtMs: number): void {
   closeEdge(traceId, paintAtMs, true);

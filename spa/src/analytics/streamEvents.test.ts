@@ -1,11 +1,11 @@
-// Tests for the stream event vocabulary: that each event reaches all four
+// Tests for the stream event vocabulary: that each event reaches all three
 // lanes, that it does NOT fire when it should not, that sampling is exactly
 // what the taxonomy declares (and never applies to an error), and that the
 // page binding is present on every one.
 //
 // The rule these exist to protect is the one that is easiest to break by
-// accident: SAMPLING IS DECIDED ONCE. If probe, metric, span and vendor ever
-// see different populations, every rate this plane reports becomes a number
+// accident: SAMPLING IS DECIDED ONCE. If probe, metric and span ever see
+// different populations, every rate this plane reports becomes a number
 // nobody can multiply back to a truth.
 
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
@@ -19,20 +19,13 @@ import { __resetFlows } from './flows';
 import { __resetIntent } from './intent';
 import { __resetPageBinding } from './pageBinding';
 
-type Call = [string, ...unknown[]];
-
 /** `as const satisfies` narrows every row to its own literal type, which is
  *  exactly what makes the call sites type-safe and exactly what stops a loop
  *  over the table from seeing the optional fields. One widening, here. */
 const SPECS = STREAM_EVENTS as unknown as Record<string, StreamEventSpec>;
 
-function installIneum(): Call[] {
-  const calls: Call[] = [];
-  (globalThis as { window?: unknown }).window = {
-    ineum: (...args: unknown[]) => { calls.push(args as Call); },
-    location: { pathname: '/os/beos' },
-  };
-  return calls;
+function onStationPage(): void {
+  (globalThis as { window?: unknown }).window = { location: { pathname: '/os/beos' } };
 }
 
 beforeEach(() => {
@@ -84,7 +77,7 @@ describe('the taxonomy is a contract, not a suggestion', () => {
   });
 });
 
-describe('one emission, four lanes', () => {
+describe('one emission, three lanes', () => {
   it('opens a span named for the event, counts a probe and buckets the metric', () => {
     emitStreamEvent('stream.quality.switch', {
       'kh.quality.tierFrom': 1,
@@ -107,7 +100,7 @@ describe('one emission, four lanes', () => {
   });
 
   it('binds every event to the page and to this page load', () => {
-    installIneum();
+    onStationPage();
     emitStreamEvent('stream.transport.closed', { 'kh.transport.reason': 'server-finished' });
     const attrs = __bufferedSpans()[0].a ?? {};
     expect(attrs['kh.page.pattern']).toBe('/os/:osId');
@@ -125,19 +118,8 @@ describe('one emission, four lanes', () => {
     expect(__bufferedSpans()[0].k).toBe('error');
   });
 
-  it('mirrors to Instana with the vendor call shape, once, with one number', () => {
-    const calls = installIneum();
-    emitStreamEvent('stream.decode.error', { 'error.type': 'X' }, 3);
-    const reported = calls.filter((c) => c[0] === 'reportEvent');
-    expect(reported).toHaveLength(1);
-    const [, name, payload] = reported[0] as [string, string, Record<string, unknown>];
-    expect(name).toBe('stream.decode.error');
-    expect(payload.customMetric).toBe(3);
-    expect((payload.meta as Record<string, string>)['error.type']).toBe('X');
-  });
-
   it('emits nothing anywhere for an unknown event name', () => {
-    installIneum();
+    onStationPage();
     // Deliberately off-vocabulary: a typo must be silent, not a half-emission.
     emitStreamEvent('stream.not.a.real.event' as never, { a: 1 });
     expect(__bufferedSpans()).toHaveLength(0);
@@ -172,12 +154,10 @@ describe('sampling', () => {
   });
 
   it('makes ONE decision: a sampled-away event reaches no lane at all', () => {
-    const calls = installIneum();
     emitStreamEvent('stream.keyframe.gap', {}, 1);
     expect(__bufferedSpans()).toHaveLength(0);
     expect(__pendingBatch().probes).toHaveLength(0);
     expect(__pendingBatch().metrics).toHaveLength(0);
-    expect(calls.filter((c) => c[0] === 'reportEvent')).toHaveLength(0);
   });
 
   it('stamps the rate on the event, so a count can be multiplied back', () => {
@@ -217,10 +197,7 @@ describe('what actually lands survives /traces intake', () => {
   ]);
 
   it('emits a storable span for every event in the vocabulary', () => {
-    (globalThis as { window?: unknown }).window = {
-      location: { pathname: '/os/beos' },
-      ineum: (verb: string) => (verb === 'getPageLoadId' ? 'vendor-load-1' : undefined),
-    };
+    onStationPage();
     for (const [name, spec] of Object.entries(SPECS)) {
       __resetStreamEventSampling();
       const attrs: Record<string, string | number | boolean> = {
@@ -255,11 +232,11 @@ describe('what actually lands survives /traces intake', () => {
 });
 
 describe('never throws into the app', () => {
-  it('survives tracing being off, no window, and a hostile ineum', () => {
+  it('survives tracing being off, no window, and a hostile window', () => {
     __resetTracer();
     expect(() => emitStreamEvent('stream.audio.start', {}, 10)).not.toThrow();
     (globalThis as { window?: unknown }).window = {
-      ineum: () => { throw new Error('vendor exploded'); },
+      get location(): never { throw new Error('location exploded'); },
     };
     configureTracer({ enabled: true, emit: () => {} });
     expect(() => emitStreamEvent('stream.audio.start', {}, 10)).not.toThrow();

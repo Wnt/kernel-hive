@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // visitor-sim.mjs — simulate visitors clicking and typing around the public
-// kernel-hive gallery, with real browsers, to populate realistic Instana and
-// analytics data. Run `node visitor-sim.mjs --help` or read
+// kernel-hive gallery, with real browsers, to populate realistic analytics
+// and trace data. Run `node visitor-sim.mjs --help` or read
 // docs/lab/VISITOR-SIM.md for the full picture; this file is the wiring.
 //
 // SAFETY. This drives real hardware behind a public edge. Every disruptive or
@@ -10,8 +10,8 @@
 // `window.__khClientClass = 'probe'` before it ever loads the bundle — belt
 // (the declaration) and braces (navigator.webdriver, which Playwright sets on
 // its own) so simulated traffic can never be mistaken for a human visitor in
-// either kernel-hive's own analytics store or in Instana
-// (spa/src/analytics/instana.ts's `kh.client.class` meta).
+// kernel-hive's own analytics store (spa/src/analytics/intent.ts's
+// `clientClass()`, stamped as `kh.class`).
 
 import { chromium } from 'playwright';
 import { parseArgs } from './lib/cli.mjs';
@@ -81,8 +81,7 @@ async function runVisitor(browser, config, safety, manifest, visitorId, rng, slo
   });
   // BELT: declare the class before any script this tab loads ever runs, so
   // analytics/intent.ts's clientClass() sees it on the very first call —
-  // window.__khClientClass, read by that module's header comment and by
-  // scripts/visitor-sim's own kh.client.class Instana meta (instana.ts).
+  // window.__khClientClass, read by that module's header comment.
   await context.addInitScript(() => {
     window.__khClientClass = 'probe';
   });
