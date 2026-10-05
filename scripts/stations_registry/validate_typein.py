@@ -45,6 +45,7 @@ TYPEIN_KEYS = {
     "maxLineChars",
     "hint",
     "settleAfter",
+    "enterAfter",
     "unreachable",
 }
 # Upper bounds the JSON-Schema-lite evaluator cannot express (it has no
@@ -201,8 +202,9 @@ def _check_wrap_pause(row: dict[str, Any], block: dict[str, Any], errors: list[s
 
 
 def _check_settle_and_reach(row: dict[str, Any], block: dict[str, Any], errors: list[str]) -> None:
-    """`settleAfter` (extra ENTER settle after a named direct command) and
-    `unreachable` (ASCII the station's keymap cannot produce)."""
+    """`settleAfter` (extra ENTER settle after a named direct command),
+    `enterAfter` (a bare ENTER after one) and `unreachable` (ASCII the
+    station's keymap cannot produce)."""
     settle = block.get("settleAfter")
     if settle is not None:
         if not isinstance(settle, dict) or not settle:
@@ -215,6 +217,16 @@ def _check_settle_and_reach(row: dict[str, Any], block: dict[str, Any], errors: 
                     fail(errors, row, f"typeIn.settleAfter key {command!r} must be trimmed upper case (matching is)")
                 if not isinstance(ms, int) or isinstance(ms, bool) or not 0 <= ms <= 60000:
                     fail(errors, row, f"typeIn.settleAfter[{command!r}]={ms!r} must be an integer 0..60000 ms")
+    after = block.get("enterAfter")
+    if after is not None:
+        if not isinstance(after, list) or not after or len(set(map(str, after))) != len(after):
+            fail(errors, row, "typeIn.enterAfter must be a non-empty list of distinct direct commands")
+        else:
+            for command in after:
+                if not (isinstance(command, str) and 0 < len(command) <= 40 and PRINTABLE.fullmatch(command)):
+                    fail(errors, row, f"typeIn.enterAfter entry {command!r} must be a short printable-ASCII line")
+                elif command != command.strip().upper():
+                    fail(errors, row, f"typeIn.enterAfter entry {command!r} must be trimmed upper case (matching is)")
     reach = block.get("unreachable")
     if reach is not None:
         if not isinstance(reach, str) or not reach or not PRINTABLE.fullmatch(reach):

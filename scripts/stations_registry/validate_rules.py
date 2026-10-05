@@ -207,6 +207,8 @@ def validate_keyboard_env(rows: list[dict[str, Any]], errors: list[str]) -> None
     for row in rows:
         charmap = (row.get("keyboard") or {}).get("charMap")
         env = (row.get("runtime") or {}).get("stationEnv", {}).get("SH_KEY_MAP")
+        if (row.get("keyboard") or {}).get("physical") and not charmap:
+            fail(errors, row, "keyboard.physical without a keyboard.charMap: nothing to apply to physical keys")
         if not charmap and not env:
             continue
         if charmap and not env:

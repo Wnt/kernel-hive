@@ -119,6 +119,49 @@ leave it at `0`.
   labctl) must either connect a WebTransport session, use `labctl`'s
   auto-cont verbs, or set `SH_IDLE_PAUSE_SECS=0` for that tile.
 
+## The launcher's standby freeze (host-native MAME) and the scene marker
+
+The daemon cannot cover a station's FIRST grace period after a (re)start, so
+the shared mame-native launcher (`streamhost/stations/mame-native/x11-runtime.sh`)
+freezes its own emulator once the scene is done:
+`MAME_NATIVE_STANDBY_DELAY_S` after launch, wall seconds by default, or
+emulated seconds of a cold boot with `MAME_NATIVE_STANDBY_CLOCK=emulated`
+(ctlsock `PING` -> mtime; a MAME cold boot reaches its prompt at the same
+emulated instant every time, however loaded the box is). The daemon takes over
+from there: `session_started` CONTs it, and the reconciler resumes it if it
+lands under a live session. The daemon's own first pause (zero sessions,
+`SH_IDLE_PAUSE_SECS` after it starts) counts wall seconds. A station whose
+scene can take longer than that on a loaded box sets
+`SH_IDLE_PAUSE_WARMUP_SECS` above it, so the launcher's freeze lands first
+(armeval, symbos, newsos). The per-station ready points are tabled in
+[`docs/TYPE-IN-EDITOR.md`](../../docs/TYPE-IN-EDITOR.md#typing-right-after-a-restore).
+
+**The delay must end on the FINISHED scene.** Whatever frame is up at the
+freeze is what the next visitor walks up to, and a guest frozen mid-boot
+finishes booting in front of them. On a keyboard station that also eats the
+first keys they type: msx2's old 8 s froze its blank blue disk-boot screen 4 s
+before `Ok` (2026-10-04). Measure the boot in emulated seconds and check the
+frozen frame, not the log line.
+
+The launcher also writes `$BASE/scene.state`: `booting <pid>` at launch, and
+`ready <pid>` once that pid is frozen at its scene. After a cold relaunch,
+`scripts/serve/reset-tile.sh` and `labctl reset` report done only at `ready`.
+The bound is 3x the delay plus 15 s, and a station whose delay is over 90 s is
+not waited on. So a visitor's Restore reconnects them to the prompt rather than
+to the boot, and the freeze can no longer land under their session. The standby
+subshell is bound to its own pid, so a subshell that outlived its launch never
+freezes the next emulator. It also freezes BETWEEN two frame publishes. While the
+emulator runs, it waits for the mapping's sequence word (odd mid-copy) to be
+even, stops the process, waits until every thread is in state `T`, and checks
+the word again. A blind stop-resume-retry was not enough: on a loaded box a
+process resumed mid-copy may not run again before the next try (symbos lost
+all 20). A
+station frozen mid-publish keeps an odd seqlock for as long as it sleeps, and
+no passive reader (`shmshot.py`, `fb-wait.py`, `labctl shot`) can take a frame
+from it. The emulated-clock wait made that the common case (5 of 7 stations on
+2026-10-04), because its last PING reply comes from a fixed point of the frame
+loop.
+
 ## Auto-reset — the next visitor gets the golden, not the last visitor's mess
 
 The pauser owns the session count, so it also drives `auto_reset.rs`: a station

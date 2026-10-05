@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { dialectSpec } from './basicDialects';
 import {
   applyCase, checkListing, cleanListing, estimateMs, foldToAscii, formatDuration, linesToType, withClearFirst,
+  withEnterAfter,
 } from './listingText';
 import { abortableSleep, paceFor, prepareFor, typeListing } from './typeInRun';
 import { typeInFor } from '../../data/demoPrograms';
@@ -237,7 +238,7 @@ describe('typeIn.wrapPause — the typist waits at the screen wrap', () => {
 describe('station-specific traps (registry typeIn)', () => {
   const sam = dialectSpec('sam-basic');
 
-  it('settles longer after a named direct command — SAM NEW redraws the banner and eats the next key', () => {
+  it('settles longer after a named direct command — SAM NEW brings up the MGT banner', () => {
     const config = typeInFor('samcoupe')!;
     const pace = paceFor(config, ['NEW', '10 MODE 4', 'new']);
     expect(pace.enterDelayMs(0)).toBeGreaterThanOrEqual(1500);
@@ -245,15 +246,28 @@ describe('station-specific traps (registry typeIn)', () => {
     expect(pace.enterDelayMs(2)).toBe(pace.enterDelayMs(0)); // matched case-insensitively
   });
 
-  it('the run actually waits that settle after NEW before the next line', async () => {
+  it('after NEW waits the settle, then dismisses the banner with a bare ENTER, then types', async () => {
+    // The banner after NEW stays up until a key, and the key that dismisses it
+    // was lost about one time in six: line 10 went missing (2026-10-04).
+    const config = typeInFor('samcoupe')!;
+    expect(config.enterAfter).toEqual(['NEW']);
     const r = recorder();
     await typeListing({
-      osId: 'samcoupe', config: typeInFor('samcoupe')!, spec: sam, lines: ['NEW', '10 CLS'], handle: r.handle,
+      osId: 'samcoupe', config, spec: sam, lines: ['NEW', '10 CLS'], handle: r.handle,
       signal: new AbortController().signal, sleep: r.sleep,
     });
     const enter = r.keys.indexOf('\n');
-    expect(r.keys[enter + 1]).toBe('1');
-    expect(Math.max(...r.waits)).toBe(typeInFor('samcoupe')!.settleAfter!.NEW);
+    expect(r.keys.slice(enter, enter + 3)).toEqual(['\n', '\n', '1']);
+    expect(Math.max(...r.waits)).toBe(config.settleAfter!.NEW);
+    // the settle follows NEW's own ENTER; the bare ENTER gets the ordinary one
+    const settle = r.waits.indexOf(config.settleAfter!.NEW);
+    expect(r.waits[settle + 1]).toBe(config.enterDelayMs ?? DEMO_ENTER_DELAY_MS);
+  });
+
+  it('withEnterAfter adds the bare ENTER only after the named commands, case-insensitively', () => {
+    expect(withEnterAfter(['NEW', '10 CLS', ' new ', '20 NEW'], ['NEW'])).toEqual(['NEW', '', '10 CLS', ' new ', '', '20 NEW']);
+    expect(withEnterAfter(['NEW', '10 CLS'], undefined)).toEqual(['NEW', '10 CLS']);
+    expect(typeInFor('zxspectrum')!.enterAfter).toBeUndefined();
   });
 
   it('flags symbols the station keymap cannot reach, and never types them', () => {

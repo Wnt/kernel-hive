@@ -25,6 +25,8 @@
 #   MAME_NATIVE_ARGS     extra flags, shell-quoted string (eval'd: the Dragon
 #                        needs a literal empty argument, `-ext ""`)
 #   MAME_NATIVE_STANDBY_DELAY_S  settle before the standby freeze (see below)
+#   MAME_NATIVE_STANDBY_CLOCK    wall (default) | emulated: which clock the
+#                        delay is counted on for a COLD boot (see below)
 #   SH_IDLE_PAUSE_PIDFILE/_SECS  the daemon's freezer; also arms standby here
 #
 # RESET = RELAUNCH: if a pidfile-owned emulator is alive we KILL it (verified
@@ -37,7 +39,10 @@
 set -euo pipefail
 
 TILE="${SH_STATION:?SH_STATION not set — run under streamhost@<tile>}"
-BASE="/data/vms/streamhost/stations/$TILE"
+# MAME_NATIVE_BASE moves the whole station dir (a sandbox proof of this very
+# launcher); MAME_NATIVE_BIN must then be a PRIVATE copy outside assets/, or the
+# reap sweep below takes the live station's emulator with it.
+BASE="${MAME_NATIVE_BASE:-/data/vms/streamhost/stations/$TILE}"
 BIN="${MAME_NATIVE_BIN:?MAME_NATIVE_BIN not set in station.env}"
 DRIVER="${MAME_NATIVE_DRIVER:?MAME_NATIVE_DRIVER not set}"
 ROMS="${MAME_NATIVE_ROMS:?MAME_NATIVE_ROMS not set}"
@@ -113,7 +118,7 @@ reap_previous || {
     "$(station_emu_pids | tr '\n' ' ')— refusing to start a second publisher" >&2
   exit 1
 }
-rm -f "$PIDFILE" "$CTL"
+rm -f "$PIDFILE" "$CTL" "$BASE/scene.state"
 
 mkdir -p "$BASE/cfg" "$BASE/nvram" "$BASE/sta"
 
@@ -244,17 +249,136 @@ grep -m1 'ctlsock: setup' "$BASE/mame.log" || true
 # the unit's BindsTo scope, so `systemctl stop` takes it with everything else.
 # Only ever signals a pid whose /proc/<pid>/exe is still OUR binary — the same
 # stale-pid guard the daemon's freezer applies (idle.rs signal_pidfile).
+#
+# THE DELAY MUST END ON THE FINISHED SCENE, NOT IN THE BOOT. Whatever frame is
+# on the glass at the freeze is what the next visitor walks up to, and a guest
+# frozen mid-boot finishes booting in front of them, eating every key they
+# type meanwhile. msx2 did exactly that (2026-10-04): its 8 s froze the
+# Philips on a blank blue screen with the drive LED lit, 4 s short of "Ok",
+# and the first line a visitor typed lost its first keys.
+#
+# MAME_NATIVE_STANDBY_CLOCK=emulated counts the delay in EMULATED seconds of a
+# cold boot (the ctlsock's own clock, `PING` -> mtime), so it ends at the same
+# point of the boot however loaded the box is: a MAME cold boot reaches its
+# prompt at the same emulated instant every time (msx2's last boot frame at
+# 14.215 s in three of three boots). The default, wall, is the old sleep, kept
+# for the stations measured on it — palmos (13% of real time) and newsos (~45%)
+# chose their delays in wall seconds. A restore (-state golden) is ready in ~1
+# s either way and always counts wall seconds.
+#
+# THE SCENE MARKER, $BASE/scene.state: `booting <pid>` from launch, `ready
+# <pid>` once that pid is frozen at its scene. reset-tile.sh and `labctl reset`
+# read it after a cold relaunch and do not report the reset done until the
+# machine is at its scene. Before that, a visitor's Restore reconnected them to
+# a booting machine: svi738's demo typed `MBASIC` into the MSX banner and the
+# rest of the listing into CP/M (2026-10-04).
+wait_emulated() { # wait_emulated <ctl.sock> <seconds> <pid>
+  python3 - "$1" "$2" "$3" <<'PY'
+import os, socket, sys, time
+sock, want, pid = sys.argv[1], float(sys.argv[2]), sys.argv[3]
+t0 = time.monotonic()
+ceiling = t0 + 4 * want + 60  # a machine this slow is frozen anyway
+while time.monotonic() < ceiling:
+    if not os.path.exists(f"/proc/{pid}"):
+        print(f"pid {pid} gone")
+        sys.exit(0)
+    try:
+        s = socket.socket(socket.AF_UNIX)
+        s.settimeout(3)
+        s.connect(sock)
+        f = s.makefile("rw")
+        f.readline()  # HELLO
+        seq = 0
+        while time.monotonic() < ceiling:
+            seq += 1
+            f.write(f"{seq} PING\n")
+            f.flush()
+            line = f.readline()
+            while line.startswith("EV "):
+                line = f.readline()
+            if " OK " not in line or "mtime=" not in line:
+                # a module without PING: the wall clock it is
+                time.sleep(max(0.0, want - (time.monotonic() - t0)))
+                print("no emulated clock; waited wall seconds")
+                sys.exit(0)
+            mt = float(line.split("mtime=")[1].split()[0])
+            if mt >= want:
+                print(f"emulated {mt:.2f} s after {time.monotonic() - t0:.1f} s")
+                sys.exit(0)
+            time.sleep(min(0.5, max(0.05, want - mt)))
+    except (OSError, ValueError, IndexError):
+        time.sleep(0.5)
+print(f"emulated clock short of {want} s at the ceiling; freezing anyway")
+PY
+}
+# freeze_published <pid>: SIGSTOP the emulator BETWEEN two frame publishes. A
+# stop that lands while drawshm is copying a frame leaves the mapping's seqlock
+# odd for as long as the station sleeps, and no reader can take a frame from it
+# (shmshot, fb-wait, labctl shot: "could not read an untorn frame"). The daemon
+# CONTs before it reads, so a visitor never saw it, but every passive look at a
+# resting station failed. The emulated-clock wait above returns from a PING the
+# module answers at a fixed point of its frame loop, so the stop landed
+# mid-publish in 5 of 7 stations (2026-10-04) where a wall-clock sleep had hit
+# it by chance. So: wait for an even sequence word (offset 24) while it runs,
+# stop, wait until EVERY thread is in state T, and check the word again.
+freeze_published() {
+  local p=$1 i _ t word all
+  for i in $(seq 1 40); do
+    # Stop just AFTER a publish: wait, running, for an even word. A process
+    # that was stopped mid-copy may not run again for a while on a loaded box,
+    # so a blind CONT-sleep-STOP retry can find it parked mid-copy every time
+    # (symbos, 2026-10-04: all 20 tries odd).
+    for _ in $(seq 1 200); do
+      word="$(od -An -t u8 -j 24 -N 8 "$SHM" 2>/dev/null | tr -d ' ')"
+      [ -n "$word" ] && [ $((word % 2)) = 0 ] && break
+      sleep 0.001
+    done
+    kill -STOP "$p" 2>/dev/null || return 1
+    # every thread stopped, not only the leader /proc/<pid>/stat reports on
+    for _ in $(seq 1 100); do
+      all=1
+      for t in /proc/"$p"/task/*/stat; do
+        [ "$(awk '{print $3}' "$t" 2>/dev/null)" = T ] || {
+          all=0
+          break
+        }
+      done
+      [ "$all" = 1 ] && break
+      sleep 0.002
+    done
+    word="$(od -An -t u8 -j 24 -N 8 "$SHM" 2>/dev/null | tr -d ' ')"
+    if [ "$all" = 1 ] && [ -n "$word" ] && [ $((word % 2)) = 0 ]; then
+      echo "mame-native[$TILE]: frozen between two publishes (try $i)"
+      return 0
+    fi
+    kill -CONT "$p" 2>/dev/null || return 1
+  done
+  echo "mame-native[$TILE]: no clean publish boundary in 40 tries; frozen anyway"
+  kill -STOP "$p" 2>/dev/null
+}
 if [ -n "${SH_IDLE_PAUSE_PIDFILE:-}" ] && [ "${SH_IDLE_PAUSE_SECS:-60}" != 0 ]; then
+  echo "booting $(cat "$PIDFILE")" >"$BASE/scene.state"
+  CLOCK=wall
+  [ "${MAME_NATIVE_STANDBY_CLOCK:-wall}" = emulated ] && [ "${#STARG[@]}" -eq 2 ] && CLOCK=emulated
   (
     # Let the scene settle before freezing it. A checkpoint restore paints in
     # ~1 s; a cold-boot station needs its ROM banner; armeval's autoboot types
     # two supervisor lines at ~16 emulated seconds. Per-station via the
     # fixture, because only the station knows when its scene is DONE.
-    sleep "${MAME_NATIVE_STANDBY_DELAY_S:-8}"
+    # Bound to THIS launch's emulator: a subshell that outlived its launch (a
+    # relaunch outside the unit's cgroup) must not freeze the next emulator,
+    # whose ctl.sock and pidfile have the same paths (seen on a sandbox rig).
+    mine="$(cat "$PIDFILE")"
+    if [ "$CLOCK" = emulated ]; then
+      echo "mame-native[$TILE]: scene clock: $(wait_emulated "$CTL" "${MAME_NATIVE_STANDBY_DELAY_S:-8}" "$mine")"
+    else
+      sleep "${MAME_NATIVE_STANDBY_DELAY_S:-8}"
+    fi
     p="$(cat "$PIDFILE" 2>/dev/null || true)"
-    [ -n "$p" ] || exit 0
+    [ -n "$p" ] && [ "$p" = "$mine" ] || exit 0
     [ "$(readlink -f "/proc/$p/exe" 2>/dev/null)" = "$(readlink -f "$BIN")" ] || exit 0
-    kill -STOP "$p" 2>/dev/null &&
+    freeze_published "$p" &&
       echo "mame-native[$TILE]: standby — frozen at the scene (pid $p, ~0 CPU; first session wakes it)"
+    echo "ready $p" >"$BASE/scene.state"
   ) &
 fi

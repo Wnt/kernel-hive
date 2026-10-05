@@ -242,6 +242,46 @@ awake while they drive; a harness of your own should use
 paused station land as nothing at all, which reads exactly like a broken
 keyboard — see [`../lab/INPUT-DEBUGGING.md`](../lab/INPUT-DEBUGGING.md).
 
+## Shifted characters: the modifier lead (2026-10-04)
+
+`typeText()` sends Shift and its key back to back, and the `ctlsock` module
+used to put both into the matrix in one drain pass. The Atmos ROM scans its
+matrix from a 100 Hz VIA interrupt, and a scan that straddles that instant
+reads the key without its Shift: `*` arrives as `8`, `$` as `4`, `(` as `9`.
+`SH_KEY_MOD_LEAD_MS=20` in the station fixture now holds a key press until the
+Shift edge has been in the matrix for 20 emulated ms.
+
+**Measured** on a rig of this station's own binary and golden, through a
+sandbox daemon at 1.00x real time, typing a 16-line listing with 176 shifted
+characters a pass (`"A+B*C:D(E)$!";1+2*3` on every line) exactly as the editor
+does, LISTed and compared with a slow reference glyph by glyph:
+
+| Binary, lead | Passes with a lost Shift |
+|---|---|
+| the old binary (before 2026-10-04) | 1 of 6 (`2*3` as `283`) |
+| the new binary, lead 0 | 10 of 10 (`B*C` as `B8C`, `$` as `4`) |
+| lead 1 ms | 3 of 3 |
+| lead 2 ms | 0 of 7 |
+| lead 20 ms (shipped) | 0 of 9, at 160 and at 180 ms per character |
+
+The threshold is between 1 and 2 ms, as on the QL; 20 is ten times it. Lead 0
+on the new binary runs the same key-module code as the old binary, yet lost
+far more often. The code is identical at lead 0, so the difference is in how
+the new build lines up with wall time (the chance that Shift and its key reach
+the same drain pass), not in the engine. The lead removes the window either
+way. `typeIn.perCharMs` and the demo went from 160 to 180 ms (+12.5 %): the
+validator holds them to HOLD 80 + max(GAP 80, LEAD) + LEAD.
+
+All three examples typed exactly, twice each. The golden is pixel-identical
+under the new binary, and the savestate signature is unchanged (`80f89ab7`).
+
+**Live since 2026-10-04.** The real editor typed *Rainbow sunburst* and *Ski
+run*; both LISTs match the source character for character, RUN ran, and
+Restore to golden brought back the Ready screen. Rollback:
+`assets/oricatmos/mame-native/oricatmos.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`. Evidence:
+`/data/vms/streamhost/stations/oricatmos/evidence/shift-lead-2026-10-04/`.
+
 ## Operating and verification
 
 ```bash

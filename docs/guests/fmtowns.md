@@ -50,19 +50,53 @@ operating manual; every number in it is measured or marked OPEN.
   frames: `docs/lab/FMTOWNS-WAVE.md` §Proofs.
 - Keyboard: real ctlsock `KEY` path through the generated
   `fmtowns.keymap` (79 of 146 dumped fields matched; `mame-keymap.py` against
-  the live rig). Proven: `Ctrl`+`Esc` (`:key3 Ctrl` + `:key1 ESC`) opens the
-  guest's own タスクリスト (Task List) dialog; pressed again from there it opens
-  a DIFFERENT dialog (サイドワークリスト), proving each keypress is read live,
-  not a cached/looping frame. Fleet floor pacing (80/80 ms hold/gap) inherited
-  from the samcoupe fixture; no dropped/duplicated characters observed in this
-  station's limited test (no full sentence typed yet — the desktop has no
-  reachable text field without a working pointer).
+  the live rig). Proven: `Ctrl`+`Esc` opens the guest's own タスクリスト (Task
+  List) dialog, and pressed again a different one (サイドワークリスト), so each
+  keypress is read live. Typed text, exclusive scan and the modifier lead:
+  see "Keyboard (2026-10-04)" below.
 - Pointer: see §Pointer below — 1:1 absolute, write route, landed 2026-09-13.
 - Credentials: none (`guest/fmtowns` is a placeholder reference).
 - Rollback: `/os/fmtowns` is dark-launched and then landed via
   `scripts/dev/darklaunch-station.py` (`smoke-rig.sh` does not fit a
   MAME-native/shm-capture rig — see the wave doc's §Publish for why); the
   station is `listing.state`-free (listed) since 2026-09-13.
+
+## Keyboard (2026-10-04)
+
+The first full line typed on this station: double-click コマンドモード
+(published 555,555), and at the `Q>` prompt type `PRINT "A+B*C:D(E)$!";1+2*3`
+through the station's `charMap`, at 150 ms a character with Shift and its key
+back to back (`typeText()`'s shape; a visitor's normal speed). Measured on a rig
+of this station's binary and golden through a sandbox daemon. This machine is
+CPU-bound: the live station runs at **0.233 of real time** (99 % of a core),
+rigs at 0.40 to 0.46, so a run counted at 0.95 of the live speed or better.
+
+| Binary, setting | Result |
+|---|---|
+| live binary, as shipped until now | most of the line lost: `R c:!` |
+| live binary, `MAME_CTL_KEY_EXCL=:key` | the overlap losses gone; shifted characters still lost |
+| new binary, EXCL + lead 2 or 5 ms | shifted characters lost (2 runs each) |
+| new binary, EXCL + lead 10 or 20 ms | exact (2 runs each) |
+
+Two faults. The fixture's exclusive-scan tag was `:kbd_`, samcoupe's, copied
+with a sibling fixture; this machine's key ports are `:key1` to `:key4`, so it
+matched nothing and overlapping keys were lost. And Shift reached the keyboard
+in the same instant as its key. The station ships `:key` and a 20 ms lead (the
+threshold is 5 to 10 ms, as on the Macintosh's serial keyboard). The slow
+reference also shows the `charMap` is wrong here: `"` arrives as `[`, `+` as
+`^`, `*` as `‾`: it is samcoupe's map, entry for entry. Re-derive it from the keymap
+before `keyboard.physical` is considered.
+
+**Live since 2026-10-04** (final-patch binary, `:key`, 20 ms; savestate
+signature `1ebe131a` unchanged, golden pixel-identical but for the guest's
+wall clock). Through the real SPA: a double-click on コマンドモード, then
+bare characters, so the SPA adds a synthetic Shift. `PRINT (A$! 1984 %OK` arrived
+as `PRINT )A$! 1984 %OK`: every Shift landed, and `(` `)` fall on the JIS
+layout (Shift+8 and Shift+9 there), the layout gap above. Restore to golden
+brought back the desktop. Evidence:
+`/data/vms/streamhost/stations/fmtowns/evidence/shift-lead-2026-10-04/`.
+Rollback: `assets/fmtowns/mame-native/fmtowns.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`.
 
 ## Pointer — 1:1 absolute (write route, guest's own cursor word)
 

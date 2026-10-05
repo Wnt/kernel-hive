@@ -67,7 +67,11 @@ every reading it produces on a sick one is noise.
   machine, RUN, Stop, restore) and prints ms/char; the tool for tuning a
   station's `typeIn` pace on long listings. `--first` presses the keys a
   station's `hint` asks for before the editor opens (`b,@2500` at the apple2e
-  and samcoupe menus). See `docs/TYPE-IN-EDITOR.md`.
+  and samcoupe menus). Steps are comma-separated Playwright keys, `@ms` waits,
+  `#label` framebuffer shots, and `!click:X:Y` / `!dclick:X:Y` for the real SPA
+  pointer at X,Y of the station's published surface (fmtowns' command mode:
+  `!dclick:555:555`). With listing `-` and no `--demo` it types nothing in the
+  editor: keys only. See `docs/TYPE-IN-EDITOR.md`.
 
 - `open-check.mjs <id> [more…]` — did the visitor path OPEN the station, and
   nothing else. No input, no QMP, no guest state touched, so it is safe on a

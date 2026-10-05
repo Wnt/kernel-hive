@@ -267,6 +267,34 @@ on the screen. That also proves the shifted matrix, since `*` is Shift+the key a
 PC labels `-`; an assertion on "the framebuffer changed" would have passed with
 every shifted key wrong.
 
+## Shifted characters: the modifier lead (2026-10-04)
+
+`SH_KEY_MOD_LEAD_MS=10` in the station fixture: the `ctlsock` module holds a
+key press until the Shift edge in front of it has been in the matrix for 10
+emulated ms, so the BASIC ROM's matrix scan sees SHIFT before the key it
+modifies. This machine lost no shifted character on the old engine (0 in the
+2026-10-04 survey). It gets the fleet's 10 ms anyway, five times the largest
+threshold measured on a MAME machine
+([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead)).
+`typeIn.perCharMs` 170 already covers it: HOLD 80 + max(GAP 80, LEAD) + LEAD =
+170.
+
+**Rig proof (2026-10-04).** A rig of this station's own binary and golden took
+the keys through a sandbox daemon, exactly as the editor sends them
+(`typeListing()` replayed by `key-burst-proof.mjs --edges`). The rig ran at
+1.00x real time. A 12-line listing with `"A+B*C:D(E)$!";1+2*3` on every line,
+through the station's `charMap`, LISTed pixel-identical to a slow reference
+typed with Shift 60 ms ahead, in 2 of 2 runs, and all three examples typed
+exactly, twice each. The golden is pixel-identical under the new binary, and
+the savestate signature is unchanged (`725b24e5`, 1056 entries).
+
+**Live since 2026-10-04.** The real editor typed *Is it a prime number?*; LIST
+was exact, RUN answered 91 with `91 = 7 * 13`, and Restore to golden brought
+back the boot screen. Rollback:
+`assets/dragon32/mame-native/dragon.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`. Evidence:
+`/data/vms/streamhost/stations/dragon32/evidence/shift-lead-2026-10-04/`.
+
 ## Verification (2026-08-09)
 
 All on labhost, MAME 0.289, station `dragon32`, in the order the builder runs them.

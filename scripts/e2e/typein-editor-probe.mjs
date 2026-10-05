@@ -14,7 +14,7 @@
 //   INVITE=<code or path> GALLERY_URL=https://kernelhive.madekivi.fi \
 //     node typein-editor-probe.mjs <station> <listing.bas> [--run <cmd>] [--restore] [--fb-shot <dir>]
 //                                  [--stop-after <seconds>] [--inject-keys <seconds>] [--then <steps>]
-//                                  [--first <steps>] [--demo <label>]
+//                                  [--first <steps>] [--demo <label>] [--restore-first]
 //
 // The listing is pasted (a synthetic `paste` event, so the editor's own paste
 // cleaning runs). `--run` types its argument + RETURN through the real
@@ -36,13 +36,18 @@
 // station's `typeIn.hint` asks the visitor for (B at the SAM's and the //e's
 // boot menus, BASIC + RETURN twice on the KC 85/4). `--demo <label>` (with
 // `-` as the listing) presses the stage menu's demo-typist row instead of the
-// editor, for a keyboard station with a demoProgram but no typeIn block.
+// editor, for a keyboard station with a demoProgram but no typeIn block; `-`
+// alone types nothing, so `--first`/`--then` are the visitor's whole input.
+// `--restore-first` presses the visitor's own ☰ → Restore to golden BEFORE
+// typing, then types the moment the SPA has reconnected by itself (no reload,
+// no wait of its own): "the first keys after a restore" exactly as a visitor
+// produces them (docs/TYPE-IN-EDITOR.md, "Typing right after a Restore").
 // A signed-in session is required to see the stream at all
 // (station-open.mjs's signIn header), hence INVITE + the public origin.
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import { galleryUrl, inviteCode, openStation, shotDir, signIn } from './station-open.mjs';
+import { galleryUrl, inviteCode, openStation, probeVideo, shotDir, signIn } from './station-open.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name) => {
@@ -58,6 +63,7 @@ const listing = listingPath === '-' ? '' : fs.readFileSync(listingPath, 'utf8');
 const runCmd = flag('--run');
 const fbDir = flag('--fb-shot');
 const restore = args.includes('--restore');
+const restoreFirst = args.includes('--restore-first');
 const stopAfter = Number(flag('--stop-after') ?? 0);
 const thenSteps = (flag('--then') ?? '').split(',').filter(Boolean);
 const firstSteps = (flag('--first') ?? '').split(',').filter(Boolean);
@@ -80,10 +86,37 @@ const fbShot = (label) => {
   }
 };
 
+// `!click:X:Y` / `!dclick:X:Y` — the real SPA pointer at X,Y of the station's
+// PUBLISHED surface (the stream's own pixels), mapped through the <video>
+// element's letterboxed box. The double-click is two deliberate press/release
+// pairs (80 ms down, 150 ms apart): a zero-gap dblclick can arrive as one
+// click on a guest that samples its button.
+const pointer = async (page, spec) => {
+  const [verb, x, y] = spec.split(':');
+  const v = page.locator('video').first();
+  const box = await v.boundingBox();
+  const { vw, vh } = await v.evaluate((el) => ({ vw: el.videoWidth, vh: el.videoHeight }));
+  if (!box || !vw || !vh) throw new Error(`pointer ${spec}: no live video`);
+  const sc = Math.min(box.width / vw, box.height / vh);
+  const px = box.x + (box.width - vw * sc) / 2 + Number(x) * sc;
+  const py = box.y + (box.height - vh * sc) / 2 + Number(y) * sc;
+  await page.mouse.move(px, py, { steps: 10 });
+  await page.waitForTimeout(600);
+  const tap = async () => {
+    await page.mouse.down();
+    await page.waitForTimeout(80);
+    await page.mouse.up();
+  };
+  if (verb === 'click') await tap();
+  else if (verb === 'dclick') { await tap(); await page.waitForTimeout(150); await tap(); }
+  else throw new Error(`pointer ${spec}: verb must be click or dclick`);
+};
+
 const play = async (page, steps) => {
   for (const step of steps) {
     if (step.startsWith('@')) await page.waitForTimeout(Number(step.slice(1)));
     else if (step.startsWith('#')) fbShot(step.slice(1));
+    else if (/^!d?click:/.test(step)) await pointer(page, step.slice(1)); // not the `!` key
     else {
       const [key, times] = step.split('*');
       for (let i = 0; i < Number(times ?? 1); i += 1) {
@@ -172,14 +205,42 @@ const typeDemo = async (page, label) => {
   const t0 = Date.now();
   for (;;) {
     await page.waitForTimeout(3000);
+    // the Controls button TOGGLES the menu: open it only if the row is not
+    // showing, read the row (disabled while the typist runs), close it again
+    const shown = (await row().count()) && (await row().isVisible());
+    if (!shown) await page.click('button[aria-label="Controls"]');
+    const busy = await row().isDisabled();
     await page.click('button[aria-label="Controls"]');
-    const busy = (await row().count()) && (await row().isDisabled());
-    await page.keyboard.press('Escape');
     if (!busy) break;
     if (Date.now() - t0 > 30 * 60 * 1000) throw new Error('demo did not finish in 30 min');
   }
   console.log(`demo typist done after ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   fbShot('typed');
+};
+
+// ☰ → Restore to golden, and the host's answer. Returns the POST's status.
+const pressRestore = async (page) => {
+  await page.click('button[aria-label="Controls"]');
+  const answered = page.waitForResponse(
+    (r) => r.url().includes(`/restore/${id}`) && r.request().method() === 'POST', { timeout: 180000 });
+  const t0 = Date.now();
+  await page.getByRole('button', { name: /Restore to golden/ }).click();
+  const reply = await answered;
+  console.log(`restore POST: HTTP ${reply.status()} after ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  return t0;
+};
+
+// The SPA's own reconnect after a restore: its "Restoring tile…" and
+// "Reconnecting to restored tile…" overlay gone and the video live again.
+const waitRestoredLive = async (page, t0) => {
+  for (;;) {
+    const busy = await page.getByText(/Restoring tile|Reconnecting to restored tile/).count();
+    const video = busy ? null : await page.evaluate(probeVideo);
+    if (video && video.readyState >= 2 && video.w > 0) break;
+    if (Date.now() - t0 > 180000) throw new Error('no live stream within 180 s of Restore');
+    await page.waitForTimeout(100);
+  }
+  console.log(`restore: stream live again ${((Date.now() - t0) / 1000).toFixed(1)} s after the click`);
 };
 
 const browser = await chromium.launch({
@@ -199,6 +260,10 @@ try {
   const opened = await openStation(page, base, id, { direct: true, log: (m) => console.log(m) });
   if (!opened.ok) throw new Error(`station did not open: ${opened.why}`);
   console.log(`stream live ${opened.video.w}x${opened.video.h}`);
+  if (restoreFirst) {
+    await waitRestoredLive(page, await pressRestore(page));
+    fbShot('restored-first');
+  }
   if (firstSteps.length) {
     const vbox = await page.locator('video').first().boundingBox();
     if (vbox) await page.mouse.click(vbox.x + vbox.width / 2, vbox.y + vbox.height / 2);
@@ -206,7 +271,9 @@ try {
   }
 
   if (demoLabel) await typeDemo(page, demoLabel);
-  else await typeWithEditor(page);
+  else if (listing) await typeWithEditor(page);
+  // listing '-' without --demo: no typist at all, only the --first/--then keys
+  // through the real SPA keyboard (a keyboard station with no editor and no demo)
 
   if (runCmd) {
     const vbox = await page.locator('video').first().boundingBox();
@@ -224,15 +291,10 @@ try {
   await play(page, thenSteps);
 
   if (restore) {
-    await page.click('button[aria-label="Controls"]');
     // Wait for the host to ANSWER the reset before reloading: a reload while the
     // POST is in flight sees the old stream still live, and the "restored"
     // framebuffer is then taken before the relaunch happened.
-    const answered = page.waitForResponse(
-      (r) => r.url().includes(`/restore/${id}`) && r.request().method() === 'POST', { timeout: 180000 });
-    await page.getByRole('button', { name: /Restore to golden/ }).click();
-    const reply = await answered;
-    console.log(`restore POST: HTTP ${reply.status()}`);
+    await pressRestore(page);
     const back = await openStation(page, base, id, { direct: true, waitMs: 60000 });
     console.log(`restore: ${back.ok ? 'stream live again' : back.why}`);
     fbShot('restored');

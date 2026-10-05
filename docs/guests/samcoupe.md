@@ -188,13 +188,50 @@ line (see §Traps).
 `registry/examples/samcoupe/` has three SAM BASIC programs: Rainbow fan
 (draw), Circle maker (input) and Higher or lower (game). They are typed at the
 SAM BASIC prompt (B on the menu). The editor types `NEW` before each run,
-because the menu's program stays in memory, and waits 2 s after it
-(`typeIn.settleAfter`). They avoid the keys a US typist cannot reach
-(`< > ? [ ] { } \ |`), which the station declares in `typeIn.unreachable`.
+because the menu's program stays in memory, waits 2 s after it
+(`typeIn.settleAfter`), then types a bare ENTER (`typeIn.enterAfter`). With a
+program in memory, `NEW` puts the MGT banner up until a key arrives, and about
+one key in six that dismisses it is lost. Before the ENTER, that key was the
+`1` of line 10, and the listing lost its first line (2 in 10 runs of
+shift-lead's 12-line listing; 4 in 24 of the race, 2026-10-04). The examples
+still open with a REM title on line 10. They avoid the keys a US typist cannot
+reach (`< > ? [ ] { } \ |`), which the station declares in `typeIn.unreachable`.
 All three were proven through the exact `typeText()` path on a sandbox rig on
-2026-10-04. `NEW` can redraw the MGT banner, which eats the next key, so line
-10 is always a REM title. See
+2026-10-04. See
 [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#sam-coup%C3%A9-what-the-typist-cannot-reach-and-what-new-does).
+
+## Shifted characters: the modifier lead (2026-10-04)
+
+`SH_KEY_MOD_LEAD_MS=10` in the station fixture: the `ctlsock` module holds a
+key press until the Shift edge in front of it has been in the matrix for 10
+emulated ms, so the ROM's matrix scan sees SHIFT before the key it modifies.
+This machine lost no shifted character on the old engine (0 in the 2026-10-04
+survey). It gets the fleet's 10 ms anyway, five times the largest threshold
+measured on a MAME machine
+([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead)).
+`typeIn.perCharMs` 260 already covers it: HOLD 80 + max(GAP 80, LEAD) + LEAD =
+170.
+
+**Rig proof (2026-10-04).** A rig of this station's own binary and golden took
+the keys through a sandbox daemon, exactly as the editor sends them
+(`typeListing()` replayed by `key-burst-proof.mjs --edges`), at 1.00x real
+time. A 12-line listing with `"A+B*C:D(E)$!";1+2*3` on every line, through the
+station's `charMap`, never lost a shifted character: not at lead 0, not at
+lead 10, not on the old binary. What it did lose is the FIRST LINE, whole, in
+4 of 13 fresh-restore runs (lead 0 1 of 4, lead 10 3 of 9), with the editor's
+own `NEW` and its 2000 ms settle in front. That is a key-after-restore problem,
+independent of the lead (see [`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#typing-right-after-a-restore);
+frames in `evidence/shift-lead-2026-10-04/first-line-loss/`).
+All three examples typed exactly, twice each. The golden is pixel-identical
+under the new binary, and the savestate signature is unchanged (`a1e84e4c`,
+1174 entries).
+
+**Live since 2026-10-04.** The real editor typed *Rainbow fan* after `B` at
+the boot menu; LIST was exact, RUN drew the fan (`0 OK, 60:1`), and Restore to
+golden brought back the boot menu. Rollback:
+`assets/samcoupe/mame-native/samcoupe.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`. Evidence:
+`/data/vms/streamhost/stations/samcoupe/evidence/shift-lead-2026-10-04/`.
 
 ## §Traps
 Four walls hit and fixed by the media stream, worth knowing before touching

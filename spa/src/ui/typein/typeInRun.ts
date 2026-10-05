@@ -6,7 +6,7 @@ import {
 } from '../grid/StreamView/typeDemoProgram';
 import type { DialectSpec } from './basicDialects';
 import { transcodeLine, type KeywordMachine } from './keywordEntry';
-import { applyCase } from './listingText';
+import { applyCase, withEnterAfter } from './listingText';
 
 // ---------------------------------------------------------------------------
 //  typeInRun — one editor run, pure and injectable so Stop and a dropped
@@ -75,8 +75,11 @@ export async function typeListing({
     return false;
   };
   const chords = keywords ? (line: string) => transcodeLine(line, keywords).chords : undefined;
+  // typeIn.enterAfter: a bare ENTER after the named direct commands, paced as
+  // its own line (the command keeps its settleAfter, the ENTER the default).
+  const typed = withEnterAfter(lines, config.enterAfter);
   const done = await typeLines({
-    lines, handle, pace: paceFor(config, lines), prepare: prepareFor(osId, config, spec), chords, sleep, cancelled, onProgress,
+    lines: typed, handle, pace: paceFor(config, typed), prepare: prepareFor(osId, config, spec), chords, sleep, cancelled, onProgress,
   });
   return done ? 'done' : dropped ? 'disconnected' : 'stopped';
 }

@@ -70,7 +70,8 @@ nothing to validate the editor's pace against.
 | `case` | How letters become keystrokes (below). |
 | `maxLineChars` | The machine's logical line length. The editor strikes through what the screen editor would cut off. Declared only where the number is certain (VIC-20 88, PET/8032 80, C64 80, C128 160). |
 | `hint` | One sentence above the Type button, for a step the machine needs first. |
-| `settleAfter` | A longer ENTER settle after a named direct command, keyed by the whole line in upper case. On samcoupe, `{"NEW": 2000}`: `NEW` redraws the MGT banner, and that eats the next key. With the default 600 ms, line 10 was lost in 4 of 7 runs; with 1.5 s it was lost in 1 of 7 (examples-sinclair rig, `tl-06…08.png`). The SAM demo listing waits 2 s after its own `NEW` (`demoProgram.enterDelayMs: [2000]`). |
+| `settleAfter` | A longer ENTER settle after a named direct command, keyed by the whole line in upper case. On zxspectrum, `{"NEW": 3000}`: the 48K's `NEW` re-tests its memory with the keyboard off. On samcoupe, `{"NEW": 2000}`, together with `enterAfter` below. |
+| `enterAfter` | Direct commands (whole line, upper case) after which the editor types a bare ENTER, once the line's settle has passed. On samcoupe, `["NEW"]`: `NEW` puts the MGT banner up until a key arrives, and the key that dismisses it is lost about one time in six, taking the listing's first line with it. An ENTER is harmless whether it is eaten or typed. The SAM demo listing carries the same ENTER as an empty line after its `NEW`. [Below](#sam-coup%C3%A9-what-the-typist-cannot-reach-and-what-new-does). |
 | `unreachable` | Printable ASCII that the station's keymap cannot produce. On samcoupe these are `< > ? [ ] { } \` and the vertical bar; on c64basic `{ }` (VICE's C64 keymap has no braces, and they vanish). The editor paints these red and blocks typing, exactly as it does for non-ASCII. The examples validator refuses them too. |
 
 `stations-registry.py new --like` does **not** copy `typeIn`. The dialect and
@@ -113,6 +114,20 @@ graphics set stays reachable. The unshifted press is an ordinary make/break, so
 hold and repeat work and the keyup releases the same scancode. The on-screen
 keyboard's `char` keys (`typeText`) are NOT changed: its shifted layer is the
 visitor choosing Shift, and the editor's own typing already follows `case`.
+
+**The station charMap on the visitor's keyboard (`keyboard.physical`).** By
+default `keyboard.charMap` maps only the typists (this editor, the demo listing,
+labctl): a visitor's own key reaches the guest at its US position. A station
+that sets `keyboard.physical: true` applies its charMap to the visitor's
+printable keys too. Physical keys and the on-screen keyboard's inline field go
+through `sendCharEvent`; the on-screen keyboard's `char` buttons and compose
+field go through `physicalTypist` (`spa/src/three/physicalCharMap.ts`). The
+order is fixed: the case rule above first (which character the visitor
+means), then the charMap (which US key makes it on the guest), the order the
+typists use too. A held key's keyup releases the scancode its press sent.
+cpm22 (a German CP/M, `docs/guests/cpm22.md`) is the only station with it on
+(2026-10-04); each other charMap station is rechecked before it gets the flag,
+because a map written for the typists can be wrong for a visitor's keys.
 
 ## Example programs and manual links
 
@@ -224,7 +239,9 @@ with a pointer to LIST it on a machine instead. Drafts persist per station in
 `scripts/e2e/typein-editor-probe.mjs` drives the REAL editor in the real SPA
 the way a visitor does: ☰ → Code editor, paste, Type into machine. It waits for
 the run to end, then optionally types RUN, captures the station framebuffer
-(`labctl shot`), presses Stop mid-run, or restores the golden. It prints
+(`labctl shot`), presses Stop mid-run, or restores the golden. `--restore-first`
+presses the visitor's Restore to golden BEFORE typing and types the moment the
+SPA has reconnected on its own ([below](#typing-right-after-a-restore)). It prints
 lines, characters, wall clock and effective ms/char. Use it for long listings
 when tuning `perCharMs` / `enterDelayMs`, and watch the daemon's
 `dropped`/`overflow`/`ack timeout` counters in
@@ -250,6 +267,94 @@ A second run pressed Stop during line 2. The framebuffer right after Stop and
 3 s later differed only in the blinking cursor cell, so no key left after
 Stop. The run ended with the visitor's Restore to golden, and the framebuffer
 returned to the clean READY screen.
+
+### Typing right after a Restore
+
+**A station without a savestate restores by booting, and keys typed into a
+boot are gone.** msx2 (`nms8250`) and svi738 (`svi738sw`) both report
+`savestate="unsupported"`, so their Restore is a service restart: a cold boot.
+Before 2026-10-04, `reset-tile.sh` reported that restart done at once. The
+SPA reconnected to the MSX logo and let the visitor, the demo typist or the
+editor type into it. On svi738 the demo's `MBASIC` vanished into the MSX
+banner, so every BASIC line then went to CP/M (`10?`, `FOR?`). On msx2 the
+first line of an example lost its first keys (`N10 REM TIMES TE - PE A
+NUMBER`). Both machines boot to the same emulated instant every time: msx2
+reaches `Ok` at 11.8 s and svi738 reaches `A>` at 20.7 s. Typed at those
+prompts, the same edges were exact.
+
+The rigs that reported "the first line, every run, old binary or new" were
+fooled the same way. They waited for a 3 s framebuffer settle, which fires
+inside a boot's quiet phases: msx2's ~7 s blank blue disk boot (only the
+drive-LED artwork changes) and svi738's ~7.5 s static MSX banner. **On a
+cold-boot station, wait for the station's ready scene, never a settle**
+(`scripts/dev/fb-wait.py --settle` cannot tell a quiet boot from a prompt).
+
+Raced on separate clones, through a sandbox daemon (2026-10-04):
+
+| Theory | Run | Verdict |
+|---|---|---|
+| Keys typed into the cold boot | msx2 and svi738, typing at launch, current and pre-shift-lead binaries | **The cause.** Same loss on both binaries; exact once typed at the prompt |
+| Keys sent while the emulator is SIGSTOPped, applied at resume | msx2 at `Ok`, stopped 4 s and 8 s while the keys arrived | Delayed, not lost (exact). Past the daemon's 5.2 s ack budget a stopped module is declared dead and the keys after it are refused (`BackendDown`): seen when the launcher's standby freeze landed under a test client the daemon did not count as a session. A live session's reconciler resumes such a freeze within 5 s, just inside that budget, so the restore now waits for the freeze to land first (below) |
+| The ROM needs time after a restore | dragon32, `LOADST golden` then typing at once | First key landed |
+| ctlsock key state survives `LOADST` | the same run, plus code: `drop_paced_state` clears every dwell, EXCL and lead gate on a restore | Ruled out |
+| The rest scene is mid-boot | the live msx2, frozen (`T`) on its blank blue disk-boot screen with the drive LED lit | **Also true.** Its 8 s standby delay ended 4 s before `Ok`; every other cold-boot MAME station rests on its prompt |
+
+**The fix is in the reset path, not the key path; no binary changed.** The
+mame-native launcher (`streamhost/stations/mame-native/x11-runtime.sh`) writes
+`scene.state`: `booting <pid>` at launch, then `ready <pid>` once its standby
+freeze has landed on the scene. After a cold relaunch, `reset-tile.sh` and
+`labctl reset` report done only at `ready` for the new pid. The bound is 3x
+the station's delay plus 15 s, and stations whose delay is over 90 s (newsos,
+palmos) are not waited on. The SPA shows "Restoring tile…" until then, then
+reconnects to the prompt. The freeze can no longer land under the visitor's
+reconnected session either. `MAME_NATIVE_STANDBY_CLOCK=emulated` counts the
+station's delay in emulated seconds (ctlsock `PING`), so the freeze ends on the
+same frame of the boot however loaded the box is. Every cold-boot MAME station
+now declares its own ready point that way, measured on rigs of its live binary
+(ctlsock `PING` beside the framebuffer; the last change bigger than a cursor
+cell; two boots each, within 0.2 s of each other):
+
+| Station | Rest scene | Reached at (emulated s) | `MAME_NATIVE_STANDBY_DELAY_S` |
+|---|---|---|---|
+| bbcmicro | `>` | 0.4 | 3 (was 8 wall) |
+| zx81 | `K` cursor | 0.5 | 3 (was 8) |
+| amstradcpc | `Ready` | 1.0 | measured; 4 to apply with its host-native conversion (still 8 wall) |
+| zxspectrum | © 1982 screen | 1.7 | 4 (was 8) |
+| kc854 | CAOS 4.2 menu | 1.8 | 4 (was 8) |
+| svi328cpm | `A>` | 4.3 | 7 (was 12) |
+| svi328 | `Ok` | 4.9 | 7 (was 12) |
+| svi728 | `Ok` | 5.4 | 8 (was 8) |
+| msx2 | `Ok`, drive LED off | 11.8 / 14.2 | 16 (was 8: **mid-boot**) |
+| svi738 | `A>` | 20.7 | 23 (was 25) |
+| armeval | ARM BASIC `>`, after the autoboot's `*LIB $` / `AB` | 20.9 | 23 (was 25 wall: mid-autoboot at the 0.3-0.5x a loaded box runs it) |
+| symbos | SymbOS desktop | 33.5 | 36 (was 75 wall: only ~34 emulated at the 0.45x measured under load) |
+
+armeval and symbos also set `SH_IDLE_PAUSE_WARMUP_SECS=120`. The daemon's own
+first pause counts wall seconds, and on a loaded box 60 of them is still
+mid-boot for these two, which is newsos's trap. palmos (~13% of real time) and
+newsos (~45%) keep their wall-clock delays (600 and 200). Their idle grace and
+warmup were tuned against those values, and a Restore does not wait on a delay
+over 90 s: a visitor watches those boots.
+
+Proof: the real launcher on a sandbox copy of each station. Each run is a
+cold relaunch followed by the scene wait, then edges typed the moment the
+restore returned, through the daemon's WebTransport path. msx2 typed its
+`input.bas` example exact in 5 of 5, svi738 its demo in 6 of 6, armeval its
+`input.bas` in 5 of 5, and bbcmicro its `input.bas` in 2 of 2. The restores
+took ~16 s, ~23 s, 44-48 s and 3 s to report. Live, through the real SPA with
+`typein-editor-probe.mjs --restore-first`, every station was exact: msx2 (Restore
+27.6 s), svi738's demo (35 s), and armeval's example (57 s), with zero ack
+timeouts or dropped keys in their daemons' counters. On armeval the module
+paces keys in emulated time, so at the ~0.5x of a loaded box the guest takes
+~40 s longer than the editor to absorb a 13-line listing. The keys queue in
+order and nothing is lost, but a framebuffer taken the moment the editor says
+"Typed" shows the listing still arriving. `labctl reset` waits for the scene
+too (armeval: 45.5 s).
+
+**Not the same bug: samcoupe** restores in process (`LOADST golden`, 0.4 s) to
+its menu, and loses the first line after `NEW` (below). A fresh restore only
+matters because pressing `B` on the menu leaves the menu program in memory,
+and that program is what `NEW` clears.
 
 ### Shifted characters: the modifier lead
 
@@ -299,8 +404,9 @@ Shift's own release is another field that nothing held back, so it applied in
 the same pass and the key landed unshifted. The apple2e, which has no EXCL,
 typed `(` as `9` and `$` as `4` with the first build of the lead. Since
 2026-10-04 a lead above 0 turns the three rules on for every station. A
-station with EXCL behaves exactly as before, and lead 0 without EXCL is still
-the old engine, byte for byte.
+station with EXCL behaves exactly as before, and lead 0 without EXCL runs the
+old engine's code path. That is not the same as the old binary's behaviour: see
+the Oric measurement under "Every MAME keyboard station" below.
 
 **The Commodores, VICE `vicectl`: the scan tore the latch.** VICE resolves a
 keysym through the machine's `.vkm` keymap, and on a VIC-20 `:` `*` `+` `@`
@@ -416,27 +522,59 @@ launcher as `station.env.pre-shiftlead-20261004` and
 `x11-runtime.sh.pre-shiftlead-20261004`. Evidence is in
 `/data/vms/streamhost/stations/<id>/evidence/shift-lead-2026-10-04/`.
 
-**Which other stations are exposed.** Every MAME keyboard station applied
-Shift and the key in one drain pass before this, by construction. How much that
-costs depends on how the machine scans its keyboard. Each station was measured
-on a rig of its live binary, typing a 16-line listing with 176 shifted
-characters through its own editor rules (`survey` frames in the evidence):
+**Every MAME keyboard station, 2026-10-04.** Before this, every MAME keyboard
+station put Shift and its key into the machine in one drain pass, by
+construction. How much that cost depended on how the machine reads its
+keyboard. Each station was measured on a rig of its own binary and golden,
+through a sandbox daemon, with the editor's own edges and pace (or, without an
+editor, a line typed with `typeText()`'s back-to-back Shift). Stations with an
+editor typed a 16-line listing with `"A+B*C:D(E)$!";1+2*3` on every line,
+LISTed and compared glyph by glyph with a slow reference. A run counted only at
+the station's own speed: 0.98 of real time, or within 5 % of the live station
+for the CPU-bound `bbcb`, `dn3500` and `fmtownsftv`. On the new binary every
+example typed exactly twice, every golden restored pixel-identical with an
+unchanged savestate signature, and every station was smoked live through the
+real editor (or the real SPA keyboard where there is none). The rollback
+binaries are `<binary>.pre-shiftlead-20261004`; evidence is in
+`/data/vms/streamhost/stations/<id>/evidence/shift-lead-2026-10-04/`, and the
+detail is in each guest doc.
 
-| Station | Shifted characters lost on the old binary (lead 0) |
+| Station | Lead | Old binary | New binary | Pace | Also |
+|---|---|---|---|---|---|
+| sinclairql | 20 | every shifted character lost | exact (above) | | final patch: signature `111a0cc2` unchanged |
+| oricatmos | 20 | 1 pass in 6 lost a Shift | 0 of 9; lead 0 lost in 10 of 10, 1 ms in 3 of 3, 2 ms 0 of 7 | 160 -> 180 (+12.5 %) | |
+| macsys1 | 20 | every shifted character lost | exact; 1, 2 and 5 ms still lose | no editor | OPEN: a phantom `]` at any lead |
+| fmtowns | 20 + EXCL `:key` | most of a line lost (overlap and Shift) | exact; 2 and 5 ms still lose | no editor | its EXCL tag `:kbd_` (samcoupe's) never matched |
+| apple2e | 10 + EXCL `:X` | 0 lost; its keymap had no Shift row | exact | new editor, 120 | below |
+| cpm22 | 10 + EXCL `:KEYS` | overlapping keys reordered | exact | no editor | German CP/M, `keyboard.physical` (above) |
+| atari800xl | 10 + EXCL `:keyboard.` | overlapping keys lost | exact | no editor | |
+| zxspectrum, zx81 | 10 | 0 lost | exact | 400 -> 410 (+2.5 %) on zxspectrum | |
+| bbcmicro, armeval | 10 | 0 lost | exact | 160 -> 170 (+6 %) on armeval | live speed 0.91 and 0.49 |
+| mpf2 | 10 | 0 lost | exact | 70 -> 74 (+6 %), ENTER 800 ms | |
+| svi728, dragon32, kc854, svi328, msx2, svi328cpm | 10 | 0 lost | exact | | |
+| samcoupe | 10 | 0 lost | exact | | the first line can be lost right after a restore ([above](#typing-right-after-a-restore)) |
+| svi738 | 10 | 0 lost | exact | | the first keys of a CP/M line are lost, old and new |
+| riscos3, newsos, symbos | none | 0 lost (a typed line, 2 of 2) | not swapped | | measured clean |
+| domainos | none | Shift and order lost | not shipped | | hidden; runs were below its own speed |
+| apple2gs, palmos | none | no reachable text field; no keyboard | | | |
+
+Lead 0 on a new binary is the old key-module code, but on the Oric it lost a
+Shift far more often than the old binary did (10 of 10 passes against 1 of 6),
+which points at how the new build lines up with wall time, not at the engine.
+So no new binary should ship at lead 0.
+
+Other key paths, measured before this rollout:
+
+| Station | Shifted characters lost |
 |---|---|
-| sinclairql | all of them (fixed, 20 ms) |
-| oricatmos | 6 in 5 passes, e.g. `(` -> `9`, `$` -> `4`, `*` -> `8`; 0 in 6 with the new binary at 20 ms, not deployed |
-| apple2e | `PRINT 6502*2` arrived as `650282` (seen by the Acorn examples agent, not measured here) |
-| bbcmicro, dragon32, samcoupe, svi728, mpf2 | 0 in one pass |
-| msx2 | 0 in lines 2 to 16 of three passes (line 1: see below) |
-| zxspectrum, zx81 | 0 in 60 and 40 Symbol Shift / SHIFT chords |
 | amstradcpc | on the Caprice32 kiosk (daemon dbus pacer), 1 in about 4,500 (`"` as `2`), plus far more keys of every kind under host load (below). Host-native MAME since 2026-10-04: 0 at lead 0, 1, 2, 5 and 10 in one pass each; ships 20 ms |
 | freedos (daemon dbus pacer, PC BIOS) | 0 in three 95-character bursts sent with no pacing at all |
 | vax43bsd's xterm (daemon x11test sink) | 0 in three 307-character bursts at 40/40 |
 
-msx2 loses keys at the start of its first line in every run, old binary or new
-(`10 PRINT` arrives as `10 NT`). That is not Shift: the lead does not change
-it. Every VICE station has the fix (above).
+msx2 lost keys at the start of its first line in every run, old binary or new
+(`10 PRINT` arrived as `10 NT`). That was not Shift, and not the key path: the
+rig started typing during the machine's cold boot
+([above](#typing-right-after-a-restore)). Every VICE station has the fix (above).
 
 **The daemon's own pacers.** The QEMU/dbus key gate (`key_quirks.rs`,
 `pace_edge`) forwarded Shift and the key back to back as well, and amstradcpc
@@ -501,19 +639,39 @@ SAM examples avoid them all and compare with `SGN`. Everything else in the
 `charMap`, including capitals, landed exactly through the `typeText()` path
 in every listing typed.
 
-**`NEW` can bring back the MGT banner, and the banner eats a key.** After `NEW`
-with a program in memory, the SAM sometimes redraws the
-`MILES GORDON TECHNOLOGY PLC © 1990 SAM Coupé 512K` banner for about a second.
-The next keypress only dismisses it. With the editor's 600 ms ENTER settle,
-that keypress is the `1` of line `10`. The SAM then rejects `0 REM …` with
-`29 Not understood` and typing carries on, so the listing loses its first line.
-A frame-by-frame capture shows the banner up from 0.1 s to at least 0.5 s
-after the ENTER, and gone once the `1` arrives at 0.6 s. It happened in 4 of
-the 7 runs at 600 ms. Waiting 1.5 s or more after `NEW` avoided it in 6 of 7
-runs; the seventh is unexplained. **Fixed in `typeIn`, not in the listings:**
-`settleAfter: {"NEW": 2000}` makes the editor wait 2 s after the `NEW` it
-types, and the station's demo listing (`NEW`, then `10 MODE 4`) waits 2 s
-after its own `NEW` (`demoProgram.enterDelayMs: [2000]`).
+**After `NEW`, the MGT banner waits for a key, and that key is sometimes
+lost.** With a program in memory (the menu program `B` leaves behind, or the
+previous run), `NEW` brings up the colour-striped
+`MILES GORDON TECHNOLOGY PLC © 1990 SAM Coupé 512K` screen ~0.3 s after its
+ENTER. It stays up until a key arrives: left alone it stood for 7.5-8.1 s, in
+6 of 6 runs, until the typist's next key. That key dismisses it, and about one
+time in six it is not typed as well. When the key is the `1` of line `10`,
+the SAM rejects `0 …` with `29 Not understood` and typing carries on, so the
+listing loses its first line. Framebuffer timelines (sandbox rigs of the live
+binary, 2026-10-04) show the banner up from 0.3 s after NEW's ENTER until the
+`1` arrives 2 s later. In the failing runs the next frame is an empty line,
+then `0`.
+
+| After `NEW` (2 s settle) | Line 10 survived |
+|---|---|
+| straight on to line 10, after a fresh golden restore and `B` | 6 of 8 |
+| the same after an in-process `LOADST golden` | 7 of 8 |
+| the same with 10 s between `B` and `NEW` | 7 of 8 |
+| shift-lead's 12-line listing, lead 0 / lead 10 | 3 of 4 / 5 of 6 |
+| **a bare ENTER, then line 10** | **8 of 8**, then 12 of 12 with the editor's own edges |
+
+The 10 s row rules out a restore transient: only `NEW` matters, and a longer
+settle cannot help, because the banner never leaves on its own. **Fixed in
+`typeIn`:** `enterAfter: ["NEW"]` makes the editor type a bare ENTER after the
+`NEW` it types, once `settleAfter: {"NEW": 2000}` has passed. Eaten by the
+banner or typed as an empty line, an ENTER is harmless. The demo listing
+carries the same ENTER as an empty line after its own `NEW`. Proof: the edges
+the editor sends, recorded from this branch's `typeListing()` and played
+through a sandbox daemon, typed `NEW` plus four shifted lines exact in 12 of 12
+runs (8 after a fresh golden restore and `B`, 4 after `LOADST golden`). Live,
+through the real SPA after the visitor's Restore and `B`, the 12-line shifted
+listing typed in 106 s, and `LIST` showed lines 10-120 exact. Evidence:
+`/data/vms/streamhost/stations/samcoupe/evidence/restore-first-keys-2026-10-04/`.
 
 ### MPF-II, Dragon 32 and the MSX family: punctuation and the MPF-II scroll
 

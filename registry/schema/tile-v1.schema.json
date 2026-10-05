@@ -456,6 +456,10 @@
             "type": "string"
           }
         },
+        "physical": {
+          "type": "boolean",
+          "description": "Apply charMap to the visitor's own printable keys too (spa/src/three/physicalCharMap.ts), not only to the typists. Opt-in per station; requires charMap."
+        },
         "letterCase": {
           "enum": [
             "upper-only"
@@ -586,6 +590,15 @@
         "settleAfter": {
           "type": "object",
           "description": "Longer ENTER settles for named direct commands, keyed by the whole line in upper case (matched case-insensitively): {\"NEW\": 2000} where NEW redraws a banner that eats the next key (samcoupe). The larger of this and enterDelayMs applies."
+        },
+        "enterAfter": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Direct commands (whole line, upper case, matched case-insensitively) after which the editor types a bare ENTER: [\"NEW\"] where NEW leaves a banner up until a key and the key that dismisses it is sometimes lost (samcoupe). The ENTER comes after the line's settle (settleAfter); eaten or typed, it is harmless."
         },
         "unreachable": {
           "type": "string",

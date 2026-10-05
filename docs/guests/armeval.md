@@ -228,6 +228,53 @@ only on the `demoProgram` path. A dead button is worse than a missing one, so
 they stay in the builder's gates (where `*CAT` doubles as the proof that the
 floppy is readable at all) and in this document.
 
+## Shifted characters: the modifier lead (2026-10-04)
+
+`SH_KEY_MOD_LEAD_MS=10` in the station fixture: the `ctlsock` module holds a
+key press until the SHIFT edge in front of it has been in the matrix for 10
+emulated ms, so the BBC OS's keyboard poll sees SHIFT before the key it
+modifies. This machine lost no shifted character on the old engine. It gets
+the fleet's 10 ms anyway, five times the largest threshold measured on a MAME
+machine ([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead)).
+`typeIn.perCharMs` went from 160 to 170 (+6 %) so the validator's drain rule
+(HOLD 80 + max(GAP 80, LEAD) + LEAD) still holds.
+
+**This station runs at half speed, and that is its own speed.** MAME's `bbcb`
+with the ARM second processor is CPU-bound on this host: the live station
+measured **0.486 of real time at 95 % of a core** (read-only, `ctlsock STAT`
+60 s apart, 2026-10-04). Rigs ran at 0.50 to 0.63 when the host was quieter.
+So a rig run counted when it was within 5 % of the live speed with its
+emulator thread at 97 % or more. The *Mandelbrot set* example shows what that
+means for a visitor: it prints **115.19 SECONDS**, which is emulated time, and
+on a rig at about 0.55 the picture took 211 s of wall time. At the live 0.486
+a visitor waits about four minutes.
+
+**Rig proof (2026-10-04).** A rig of this station's own binary took the keys
+through a sandbox daemon, exactly as the editor sends them (`typeListing()`
+replayed by `key-burst-proof.mjs --edges`), at 0.50 to 0.55 of real time and
+98 to 100 % CPU. A 16-line listing with `"A+B*C:D(E)$!";1+2*3` on every line,
+through the station's `charMap`, LISTed pixel-identical to a slow reference
+on the old binary and in 2 of 2 runs on the new one. All three examples typed
+exactly, twice each. The autobooted BASIC screen is pixel-identical under the
+new binary, and the savestate signature is unchanged (`ad064ed5`, 2363
+entries).
+
+**After a Restore, BASIC takes about 40 s.** `bbcb` has no savestates, so
+Restore is a cold relaunch: the screen sits at the bare `A*` supervisor while
+the launcher's `-autoboot_script` types `*LIB $` and `AB`, about 16 emulated
+seconds in (40 s after launch on a rig). Code typed into the editor before the
+`>` prompt goes to the supervisor and every line answers `Bad command (254)`.
+The first live smoke did exactly that. OPEN: Restore should wait for the
+station's ready scene (the restore-first-keys work, together with
+`bbcmicro`).
+
+**Live since 2026-10-04.** After the `>` prompt, the real editor typed *Count the
+primes*; LIST was exact, RUN answered 1000 with `168 PRIMES BELOW 1000` in
+0.24 s, and Restore to golden brought back the supervisor and its autoboot.
+Rollback: `assets/armeval/mame-native/bbcb.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`. Evidence:
+`/data/vms/streamhost/stations/armeval/evidence/shift-lead-2026-10-04/`.
+
 ## Proven dead ends
 
 Angle B's exhibit was the supervisor, and its four keyboard actions were real

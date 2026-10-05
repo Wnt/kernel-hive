@@ -138,6 +138,30 @@ The synthetic regression test in `scripts/test_svi_cpm_media.py` checks
 unsorted physical sector IDs, mixed compressed/full sectors and byte-exact
 logical overlays without requiring proprietary media.
 
+## Shifted characters: the modifier lead (2026-10-04)
+
+`SH_KEY_MOD_LEAD_MS=10` in the station fixture: the `ctlsock` module holds a
+key press until the Shift edge in front of it has been in the matrix for 10
+emulated ms, so the BIOS's matrix scan sees SHIFT before the key it modifies.
+This machine lost no shifted character on the old engine. It gets the fleet's
+10 ms anyway, five times the largest threshold measured on a MAME machine
+([`../TYPE-IN-EDITOR.md`](../TYPE-IN-EDITOR.md#shifted-characters-the-modifier-lead)).
+The demo's `perCharMs` 500 already covers it: HOLD 100 + max(GAP 100, LEAD) +
+LEAD = 210.
+
+**Rig proof (2026-10-04).** A rig of this station's own binary and golden took
+the keys through a sandbox daemon at 0.99 to 1.00x real time. The demo listing
+and a 10-line MBASIC listing with `"A+B*C:D(E)$!";1+2*3` on every line came
+out pixel-identical on the old binary and twice on the new one (LIST included).
+The golden is pixel-identical under the new binary, and the savestate
+signature is unchanged (`bf0585be`, 1359 entries).
+
+**Live since 2026-10-04.** The stage menu's demo typed exactly, and Restore to
+golden brought back the `A>` prompt. Rollback:
+`assets/svi328cpm/mame-native/svi328.pre-shiftlead-20261004` and
+`station.env.pre-shiftlead-20261004`. Evidence:
+`/data/vms/streamhost/stations/svi328cpm/evidence/shift-lead-2026-10-04/`.
+
 ## Source references
 
 - [Pinned MAME machine](https://github.com/mamedev/mame/blob/mame0289/src/mame/svi/svi318.cpp)
