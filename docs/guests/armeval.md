@@ -237,12 +237,13 @@ key) and `` ` `` (code 96 is the BBC's `£`). Those three are
 `typeIn.unreachable`; [`bbcmicro.md`](bbcmicro.md#keyboard) has the detail.
 Evidence: `/data/vms/streamhost/stations/armeval/evidence/physical-charmap-2026-10-05/`.
 
-**Live (2026-10-05): the visitor's keys proven, the editor proof pending.**
+**Live (2026-10-05): the visitor's keys and the editor proven.**
 On the live station `PRINT "AB";""""` typed with `"` both as Shift+`'` and as a
 bare resolved key printed `AB"`, and the full symbol line arrived exactly. Three
 of four live editor runs that day lost the stream partway (the SPA's ping timeout:
-the tile went silent for 5 s), so the editor's LIST proof is pending the
-investigation of that stall.
+the tile went silent for 5 s). That was the home uplink, not the station. The
+editor's LIST proof then passed five times in a row (*The stalls of
+2026-10-05*, below).
 
 ## Shifted characters: the modifier lead (2026-10-04)
 
