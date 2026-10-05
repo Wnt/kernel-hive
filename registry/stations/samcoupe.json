@@ -121,11 +121,14 @@
         "--x11-runtime-file",
         "$T/mame-native/x11-runtime.sh",
         "--aux-file",
+        "$T/mame-native/media-hook.sh",
+        "--aux-file",
         "$T/samcoupe/samcoupe.keymap",
         "--env-append-file",
         "$T/samcoupe/station.env.fixture"
       ],
       "auxFiles": [
+        "streamhost/stations/mame-native/media-hook.sh",
         "streamhost/stations/samcoupe/samcoupe.keymap",
         "streamhost/stations/samcoupe/station.env.fixture"
       ]

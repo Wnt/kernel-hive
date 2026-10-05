@@ -121,11 +121,14 @@
         "--x11-runtime-file",
         "$T/mame-native/x11-runtime.sh",
         "--aux-file",
+        "$T/mame-native/media-hook.sh",
+        "--aux-file",
         "$T/atari800xl/atari800xl.keymap",
         "--env-append-file",
         "$T/atari800xl/station.env.fixture"
       ],
       "auxFiles": [
+        "streamhost/stations/mame-native/media-hook.sh",
         "streamhost/stations/atari800xl/atari800xl.keymap",
         "streamhost/stations/atari800xl/station.env.fixture"
       ]

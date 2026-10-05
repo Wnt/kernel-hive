@@ -24,6 +24,9 @@
 #   MAME_NATIVE_GEOM     published surface (MAME_SHM_SIZE)
 #   MAME_NATIVE_ARGS     extra flags, shell-quoted string (eval'd: the Dragon
 #                        needs a literal empty argument, `-ext ""`)
+#   MAME_NATIVE_DISK_TEMPLATE    "<src>:<dest> ..." — every disk the station
+#                        mounts, copied fresh from an immutable template at
+#                        each start (see below); -flopN/-hardN name the dest
 #   MAME_NATIVE_STANDBY_DELAY_S  settle before the standby freeze (see below)
 #   MAME_NATIVE_STANDBY_CLOCK    wall (default) | emulated: which clock the
 #                        delay is counted on for a COLD boot (see below)
@@ -180,39 +183,88 @@ if [ "${MAME_NATIVE_CHECKPOINT:-1}" = 1 ] && [ -f "$BASE/sta/$DRIVER/golden.sta"
   STARG+=(-state golden)
 fi
 
-# IMMUTABLE DISK TEMPLATE (MAME_NATIVE_DISK_TEMPLATE="<src>:<dest-name>").
-# MAME writes a hard-disk image IN PLACE, and a savestate is only valid against
-# the bytes the disk had when it was saved (AGENTS.md rule 6: checkpoint +
-# binary + device set are ONE combination). A station that is SIGKILLed --
-# which is exactly how the service stops, because these binaries ignore
-# SIGTERM -- loses whatever MAME had not flushed, so the next start restores a
-# checkpoint against a disk that has drifted underneath it. MEASURED on
-# domainos, 2026-09-10: the guest came up, decided its boot volume was
-# inconsistent, and cold-booted into SALVAGING BOOT VOL -- which then rewrote
-# the disk some more, so the damage compounded on every start.
-# The fix is irix's: keep the golden disk IMMUTABLE in assets/ and give the
-# emulator a fresh copy of it every start, so a launch always restores against
-# the exact bytes the checkpoint was taken from. --reflink=auto makes that
-# nearly free on a CoW filesystem and a plain copy elsewhere.
-if [ -n "${MAME_NATIVE_DISK_TEMPLATE:-}" ]; then
-  TPL_SRC="${MAME_NATIVE_DISK_TEMPLATE%%:*}"
-  TPL_DST="${MAME_NATIVE_DISK_TEMPLATE##*:}"
-  [ -f "$TPL_SRC" ] || {
-    echo "mame-native[$TILE]: MAME_NATIVE_DISK_TEMPLATE source missing: $TPL_SRC" >&2
+# FRESH MEDIA PER START: IMMUTABLE TEMPLATES (MAME_NATIVE_DISK_TEMPLATE=
+# "<src>:<dest> [<src>:<dest> ...]" -- every disk, floppy and hard disk the
+# station mounts; <dest> is relative to the station dir and is what the -flopN/
+# -hardN argument names). MAME opens its media READ-WRITE: a hard-disk image
+# takes every guest write in place, a floppy is committed back to its file
+# whenever the drive motor stops (floppy.cpp mon_w) and on exit. Pointed at a
+# shared asset, one visitor's saved file or renamed icon becomes the next
+# visitor's exhibit (apple2e, 2026-09-08 -> 2026-10-05: a Dazzle Draw picture
+# saved by a pointer test sat in /DAZZLE for four weeks). And a savestate is
+# only valid against the bytes the disk had when it was saved (AGENTS.md rule
+# 6: checkpoint + binary + device set + media are ONE combination). MEASURED on
+# domainos, 2026-09-10: restored against a drifted disk, the guest decided its
+# boot volume was inconsistent and cold-booted into SALVAGING BOOT VOL.
+# The fix is irix's: keep each golden image IMMUTABLE in assets/ (mode 444; it
+# is never handed to MAME) and give the emulator a fresh copy every start, so a
+# launch always restores against the exact bytes the checkpoint was taken from.
+# --reflink=auto makes that nearly free on a CoW filesystem. A cold-relaunch
+# station's Restore IS a start; a LOADST station's Restore swaps the same
+# copies in-process through the media hook below.
+MEDIA_SRC=()
+MEDIA_DST=()
+for tpl in ${MAME_NATIVE_DISK_TEMPLATE:-}; do
+  src="${tpl%%:*}"
+  dst="$BASE/${tpl#*:}"
+  [ -n "$src" ] && [ "$dst" != "$BASE/" ] && [ "$src" != "$tpl" ] || {
+    echo "mame-native[$TILE]: MAME_NATIVE_DISK_TEMPLATE entry is not <src>:<dest>: $tpl" >&2
     exit 1
   }
-  cp --reflink=auto -f "$TPL_SRC" "$BASE/$TPL_DST"
-  # the template is deliberately mode 444 so nothing writes the golden by
-  # accident; the per-start COPY has to be writable or MAME mounts it
-  # read-only and the guest cannot even update its own volume label
-  chmod u+w "$BASE/$TPL_DST"
-  echo "mame-native[$TILE]: disk template $TPL_SRC -> $BASE/$TPL_DST ($(stat -c %s "$BASE/$TPL_DST") bytes)"
-fi
+  [ -f "$src" ] || {
+    echo "mame-native[$TILE]: MAME_NATIVE_DISK_TEMPLATE source missing: $src" >&2
+    exit 1
+  }
+  mkdir -p "$(dirname "$dst")"
+  cp --reflink=auto -f "$src" "$dst.tmp"
+  # the per-start COPY has to be writable or MAME mounts it read-only and the
+  # guest cannot save anything (nor update its own volume label)
+  chmod u+w "$dst.tmp"
+  mv -f "$dst.tmp" "$dst"
+  [ -w "$src" ] && [ "$(id -u)" != 0 ] &&
+    echo "mame-native[$TILE]: WARNING template $src is writable — chmod a-w it" >&2
+  MEDIA_SRC+=("$src")
+  MEDIA_DST+=("$dst")
+  echo "mame-native[$TILE]: disk template $src -> $dst ($(stat -c %s "$dst") bytes)"
+done
 
 EXTRA=()
 # shellcheck disable=SC2294 # the fixture value is a shell-quoted string on
 # purpose: `-ext ""` must survive as a literal empty argument.
 [ -n "${MAME_NATIVE_ARGS:-}" ] && eval 'EXTRA=('"$MAME_NATIVE_ARGS"')'
+
+# THE IN-PROCESS MEDIA HOOK (LOADST stations). Restore on a station with a
+# checkpoint is an in-process `LOADST golden` (~0.4 s, no restart), and LOADST
+# restores CPU, RAM and every device's registers but NOT media (a floppy's
+# track data lives in the drive's in-memory image, which no savestate carries;
+# a hard disk is the file itself). The companion media-hook.sh — an --aux-file
+# next to this launcher, so the two travel together — arms a Lua hook that
+# swaps the fresh copies in on request, and is also the Restore paths' client
+# for it (`media-hook.sh --media-reset`). Without the companion, or with the
+# hook off, Restore falls back to the service restart, which copies fresh
+# media at its start: correct, only slower.
+HOOK="$BASE/media-hook"
+rm -rf "$HOOK"
+rm -f "$BASE/media-reset.armed" "$BASE/media-reset.req" "$BASE/media-reset.ack"
+if [ "${#MEDIA_DST[@]}" -gt 0 ] && [ "${#STARG[@]}" -eq 4 ] && [ "${SH_MAME_RESET_INPROCESS:-1}" != 0 ]; then
+  COMPANION="$(dirname "$(readlink -f "$0")")/media-hook.sh"
+  case " ${EXTRA[*]-} " in
+    *" -pluginspath "*)
+      echo "mame-native[$TILE]: media hook OFF — the station sets its own -pluginspath; Restore is a cold relaunch"
+      ;;
+    *)
+      if [ ! -f "$COMPANION" ]; then
+        echo "mame-native[$TILE]: media hook OFF — no $COMPANION (emit it with --aux-file mame-native/media-hook.sh); Restore is a cold relaunch"
+      else
+        pairs=()
+        for i in "${!MEDIA_DST[@]}"; do pairs+=("${MEDIA_SRC[$i]}:${MEDIA_DST[$i]}"); done
+        bash "$COMPANION" --arm "$BASE" "${pairs[@]}"
+        EXTRA+=(-pluginspath "$HOOK")
+        echo "mame-native[$TILE]: media hook for ${#MEDIA_DST[@]} image(s) (in-process Restore swaps fresh copies)"
+      fi
+      ;;
+  esac
+fi
 
 nohup "$BIN" "$DRIVER" \
   -rompath "$ROMS" -inipath "$BASE" -homepath "$BASE" \

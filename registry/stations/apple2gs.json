@@ -120,11 +120,14 @@
         "--x11-runtime-file",
         "$T/mame-native/x11-runtime.sh",
         "--aux-file",
+        "$T/mame-native/media-hook.sh",
+        "--aux-file",
         "$T/apple2gs/apple2gs.keymap",
         "--env-append-file",
         "$T/apple2gs/station.env.fixture"
       ],
       "auxFiles": [
+        "streamhost/stations/mame-native/media-hook.sh",
         "streamhost/stations/apple2gs/apple2gs.keymap",
         "streamhost/stations/apple2gs/station.env.fixture"
       ]
