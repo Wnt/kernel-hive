@@ -53,21 +53,31 @@ committed by accident: `~/vom-repo` (launcher), `~/vom-site` (catalogue),
 
 ### The media itself, and how to read it without running the VM
 
-The full edition is downloaded to **`~/virtualosmuseum/virtual_os_museum-2026.06.12-full.zip`**
-(130 GB), and its guest-image disk is extracted, kept, and reusable at:
+**There is no local copy of the media.** The full edition zip (130 GB) and the
+guest-image disk extracted from it (~126 GB on disk) were both deleted from CT950
+to reclaim space — the zip on 2026-09-13, the extract on 2026-10-15. Only the
+three git clones above remain. For "which emulator, which machine, which
+settings", the clones and the catalog below are enough; you need the media only
+to read a file out of a specific installation (a `cfg.emu`, a `PASSWD`, a string
+inside a guest disk).
 
-**`~/vom-extract/guest_images.vdi`** — 173 GB apparent, ~126 GB on disk (written
-sparse), a 5 TB VDI holding one **btrfs** filesystem with every installation
-under `/images/<platform>/.../<name>_config/`.
-
-Extract it again, if it is ever lost, with a sparse stream — no unzip to a
-temporary file, and zeros never hit the disk:
+If you do need it, it costs a 130 GB download plus ~126 GB of pool, so check
+`zpool list data` first. Download the full edition from
+[virtualosmuseum.org](https://virtualosmuseum.org/) (the copy we had was
+`virtual_os_museum-2026.06.12-full.zip`), then extract only the guest-image disk
+with a sparse stream — no unzip to a temporary file, and zeros never hit the
+disk:
 
 ```bash
 unzip -p ~/virtualosmuseum/virtual_os_museum-2026.06.12-full.zip \
   "virtual_os_museum-2026.06.12-full/VirtualOSMuseum.utm/Data/guest_images.vdi" |
   dd of=~/vom-extract/guest_images.vdi bs=4M conv=sparse status=progress   # ~35 min
 ```
+
+The result is `guest_images.vdi`: 173 GB apparent, ~126 GB on disk, a 5 TB VDI
+holding one **btrfs** filesystem with every installation under
+`/images/<platform>/.../<name>_config/`. Delete the zip once the extract is
+done, and delete the extract when you are finished with it.
 
 **Mounting it needs labhost**, because the dev container (CT950) has no
 `/dev/nbd*`, no `/dev/loop-control` and no `/dev/fuse`. Serve it from wherever
@@ -101,9 +111,8 @@ mount -o ro /dev/nbd0p1 /mnt/vom
 mount-guard hook refuses `umount` on labhost, so tearing this down needs the
 operator. The collection is read-only and idle when nothing is reading it, so
 leaving it attached between sessions is cheap and is the operator's stated
-preference; it goes away at the next reboot.
-
-**Currently attached** (2026-08-17): `/dev/nbd1` → `/mnt/vom`, read-only.
+preference; it goes away at the next reboot. Detach it before deleting the
+file — ZFS cannot free the blocks while `qemu-nbd` still holds them open.
 
 What you can and cannot open once mounted: their **config directories are plain
 files** (`cfg.emu`, `PASSWD`, `INFO/info`, the disk image) and readable, but a
